@@ -1,11 +1,11 @@
-set(libbar_SRCS
+set(libhex_SRCS
     hex.h
     hex.cpp
 )
 
 # Declare the library
 add_library(libhex STATIC
-    ${libbar_SRCS}
+    ${libhex_SRCS}
 )
 
 target_link_libraries(libhex)

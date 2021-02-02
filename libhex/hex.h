@@ -1,5 +1,5 @@
 
-namespace can {
+namespace Hex {
 
     struct HexLine {
 
