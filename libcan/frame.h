@@ -17,11 +17,12 @@ namespace Can {
     class Frame {
     public:
         virtual FrameType get_type() = 0;
+        virtual void write(Writer) = 0;
     };
 
     class Frame_SingleFrame : public Frame {
     public:
-        Frame_SingleFrame(std::vector<uint8_t>, int);
+        Frame_SingleFrame(int, std::vector<uint8_t>);
         
         FrameType get_type() {
             return FrameType::SingleFrame;
@@ -30,6 +31,8 @@ namespace Can {
         std::vector<uint8_t> get_data() { return m_data; }
         int get_len() { return m_len; }
 
+        void write(Writer);
+
     private:
         std::vector<uint8_t> m_data;
         int m_len;
@@ -37,7 +40,7 @@ namespace Can {
 
     class Frame_FirstFrame : public Frame {
     public:
-        Frame_FirstFrame(std::vector<uint8_t>, int);
+        Frame_FirstFrame(int, std::vector<uint8_t>);
         
         FrameType get_type() {
             return FrameType::FirstFrame;
@@ -46,6 +49,8 @@ namespace Can {
         std::vector<uint8_t> get_data() { return m_data; }
         int get_len() { return m_len; }
 
+        void write(Writer);
+
     private:
         std::vector<uint8_t> m_data;
         int m_len;
@@ -53,7 +58,7 @@ namespace Can {
 
     class Frame_ConsecutiveFrame : public Frame {
     public:
-        Frame_ConsecutiveFrame(std::vector<uint8_t>, int);
+        Frame_ConsecutiveFrame(int, std::vector<uint8_t>);
         
         FrameType get_type() {
             return FrameType::ConsecutiveFrame;
@@ -61,6 +66,8 @@ namespace Can {
         
         std::vector<uint8_t> get_data() { return m_data; }
         int get_seq_num() { return m_seq_num; }
+
+        void write(Writer);
 
     private:
         std::vector<uint8_t> m_data;
@@ -85,6 +92,8 @@ namespace Can {
         FlowStatus get_status() { return m_status; }
         int get_block_size() { return m_block_size; }
         int get_min_separation_time() { return m_min_separation_time; }
+
+        void write(Writer);
         
     private:
         FlowStatus m_status;
