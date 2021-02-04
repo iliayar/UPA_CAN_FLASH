@@ -22,7 +22,7 @@ std::vector<uint8_t> Can::Reader::read(int offset, int len)
         uint8_t mask    = 0xff >> byte_offset;
         int n           = m_payload[byte_num] & mask;
         int to_read     = std::min(8 - byte_offset, std::min(8 - (bits_read % 8), len - bits_read));
-        mask            = 0xff << (8 - byte_offset - to_read);
+        mask            = 0xff << (8 - to_read);
         n               = ((n << (byte_offset)) & mask) >> (bits_read % 8);
         res[bits_read / 8] |= n;
 
@@ -69,7 +69,7 @@ void Can::Writer::write(std::vector<uint8_t> data, int offset, int len)
         uint8_t mask    = 0xff >> (bits_wrote % 8);
         int n           = data[bits_wrote / 8] & mask;
         int to_write    = std::min(8 - byte_offset, std::min(8 - (bits_wrote % 8), len - bits_wrote));
-        mask            = 0xff << (8 - byte_offset - to_write);
+        mask            = 0xff << (8 - to_write);
         n               = ((n << (bits_wrote % 8)) & mask) >> (byte_offset);
         m_payload[byte_num] |= n;
 
