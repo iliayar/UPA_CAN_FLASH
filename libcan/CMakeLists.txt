@@ -1,6 +1,8 @@
 set(libcan_SRCS
     can.h
     can.cpp
+    frame.h
+    frame.cpp
 )
 
 # Declare the library
