@@ -113,6 +113,72 @@ TEST(testReader, testNumbersReader)
     }
 }
 
+TEST(testWriter, testNumberWriter)
+{
+    {
+        std::vector<uint8_t> payload(8, 0);
+        Can::Writer writer(payload);
+        std::vector<uint8_t> res;
+        res = {0x00, 0x37, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+        writer.write_8(0x6e, 9, 8);
+        EXPECT_EQ(res, payload);
+
+        res = {0x00, 0x37, 0x42, 0x00, 0x00, 0x00, 0x00, 0x00};
+        writer.write_16(0x6e84, 9, 16);
+        EXPECT_EQ(res, payload);
+
+        res = {0x00, 0x37, 0x42, 0x00, 0x00, 0x00, 0x00, 0x00};
+        writer.write_32(0x6e840000, 9, 32);
+        EXPECT_EQ(res, payload);
+
+        res = {0x13, 0x37, 0x42, 0x00, 0x00, 0x00, 0x00, 0x12};
+        writer.write_64(0x1337420000000012, 0, 64);
+        EXPECT_EQ(res, payload);
+    } 
+
+    {
+        std::vector<uint8_t> payload(8, 0);
+        Can::Writer writer(payload);
+        std::vector<uint8_t> res;
+        res = {0x00, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+        writer.write_8(0x03, 4, 8);
+        EXPECT_EQ(res, payload);
+
+        res = {0x00, 0x37, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00};
+        writer.write_16(0x0374, 4, 16);
+        EXPECT_EQ(res, payload);
+
+        res = {0x00, 0x37, 0x42, 0x12, 0x30, 0x00, 0x00, 0x00};
+        writer.write_32(0x03742123, 4, 32);
+        EXPECT_EQ(res, payload);
+
+        res = {0x00, 0x37, 0x42, 0x12, 0x34, 0x00, 0x00, 0x00};
+        writer.write_64(0x0000001234000000, 24, 40);
+        EXPECT_EQ(res, payload);
+    } 
+    
+    {
+        std::vector<uint8_t> payload(8, 0);
+        Can::Writer writer(payload);
+        std::vector<uint8_t> res;
+        res = {0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+        writer.write_8(0x30, 4, 8);
+        EXPECT_EQ(res, payload);
+
+        res = {0x03, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00};
+        writer.write_16(0x3004, 4, 16);
+        EXPECT_EQ(res, payload);
+
+        res = {0x03, 0x00, 0x42, 0x53, 0x00, 0x00, 0x00, 0x00};
+        writer.write_32(0x30042530, 4, 32);
+        EXPECT_EQ(res, payload);
+
+        res = {0x03, 0x00, 0x42, 0x53, 0x00, 0x12, 0x34, 0x56};
+        writer.write_64(0x0000425300123456, 16, 48);
+        EXPECT_EQ(res, payload);
+    } 
+}
+
 TEST(testFrame, testFrameFactory)
 {
     {

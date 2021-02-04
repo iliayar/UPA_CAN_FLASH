@@ -76,3 +76,22 @@ void Can::Writer::write(std::vector<uint8_t> data, int offset, int len)
         bits_wrote += to_write;
     }
 }
+
+#define WRITE_N(N)                                                      \
+    void Can::Writer::write_##N(uint##N##_t data, int offset, int len) { \
+        if(len > N) {                                                   \
+            throw std::runtime_error("Len is greater than size of uint"#N"_t"); \
+        }                                                               \
+        data <<= (N - len);                                             \
+        std::vector<uint8_t> data_vec(N / 8, 0);                        \
+        for(int i = N / 8 - 1; i >= 0; --i) {                           \
+            data_vec[i] |= data;                                        \
+            data >>= 8;                                                 \
+        }                                                               \
+        this->write(data_vec, offset, len);                             \
+    }
+WRITE_N(8)
+WRITE_N(16)
+WRITE_N(32)
+WRITE_N(64)
+#undef WRITE_N
