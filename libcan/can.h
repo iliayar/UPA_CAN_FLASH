@@ -18,8 +18,12 @@ namespace Can {
         uint64_t             read_64(int offset, int len);
         std::vector<uint8_t> read   (int offset, int len);
 
+        void add_offset(int offset);
+        int get_offset() { return m_offset; }
+        bool is_eof() { return m_offset >= m_payload.size(); }
     private:
         std::vector<uint8_t> m_payload;
+        int m_offset;
     };
 
     class Writer {
@@ -32,7 +36,11 @@ namespace Can {
         void write_64(uint64_t             data, int offset, int len);
         void write   (std::vector<uint8_t> data, int offset, int len);
 
+        void add_offset(int offset);
+        int get_offset() { return m_offset; }
+        bool is_eof() { return m_offset >= m_payload.size(); }
     private:
         std::vector<uint8_t>& m_payload;
+        int m_offset;
     };
 }

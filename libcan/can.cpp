@@ -7,10 +7,16 @@
 
 Can::Reader::Reader(std::vector<uint8_t> payload)
     : m_payload(payload)
+    , m_offset(0)
 {}
+
+void Can::Reader::add_offset(int offset) {
+    m_offset += offset;
+}
 
 std::vector<uint8_t> Can::Reader::read(int offset, int len)
 {
+    offset += m_offset;
     if(len + offset > m_payload.size()*8) {
         throw std::runtime_error("Len with offset is greater than frame size");
     }
@@ -55,10 +61,17 @@ READ_N(64)
 
 Can::Writer::Writer(std::vector<uint8_t>& payload)
     : m_payload(payload)
+    , m_offset(0)
 {}
+
+void Can::Writer::add_offset(int offset)
+{
+    m_offset += offset;
+}
 
 void Can::Writer::write(std::vector<uint8_t> data, int offset, int len)
 {
+    offset += m_offset;
     if(len + offset > m_payload.size()*8) {
         throw std::runtime_error("Len with offset is greater than frame size");
     }
