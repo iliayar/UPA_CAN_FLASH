@@ -5,6 +5,7 @@
 #include "service.h"
 
 #include <vector>
+#include <chrono>
 
 namespace Can {
 
@@ -29,6 +30,21 @@ namespace Can {
         virtual WorkerStatus get_status() = 0;
         virtual Frame* fetch_frame() = 0;
         virtual void push_frame(Frame*) = 0;
+
+        std::chrono::milliseconds TIMEOUT{600};
+    protected:
+        std::chrono::time_point<std::chrono::high_resolution_clock> m_last_update = std::chrono::high_resolution_clock::now();
+
+        bool check_timeout_imp() {
+            if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_last_update) > TIMEOUT) {
+                return false;
+            }
+            return true;
+        }
+        
+        void update_imp() {
+            m_last_update = std::chrono::high_resolution_clock::now();
+        }
     };
     
     class Receiver : public Worker {
@@ -56,6 +72,16 @@ namespace Can {
         WorkerStatus get_status();
         Frame* fetch_frame();
         void push_frame(Frame*);
+    private:
+        std::vector<Frame*> m_frames;
+        WorkerStatus m_status;
+
+        int m_fc_block_size;
+        std::chrono::milliseconds m_fc_min_time;
+        std::chrono::time_point<std::chrono::high_resolution_clock> m_last_frame_time;
+        int m_i;
+        bool m_wait_fc;
+        int m_block_begin;
     };
 
     class Communicator {

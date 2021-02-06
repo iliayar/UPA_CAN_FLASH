@@ -6,6 +6,7 @@
 #include <stdexcept>
 
 Can::CommunicatorStatus Can::Communicator::get_status() {
+    update_task();
     if(m_worker == nullptr) return Can::CommunicatorStatus::Idle;
     return m_worker->get_type();
 }
@@ -23,6 +24,7 @@ Can::Frame* Can::Communicator::fetch_frame() {
 }
 
 void Can::Communicator::update_task() {
+    if(m_worker == nullptr) return;
     switch(m_worker->get_status()) {
     case Can::WorkerStatus::Done:
         switch(m_worker->get_type()) {
@@ -37,7 +39,7 @@ void Can::Communicator::update_task() {
         m_worker = new Transmitter(m_task->fetch_request());
         break;
     case Can::WorkerStatus::Error:
-        throw std::runtime_error("Wrong frame received");
+        throw std::runtime_error("Worker have met an Error");
         break;
     }
 }
@@ -107,17 +109,86 @@ std::vector<Can::Frame*> Can::service_to_frames(Can::ServiceRequest* request) {
 }
 
 Can::Transmitter::Transmitter(Can::ServiceRequest* request) {
+    m_frames = Can::service_to_frames(request);
+    if(m_frames.size() == 0) {
+        throw std::runtime_error("Failed to disassemble request to frames");
+    }
+    switch (m_frames[0]->get_type()) {
+    case Can::FrameType::SingleFrame: {
+        m_status = Can::WorkerStatus::Work;
+        break;
+    }
+    case Can::FrameType::FirstFrame: {
+        m_status = Can::WorkerStatus::Work;
+        m_i = 0;
+        m_wait_fc = false;
+        m_fc_min_time = static_cast<std::chrono::milliseconds>(0);
+        break;
+    }
+    default:
+        m_status = Can::WorkerStatus::Error;
+        break;
+    }
 }
 
 void Can::Transmitter::push_frame(Can::Frame* frame) {
+    if(m_wait_fc && frame->get_type() == Can::FrameType::FlowControl) {
+        m_wait_fc = false;
+        Can::FlowStatus status = static_cast<Can::Frame_FlowControl*>(frame)->get_status();
+        update_imp();
+        if(status == Can::FlowStatus::WaitForAnotherFlowControlMessageBeforeContinuing) {
+            m_wait_fc = true;
+            return;
+        } else if(status == Can::FlowStatus::OverflowAbortTransmission) {
+            m_status = Can::WorkerStatus::Error;
+            return;
+        }
+        m_fc_block_size = static_cast<Can::Frame_FlowControl*>(frame)->get_block_size();
+        if(m_fc_block_size == 0) m_fc_block_size = m_frames.size();
+        // m_fc_min_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<int>(static_cast<Can::Frame_FlowControl*>(frame)->get_min_separation_time()));
+        m_fc_min_time = static_cast<std::chrono::milliseconds>(static_cast<Can::Frame_FlowControl*>(frame)->get_min_separation_time());
+        m_last_frame_time = std::chrono::high_resolution_clock::now();
+    }
 }
 
 Can::Frame* Can::Transmitter::fetch_frame() {
-    return nullptr;
+    if(m_frames.size() == 1) {
+        m_status = Can::WorkerStatus::Done;
+        return m_frames[0];
+    }
+
+    if(m_wait_fc) {
+        return nullptr;
+    } else {
+        if(m_i == 0) {
+            m_i++;
+            m_wait_fc = true;
+            m_block_begin = 1;
+            return m_frames[0];
+        } else {
+            if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_last_frame_time) < m_fc_min_time) {
+                return nullptr;
+            }
+            m_i++;
+            if(m_i - m_block_begin + 1 >= m_fc_block_size) {
+                m_wait_fc = true;
+            }
+            if(m_i == m_frames.size()) {
+                m_status = Can::WorkerStatus::Done;
+            }
+            m_last_frame_time = std::chrono::high_resolution_clock::now();
+            return m_frames[m_i - 1];
+        }
+    }
 }
 
 Can::WorkerStatus Can::Transmitter::get_status() {
-    return Can::WorkerStatus::Error;
+    if(m_wait_fc) {
+        if(!check_timeout_imp()) {
+            m_status = Can::WorkerStatus::Error;
+        }
+    }
+    return m_status;
 }
 
 Can::Receiver::Receiver(Can::Frame* frame) {
@@ -159,6 +230,7 @@ void Can::Receiver::push_frame(Can::Frame* frame) {
             m_status = Can::WorkerStatus::Error;
             break;
         }
+        update_imp();
         if(6 + (m_frames.size() - 1)*7 >= m_consecutive_len) {
             m_status = Can::WorkerStatus::Done;
         }
@@ -173,9 +245,13 @@ void Can::Receiver::push_frame(Can::Frame* frame) {
 Can::Frame* Can::Receiver::fetch_frame() {
     // Only the FlowControl frame has posibility to be fetched
     // :TODO: Various error handling
+    update_imp();
     return new Frame_FlowControl(Can::FlowStatus::ContinueToSend, 0, 0);
 }
 
 Can::WorkerStatus Can::Receiver::get_status() {
+    if(!check_timeout_imp()) {
+        m_status = Can::WorkerStatus::Error;
+    }
     return m_status;
 }
