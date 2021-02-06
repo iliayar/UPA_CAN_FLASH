@@ -17,12 +17,12 @@ TEST(testService, testServiceRequest)
 {
     {
         Can::ServiceRequest_ReadDataByIdentifier request(Can::DataIdentifier::VIN);
-        std::vector<uint8_t> res = {0x22, 0xf1, 0x90, 0x00, 0x00, 0x00, 0x00};
+        std::vector<uint8_t> res = {0x22, 0xf1, 0x90};
         EXPECT_EQ(res, request.dump());
     }
 
     {
-        Can::ServiceRequest_WriteDataByIdentifier request(Can::Data(Can::DataIdentifier::VIN, std::vector<uint8_t>(17, 0x41)));
+        Can::ServiceRequest_WriteDataByIdentifier request(new Can::Data(Can::DataIdentifier::VIN, std::vector<uint8_t>(17, 0x41)));
         std::vector<uint8_t> res = {0x2e, 0xf1, 0x90};
         res.resize(3 + 17, 0x41);
         EXPECT_EQ(res, request.dump());

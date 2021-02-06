@@ -45,7 +45,7 @@ PARSE_DATA(UPASystemType, 1)
 
 std::vector<uint8_t> Can::ServiceRequest_ReadDataByIdentifier::dump()
 {
-    std::vector<uint8_t> payload(7, 0);
+    std::vector<uint8_t> payload(3, 0);
     Can::Writer writer(payload);
 
     int offset = 0;
@@ -61,7 +61,7 @@ std::vector<uint8_t> Can::ServiceRequest_ReadDataByIdentifier::dump()
 
 std::vector<uint8_t> Can::ServiceRequest_WriteDataByIdentifier::dump()
 {
-    std::vector<uint8_t> payload(1 + 2 + m_data.get_value().size(), 0);
+    std::vector<uint8_t> payload(1 + 2 + m_data->get_value().size(), 0);
     Can::Writer writer(payload);
 
     int offset = 0;
@@ -69,11 +69,11 @@ std::vector<uint8_t> Can::ServiceRequest_WriteDataByIdentifier::dump()
     writer.write_8(static_cast<uint8_t>(Can::ServiceRequestType::WriteDataByIdentifier), offset, 8);
     offset += 8;
     
-    writer.write_16(static_cast<uint16_t>(m_data.get_type()), offset, 16);
+    writer.write_16(static_cast<uint16_t>(m_data->get_type()), offset, 16);
     offset += 16;
 
-    writer.write(m_data.get_value(), offset, m_data.get_value().size()*8);
-    offset += m_data.get_value().size()*8;
+    writer.write(m_data->get_value(), offset, m_data->get_value().size()*8);
+    offset += m_data->get_value().size()*8;
 
     return payload;
 }

@@ -1,6 +1,6 @@
 file(GLOB SRCS *.cpp)
 
-ADD_EXECUTABLEan ${SRCS})
+ADD_EXECUTABLE(testcan ${SRCS})
 
 TARGET_LINK_LIBRARIES(testcan
     libcan

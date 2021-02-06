@@ -6,8 +6,8 @@ namespace Can {
 
     class Task {
     public:
-        virtual Service* fetch_request() = 0;
-        virtual void push_response(Service*) = 0;
+        virtual ServiceRequest* fetch_request() = 0;
+        virtual void push_response(ServiceResponse*) = 0;
     };
 
 }

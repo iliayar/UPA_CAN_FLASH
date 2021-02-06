@@ -69,14 +69,14 @@ namespace Can {
 
     class ServiceRequest_WriteDataByIdentifier : public ServiceRequest {
     public:
-        ServiceRequest_WriteDataByIdentifier(Data data)
+        ServiceRequest_WriteDataByIdentifier(Data* data)
             : m_data(data)
             {}
 
         ServiceRequestType get_type() { return ServiceRequestType::WriteDataByIdentifier; }
         std::vector<uint8_t> dump();
     private:
-        Data m_data;
+        Data* m_data;
     };
 
 // --------------- Service Response -------------------
