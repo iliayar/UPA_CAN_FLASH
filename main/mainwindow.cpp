@@ -60,8 +60,7 @@ MainWindow::MainWindow(QWidget* parent)
                     this, &MainWindow::processReceivedFrames);
             m_communicator = new Can::Communicator();
             m_communicator->set_task(new Can::ReadWriteThreadedTask{});
-            m_communicator_thread = new CommunicatorThread(this, m_device, m_communicator, m_communicator_mutex);
-            m_communicator_thread->start();
+            m_communicator_thread = new std::thread(&MainWindow::communicator_write, this);
         } else {
             std::cerr << "Cannot connect device" << std::endl;
         }
@@ -85,7 +84,7 @@ void MainWindow::processReceivedFrames() {
 MainWindow::~MainWindow()
 {}
 
-void CommunicatorThread::run() {
+void MainWindow::communicator_write() {
     while(true) {
         {
             std::unique_lock<std::mutex> lock(m_communicator_mutex);
