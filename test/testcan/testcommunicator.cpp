@@ -440,7 +440,7 @@ TEST(testCommunicator, testTaskWriteRead)
 }
 
 namespace Can {
-    class TestThreadedTask : public ThreadedTask {
+    class TestAsyncTask : public AsyncTask {
     public:
         void task() {
             ServiceResponse* response;
@@ -459,7 +459,7 @@ namespace Can {
 }
 
 TEST(testCommunication, testThreadedTask) {
-    Can::TestThreadedTask* task = new Can::TestThreadedTask();
+    Can::TestAsyncTask* task = new Can::TestAsyncTask();
     Can::Communicator communicator{};
     communicator.set_task(task);
     EXPECT_EQ(communicator.get_status(), Can::CommunicatorStatus::Transmit);

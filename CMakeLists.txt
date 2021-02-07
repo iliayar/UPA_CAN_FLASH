@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(myProject)
+project(can-util)
 
 enable_testing()
 

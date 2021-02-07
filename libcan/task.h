@@ -3,7 +3,7 @@
 #include "service.h"
 
 #include <mutex>
-#include <thread>
+#include <future>
 
 #include <iostream>
 
@@ -27,10 +27,10 @@ namespace Can {
         int m_step = 0;
     };
 
-    class ThreadedTask : public Task {
+    class AsyncTask : public Task {
     public:
-        ThreadedTask()
-            : m_thread(&ThreadedTask::task_imp, this)
+        AsyncTask()
+            : m_async(&AsyncTask::task_imp, this)
             , m_completed(false)
             , m_request(nullptr)
             , m_response(nullptr)
@@ -116,13 +116,13 @@ namespace Can {
         ServiceResponse* m_response;
         bool m_completed;
         bool m_wait_response;
-        std::thread m_thread;
+        std::thread m_async;
         std::mutex m_mutex;
 
         static constexpr std::chrono::milliseconds DELAY = static_cast<std::chrono::milliseconds>(2);
     };
 
-    class ReadWriteThreadedTask : public ThreadedTask {
+    class ReadWriteThreadedTask : public AsyncTask {
     public:
         void task();
     };
