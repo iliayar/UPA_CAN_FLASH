@@ -12,6 +12,17 @@ namespace Ui
     class MainWindow;
 }
 
+class CommunicatorThread : public QThread {
+    Q_OBJECT
+public:
+    CommunicatorThread(QObject* parent)
+        : QThread(parent)
+        {}
+    void run() override;
+signals:
+    void check_frames_to_write();
+};
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -21,10 +32,10 @@ public:
     virtual ~MainWindow();
     void processReceivedFrames();
 private:
-    void communicator_write();
+    void check_frames_to_write();
     
     QCanBusDevice *m_device;
     Can::Communicator* m_communicator;
     std::mutex m_communicator_mutex;
-    std::thread* m_communicator_thread;
+    CommunicatorThread* m_communicator_thread;
 };

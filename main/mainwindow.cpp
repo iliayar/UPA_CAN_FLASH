@@ -60,13 +60,28 @@ MainWindow::MainWindow(QWidget* parent)
                     this, &MainWindow::processReceivedFrames);
             m_communicator = new Can::Communicator();
             m_communicator->set_task(new Can::ReadWriteThreadedTask{});
-            m_communicator_thread = new std::thread(&MainWindow::communicator_write, this);
+            m_communicator_thread = new CommunicatorThread(this);
+            connect(m_communicator_thread, &CommunicatorThread::check_frames_to_write, this, &MainWindow::check_frames_to_write);
+            m_communicator_thread->start();
         } else {
             std::cerr << "Cannot connect device" << std::endl;
         }
     }
 
     setCentralWidget(window);
+}
+
+void MainWindow::check_frames_to_write() {
+    try {
+        Can::Frame* frame = m_communicator->fetch_frame();
+        std::vector<uint8_t> payload = frame->dump();
+        QCanBusFrame qframe;
+        qframe.setFrameId(TESTER_ID);
+        qframe.setPayload(QByteArray(reinterpret_cast<const char*>(payload.data()), payload.size()));
+        m_device->writeFrame(qframe);
+    } catch(Can::NothingToFetch e) {
+
+    }
 }
 
 void MainWindow::processReceivedFrames() {
@@ -84,21 +99,8 @@ void MainWindow::processReceivedFrames() {
 MainWindow::~MainWindow()
 {}
 
-void MainWindow::communicator_write() {
+void CommunicatorThread::run() {
     while(true) {
-        {
-            std::unique_lock<std::mutex> lock(m_communicator_mutex);
-            try {
-                Can::Frame* frame = m_communicator->fetch_frame();
-                std::vector<uint8_t> payload = frame->dump();
-                QCanBusFrame qframe;
-                qframe.setFrameId(TESTER_ID);
-                qframe.setPayload(QByteArray(reinterpret_cast<const char*>(payload.data()), payload.size()));
-                m_device->writeFrame(qframe);
-            } catch(Can::NothingToFetch e) {
-
-            }
-        }
-        // usleep(10);
+        emit check_frames_to_write();
     }
 }
