@@ -12,32 +12,41 @@ Can::CommunicatorStatus Can::Communicator::get_status() {
 }
 
 void Can::Communicator::set_task(Can::Task* task) {
+    if(m_task != nullptr) delete m_task;
     m_task = task;
+    if(m_worker != nullptr) delete m_worker;
     m_worker = new Transmitter(m_task->fetch_request());
 }
 
 Can::Frame* Can::Communicator::fetch_frame() {
-    if(m_worker == nullptr) throw std::runtime_error("No frames to fetch");
+    if(m_worker == nullptr) throw Can::NothingToFetch();
     Can::Frame* frame = m_worker->fetch_frame();
+    if(frame == nullptr) throw Can::NothingToFetch();
     update_task();
     return frame;
 }
 
 void Can::Communicator::update_task() {
     if(m_worker == nullptr) return;
+    if(m_task == nullptr) throw std::runtime_error("No task set");
     switch(m_worker->get_status()) {
-    case Can::WorkerStatus::Done:
+    case Can::WorkerStatus::Done: {
         switch(m_worker->get_type()) {
-        case Can::CommunicatorStatus::Receive:
+        case Can::CommunicatorStatus::Receive: {
             m_task->push_response(static_cast<Can::Receiver*>(m_worker)->get_response());
             delete m_worker;
             break;
+        }
         case Can::CommunicatorStatus::Transmit:
             delete m_worker;
             break;
         }
-        m_worker = new Transmitter(m_task->fetch_request());
+        m_worker = nullptr;
+        Can::ServiceRequest* request = m_task->fetch_request();
+        if(request != nullptr)
+            m_worker = new Transmitter(request);
         break;
+    }
     case Can::WorkerStatus::Error:
         throw std::runtime_error("Worker have met an Error");
         break;
@@ -109,6 +118,10 @@ std::vector<Can::Frame*> Can::service_to_frames(Can::ServiceRequest* request) {
 }
 
 Can::Transmitter::Transmitter(Can::ServiceRequest* request) {
+    if(request == nullptr) {
+        m_status = Can::WorkerStatus::Done;
+    }
+    
     m_frames = Can::service_to_frames(request);
     if(m_frames.size() == 0) {
         throw std::runtime_error("Failed to disassemble request to frames");
@@ -145,7 +158,6 @@ void Can::Transmitter::push_frame(Can::Frame* frame) {
         }
         m_fc_block_size = static_cast<Can::Frame_FlowControl*>(frame)->get_block_size();
         if(m_fc_block_size == 0) m_fc_block_size = m_frames.size();
-        // m_fc_min_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<int>(static_cast<Can::Frame_FlowControl*>(frame)->get_min_separation_time()));
         m_fc_min_time = static_cast<std::chrono::milliseconds>(static_cast<Can::Frame_FlowControl*>(frame)->get_min_separation_time());
         m_last_frame_time = std::chrono::high_resolution_clock::now();
     }
@@ -176,6 +188,7 @@ Can::Frame* Can::Transmitter::fetch_frame() {
             if(m_i == m_frames.size()) {
                 m_status = Can::WorkerStatus::Done;
             }
+            if(m_i > m_frames.size()) return nullptr;
             m_last_frame_time = std::chrono::high_resolution_clock::now();
             return m_frames[m_i - 1];
         }

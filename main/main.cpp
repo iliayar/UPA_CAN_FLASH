@@ -1,4 +1,3 @@
-#include "hex.h"
 #include "mainwindow.h"
 
 #include <iostream>

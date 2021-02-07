@@ -9,6 +9,7 @@ set(libcan_SRCS
     service.cpp
     task.h
     task.cpp
+    util.h
 )
 
 # Declare the library

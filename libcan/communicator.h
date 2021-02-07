@@ -9,6 +9,13 @@
 
 namespace Can {
 
+    struct NothingToFetch : public std::exception {
+        const char* what() const throw()
+            {
+                return "No frames to fetch";
+            }
+    };
+
     enum class CommunicatorStatus {
         Idle,
         Receive,
@@ -16,9 +23,9 @@ namespace Can {
     };
 
     enum WorkerStatus {
+        Done,
         Work,
-        Error,
-        Done
+        Error
     };
 
     std::vector<Frame*> service_to_frames(ServiceRequest*);
@@ -88,6 +95,7 @@ namespace Can {
     public:
         Communicator()
             : m_worker(nullptr)
+            , m_task(nullptr)
             {}
         
         CommunicatorStatus get_status();

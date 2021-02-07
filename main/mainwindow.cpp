@@ -1,15 +1,24 @@
 #include "mainwindow.h"
+#include "communicator.h"
+#include "frame.h"
+#include "task.h"
 
 #include <iostream>
 #include <QCoreApplication>
 #include <QCanBus>
 #include <QCanBusFrame>
+#include <QThread>
+#include <QDebug>
+#include <vector>
 
 #ifdef __MINGW32__
 #define CAN_PLUGIN "systeccan"
 #elif __linux__
 #define CAN_PLUGIN "socketcan"
 #endif
+
+#define DEVICE_ID 0x76E
+#define TESTER_ID 0x74E
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -49,21 +58,48 @@ MainWindow::MainWindow(QWidget* parent)
             std::cout << m_device->state() << std::endl;
             connect(m_device, &QCanBusDevice::framesReceived,
                     this, &MainWindow::processReceivedFrames);
+            m_communicator = new Can::Communicator();
+            m_communicator->set_task(new Can::ReadWriteThreadedTask{});
+            m_communicator_thread = new CommunicatorThread(this, m_device, m_communicator, m_communicator_mutex);
+            m_communicator_thread->start();
         } else {
             std::cerr << "Cannot connect device" << std::endl;
         }
     }
 
-
     setCentralWidget(window);
 }
 
 void MainWindow::processReceivedFrames() {
+    std::unique_lock<std::mutex> lock(m_communicator_mutex);
     while(m_device->framesAvailable()) {
-        QCanBusFrame frame = m_device->readFrame();
-        std::cout << frame.toString().toStdString() << std::endl;
+        QCanBusFrame qframe = m_device->readFrame();
+        if(qframe.frameId() == DEVICE_ID) {
+            QByteArray payload = qframe.payload();
+            Can::Frame* frame = Can::FrameFactory(std::vector<uint8_t>(payload.begin(), payload.end())).get();
+            m_communicator->push_frame(frame);
+        }
     }
 }
 
 MainWindow::~MainWindow()
 {}
+
+void CommunicatorThread::run() {
+    while(true) {
+        {
+            std::unique_lock<std::mutex> lock(m_communicator_mutex);
+            try {
+                Can::Frame* frame = m_communicator->fetch_frame();
+                std::vector<uint8_t> payload = frame->dump();
+                QCanBusFrame qframe;
+                qframe.setFrameId(TESTER_ID);
+                qframe.setPayload(QByteArray(reinterpret_cast<const char*>(payload.data()), payload.size()));
+                m_device->writeFrame(qframe);
+            } catch(Can::NothingToFetch e) {
+
+            }
+        }
+        // usleep(10);
+    }
+}

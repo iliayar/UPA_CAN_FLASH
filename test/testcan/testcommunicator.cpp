@@ -1,10 +1,14 @@
 #include "gtest/gtest.h"
 #include "frame.h"
 #include "communicator.h"
+#include "task.h"
+#include "util.h"
 
 #include <vector>
 #include <chrono>
 #include <thread>
+#include <string>
+#include <stdexcept>
 
 TEST(testCommunicator, testFramesToService)
 {
@@ -283,4 +287,199 @@ TEST(testCommunicator, testTransmitter)
         EXPECT_EQ(static_cast<Can::Frame_ConsecutiveFrame*>(frame)->get_seq_num(), 2);
         EXPECT_EQ(static_cast<Can::Frame_ConsecutiveFrame*>(frame)->get_data(), std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41}));
     }
+}
+
+
+namespace Can {
+
+    class TestTask_Read : public Task {
+    public:
+        ServiceRequest* fetch_request() {
+            m_step++;
+            switch(m_step - 1) {
+            case 0:
+                return new ServiceRequest_ReadDataByIdentifier(DataIdentifier::VIN);
+            default:
+                m_step--;
+                return nullptr;
+            }
+        }
+
+        void push_response(ServiceResponse* response) {
+            m_step++;
+            switch(m_step - 1) {
+            case 1:
+                m_result = Util::vec_to_str(static_cast<ServiceResponse_ReadDataByIdentifier*>(response)->get_data()->get_value());
+                break;
+            default:
+                m_step--;
+                return;
+            }
+        }
+
+        std::string get_result() {
+            return m_result;
+        }
+
+        bool is_completed() {
+            return m_step == 2;
+        }
+
+    private:
+        int m_step = 0;
+        std::string m_result;
+    };
+
+    class TestTask_DoubleRead : public Task {
+    public:
+        ServiceRequest* fetch_request() {
+            m_step++;
+            switch(m_step - 1) {
+            case 0:
+                return new ServiceRequest_ReadDataByIdentifier(DataIdentifier::VIN);
+            case 2:
+                return new ServiceRequest_ReadDataByIdentifier(DataIdentifier::UPASystemType);
+            default:
+                m_step--;
+                return nullptr;
+            }
+        }
+
+        void push_response(ServiceResponse* response) {
+            m_step++;
+            switch(m_step - 1) {
+            case 1:
+                m_result_VIN = Util::vec_to_str(static_cast<ServiceResponse_ReadDataByIdentifier*>(response)->get_data()->get_value());
+                break;
+            case 3:
+                m_result_UPASystemType = static_cast<ServiceResponse_ReadDataByIdentifier*>(response)->get_data()->get_value()[0];
+                break;
+            default:
+                m_step--;
+                return;
+            }
+        }
+
+        std::pair<std::string, uint8_t> get_result() {
+            return std::make_pair(m_result_VIN, m_result_UPASystemType);
+        }
+
+        bool is_completed() {
+            return m_step == 4;
+        }
+
+    private:
+        int m_step = 0;
+        std::string m_result_VIN;
+        uint8_t m_result_UPASystemType;
+    };
+
+}
+
+TEST(testCommunicator, testTaskRead)
+{
+    Can::TestTask_Read* task = new Can::TestTask_Read();
+    Can::Communicator communicator{};
+    communicator.set_task(task);
+    EXPECT_EQ(communicator.get_status(), Can::CommunicatorStatus::Transmit);
+
+    Can::Frame* frame = communicator.fetch_frame();
+    EXPECT_EQ(frame->get_type(), Can::FrameType::SingleFrame);
+    EXPECT_EQ(static_cast<Can::Frame_FirstFrame*>(frame)->get_len(), 3);
+    EXPECT_EQ(static_cast<Can::Frame_FirstFrame*>(frame)->get_data(), std::vector<uint8_t>({0x22, 0xf1, 0x90, 0x00, 0x00, 0x00, 0x00}));
+
+    std::vector<Can::Frame*> frames;
+    frames.push_back(new Can::Frame_FirstFrame(20, std::vector<uint8_t>({0x62, 0xf1, 0x90, 0x41, 0x20, 0x41})));
+    frames.push_back(new Can::Frame_ConsecutiveFrame(1, std::vector<uint8_t>({0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20})));
+    frames.push_back(new Can::Frame_ConsecutiveFrame(2, std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})));
+
+    EXPECT_EQ(communicator.get_status(), Can::CommunicatorStatus::Idle);
+    for(Can::Frame* f : frames) {
+        communicator.push_frame(f);
+    }
+    EXPECT_EQ(communicator.get_status(), Can::CommunicatorStatus::Idle);
+    EXPECT_EQ(task->is_completed(), true);
+    EXPECT_EQ(task->get_result(), "A A A A A A A A A");
+}
+
+TEST(testCommunicator, testTaskWriteRead)
+{
+    Can::TestTask_DoubleRead* task = new Can::TestTask_DoubleRead();
+    Can::Communicator communicator{};
+    communicator.set_task(task);
+    EXPECT_EQ(communicator.get_status(), Can::CommunicatorStatus::Transmit);
+
+    Can::Frame* frame = communicator.fetch_frame();
+    EXPECT_EQ(frame->get_type(), Can::FrameType::SingleFrame);
+    EXPECT_EQ(static_cast<Can::Frame_FirstFrame*>(frame)->get_len(), 3);
+    EXPECT_EQ(static_cast<Can::Frame_FirstFrame*>(frame)->get_data(), std::vector<uint8_t>({0x22, 0xf1, 0x90, 0x00, 0x00, 0x00, 0x00}));
+
+    std::vector<Can::Frame*> frames;
+    frames.push_back(new Can::Frame_FirstFrame(20, std::vector<uint8_t>({0x62, 0xf1, 0x90, 0x41, 0x20, 0x41})));
+    frames.push_back(new Can::Frame_ConsecutiveFrame(1, std::vector<uint8_t>({0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20})));
+    frames.push_back(new Can::Frame_ConsecutiveFrame(2, std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})));
+
+    EXPECT_EQ(communicator.get_status(), Can::CommunicatorStatus::Idle);
+    ASSERT_THROW(communicator.fetch_frame(), Can::NothingToFetch);
+    for(Can::Frame* f : frames) {
+        communicator.push_frame(f);
+    }
+
+    EXPECT_EQ(communicator.get_status(), Can::CommunicatorStatus::Transmit);
+    frame = communicator.fetch_frame();
+    EXPECT_EQ(frame->get_type(), Can::FrameType::SingleFrame);
+    EXPECT_EQ(static_cast<Can::Frame_FirstFrame*>(frame)->get_len(), 3);
+    EXPECT_EQ(static_cast<Can::Frame_FirstFrame*>(frame)->get_data(), std::vector<uint8_t>({0x22, 0x20, 0x0e, 0x00, 0x00, 0x00, 0x00}));
+
+    communicator.push_frame(new Can::Frame_SingleFrame(4, std::vector<uint8_t>({0x62, 0x20, 0x0E, 0x03, 0x55, 0x55, 0x55})));
+    
+    EXPECT_EQ(task->is_completed(), true);
+    auto res = task->get_result();
+    EXPECT_EQ(res.first, "A A A A A A A A A");
+    EXPECT_EQ(res.second, 0x03);
+}
+
+namespace Can {
+    class TestThreadedTask : public ThreadedTask {
+    public:
+        void task() {
+            ServiceResponse* response;
+
+            response = call(new ServiceRequest_ReadDataByIdentifier(DataIdentifier::VIN));
+
+            m_result = Util::vec_to_str(static_cast<ServiceResponse_ReadDataByIdentifier*>(response)->get_data()->get_value());
+        }
+
+        std::string get_result() {
+            return m_result;
+        }
+    private:
+        std::string m_result;
+    };
+}
+
+TEST(testCommunication, testThreadedTask) {
+    Can::TestThreadedTask* task = new Can::TestThreadedTask();
+    Can::Communicator communicator{};
+    communicator.set_task(task);
+    EXPECT_EQ(communicator.get_status(), Can::CommunicatorStatus::Transmit);
+
+    Can::Frame* frame = communicator.fetch_frame();
+
+    EXPECT_EQ(frame->get_type(), Can::FrameType::SingleFrame);
+    EXPECT_EQ(static_cast<Can::Frame_FirstFrame*>(frame)->get_len(), 3);
+    EXPECT_EQ(static_cast<Can::Frame_FirstFrame*>(frame)->get_data(), std::vector<uint8_t>({0x22, 0xf1, 0x90, 0x00, 0x00, 0x00, 0x00}));
+
+    std::vector<Can::Frame*> frames;
+    frames.push_back(new Can::Frame_FirstFrame(20, std::vector<uint8_t>({0x62, 0xf1, 0x90, 0x41, 0x20, 0x41})));
+    frames.push_back(new Can::Frame_ConsecutiveFrame(1, std::vector<uint8_t>({0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20})));
+    frames.push_back(new Can::Frame_ConsecutiveFrame(2, std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})));
+
+    EXPECT_EQ(communicator.get_status(), Can::CommunicatorStatus::Idle);
+    for(Can::Frame* f : frames) {
+        communicator.push_frame(f);
+    }
+    EXPECT_EQ(communicator.get_status(), Can::CommunicatorStatus::Idle);
+    EXPECT_EQ(task->is_completed(), true);
+    EXPECT_EQ(task->get_result(), "A A A A A A A A A");
 }

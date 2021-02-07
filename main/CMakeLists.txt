@@ -23,7 +23,7 @@ add_executable(myApp
 
 # Specify here the libraries this program depends on
 target_link_libraries(myApp
-    libhex
+    libcan
     Qt5::Widgets
     Qt5::SerialBus
 )
