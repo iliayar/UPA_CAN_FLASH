@@ -91,8 +91,8 @@ void MainWindow::processReceivedFrames() {
 		Can::FrameFactory(
 		    std::vector<uint8_t>(payload.begin(), payload.end()))
 		    .get();
-            m_communicator->push_frame(frame);
-        }
+	    m_communicator->push_frame(frame);
+	}
     }
 }
 
