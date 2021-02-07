@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "frame.h"
+#include "frame_all.h"
 
 #include <vector>
 
@@ -9,7 +9,7 @@ TEST(testFrame, testFrameFactory)
         Can::Frame* frame = Can::FrameFactory({0x02, 0x13, 0x37, 0x00, 0x00, 0x00, 0x00, 0x00}).get();
         EXPECT_EQ(frame->get_type(), Can::FrameType::SingleFrame);
         EXPECT_EQ(static_cast<Can::Frame_SingleFrame*>(frame)->get_len(), 2);
-        EXPECT_EQ(static_cast<Can::Frame_SingleFrame*>(frame)->get_data(), std::vector<uint8_t>({0x13, 0x37}));
+        EXPECT_EQ(static_cast<Can::Frame_SingleFrame*>(frame)->get_data(), std::vector<uint8_t>({0x13, 0x37, 0x00, 0x00, 0x00, 0x00, 0x00}));
     }
 
     {

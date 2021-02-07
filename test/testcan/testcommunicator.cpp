@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "frame.h"
+#include "frame_all.h"
 #include "communicator.h"
 #include "task.h"
 #include "util.h"

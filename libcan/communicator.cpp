@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-#include "frame.h"
+#include "frame_all.h"
 #include "service.h"
 #include "task.h"
 

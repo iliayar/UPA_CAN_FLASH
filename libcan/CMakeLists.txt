@@ -1,5 +1,6 @@
 set(libcan_SRCS
     frame.h
+    frame_virt.h
     frame.cpp
     communicator.h
     communicator.cpp
