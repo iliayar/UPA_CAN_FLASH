@@ -2,12 +2,12 @@
 
 #include <stdexcept>
 
-#include "can.h"
+#include "bytes.h"
 
 Can::DataFactory::DataFactory(std::vector<uint8_t> payload)
     : m_offset(0), m_reader(payload) {}
 
-Can::DataFactory::DataFactory(Can::Reader reader)
+Can::DataFactory::DataFactory(Util::Reader reader)
     : m_offset(0), m_reader(reader) {}
 
 Can::Data* Can::DataFactory::get() {
@@ -40,7 +40,7 @@ PARSE_DATA(UPASystemType, 1)
 
 std::vector<uint8_t> Can::ServiceRequest_ReadDataByIdentifier::dump() {
     std::vector<uint8_t> payload(3, 0);
-    Can::Writer writer(payload);
+    Util::Writer writer(payload);
 
     int offset = 0;
 
@@ -57,7 +57,7 @@ std::vector<uint8_t> Can::ServiceRequest_ReadDataByIdentifier::dump() {
 
 std::vector<uint8_t> Can::ServiceRequest_WriteDataByIdentifier::dump() {
     std::vector<uint8_t> payload(1 + 2 + m_data->get_value().size(), 0);
-    Can::Writer writer(payload);
+    Util::Writer writer(payload);
 
     int offset = 0;
 

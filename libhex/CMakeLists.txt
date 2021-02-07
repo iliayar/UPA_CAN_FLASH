@@ -8,7 +8,10 @@ add_library(libhex STATIC
     ${libhex_SRCS}
 )
 
-target_link_libraries(libhex)
+target_link_libraries(libhex
+	libutil
+	libcan
+)
 
 # Specify here the include directories exported
 # by this library

@@ -4,10 +4,15 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "can.h"
+#include "bytes.h"
 
 Can::FrameFactory::FrameFactory(std::vector<uint8_t> frame)
     : m_reader(frame), m_offset(0) {}
+
+#define CASE(type)                   \
+    case Can::FrameType::type:       \
+	return this->parse_##type(); \
+	break
 
 Can::Frame* Can::FrameFactory::get() {
     Can::FrameType frame_type =
@@ -15,151 +20,74 @@ Can::Frame* Can::FrameFactory::get() {
     m_offset += 4;
 
     switch (frame_type) {
-	case Can::FrameType::SingleFrame:
-	    return this->parse_SingleFrame();
-	    break;
-	case Can::FrameType::FirstFrame:
-	    return this->parse_FirstFrame();
-	    break;
-	case Can::FrameType::ConsecutiveFrame:
-	    return this->parse_ConsecutiveFrame();
-	    break;
-	case Can::FrameType::FlowControl:
-	    return this->parse_FlowControl();
-	    break;
+	CASE(SingleFrame);
+	CASE(FirstFrame);
+	CASE(ConsecutiveFrame);
+	CASE(FlowControl);
     }
     return nullptr;
 }
 
-Can::Frame* Can::FrameFactory::parse_SingleFrame() {
-    int len = m_reader.read_8(m_offset, 4);
-    m_offset += 4;
+#undef CASE
 
-    std::vector<uint8_t> data = m_reader.read(m_offset, len * 8);
-    m_offset += len * 8;
+#define PARSE_ENUM(name, type, n, len)                               \
+    type name = static_cast<type>(m_reader.read_##n(m_offset, len)); \
+    m_offset += len;
+#define PARSE_INT(name, n, len)                          \
+    uint##n##_t name = m_reader.read_##n(m_offset, len); \
+    m_offset += len;
+#define PARSE_VEC(name, len)                                  \
+    std::vector<uint8_t> name = m_reader.read(m_offset, len); \
+    m_offset += len;
+#define PARSE_BEGIN(type) Can::Frame* Can::FrameFactory::parse_##type() {
+#define PARSE_RETURN(type, ...)           \
+    return new Frame_##type(__VA_ARGS__); \
+    }
+#define PARSE_ARG(func, ...) PARSE_##func(__VA_ARGS__)
+#define PARSE_FETCH_NAME(_, name, ...) name
+#define PARSE(type, ...)                    \
+    PARSE_BEGIN(type)                       \
+    EVAL(MAP_TUPLE(PARSE_ARG, __VA_ARGS__)) \
+    PARSE_RETURN(type, MAP_TUPLE_LIST(PARSE_FETCH_NAME, __VA_ARGS__))
 
-    return new Frame_SingleFrame(len, data);
-}
+PARSE(SingleFrame, (INT, len, 8, 4), (VEC, data, len * 8))
+PARSE(FirstFrame, (INT, len, 16, 12), (VEC, data, 64 - m_offset))
+PARSE(ConsecutiveFrame, (INT, seq_num, 8, 4), (VEC, data, 64 - m_offset))
+PARSE(FlowControl, (ENUM, status, FlowStatus, 8, 4), (INT, block_size, 8, 8),
+      (INT, min_separation_time, 8, 8))
+#undef PARSE_INT
+#undef PARSE_VEC
+#undef PARSE_BEGIN
+#undef PARSE_RETURN
 
-Can::Frame* Can::FrameFactory::parse_FirstFrame() {
-    int len = m_reader.read_16(m_offset, 12);
-    m_offset += 12;
-
-    std::vector<uint8_t> data = m_reader.read(m_offset, 64 - m_offset);
-    m_offset += 64 - m_offset;
-
-    return new Frame_FirstFrame(len, data);
-}
-Can::Frame* Can::FrameFactory::parse_ConsecutiveFrame() {
-    int seq_num = m_reader.read_8(m_offset, 4);
-    m_offset += 4;
-
-    std::vector<uint8_t> data = m_reader.read(m_offset, 64 - m_offset);
-    m_offset += 8 - m_offset;
-
-    return new Frame_ConsecutiveFrame(seq_num, data);
-}
-Can::Frame* Can::FrameFactory::parse_FlowControl() {
-    FlowStatus status = static_cast<FlowStatus>(m_reader.read_8(m_offset, 4));
-    m_offset += 4;
-
-    uint8_t block_size = m_reader.read_8(m_offset, 8);
-    m_offset += 8;
-
-    uint8_t min_separation_time = m_reader.read_8(m_offset, 8);
-    m_offset += 8;
-
-    return new Frame_FlowControl(status, block_size, min_separation_time);
-}
-
-Can::Frame_SingleFrame::Frame_SingleFrame(int len, std::vector<uint8_t> data)
-    : m_data(data), m_len(len) {}
-
-Can::Frame_FirstFrame::Frame_FirstFrame(int len, std::vector<uint8_t> data)
-    : m_data(data), m_len(len) {}
-
-Can::Frame_ConsecutiveFrame::Frame_ConsecutiveFrame(int seq_num,
-						    std::vector<uint8_t> data)
-    : m_data(data), m_seq_num(seq_num) {}
-
-Can::Frame_FlowControl::Frame_FlowControl(FlowStatus status, int block_size,
-					  int min_separation_time)
-    : m_status(status),
-      m_block_size(block_size),
-      m_min_separation_time(min_separation_time) {}
-
-std::vector<uint8_t> Can::Frame_SingleFrame::dump() {
-    std::vector<uint8_t> payload(8, 0);
-    Writer writer(payload);
-
-    int offset = 0;
-
-    writer.write_8(static_cast<uint8_t>(FrameType::SingleFrame), offset, 4);
-    offset += 4;
-
-    writer.write_8(static_cast<uint8_t>(m_len), offset, 4);
-    offset += 4;
-
-    writer.write(m_data, offset, m_len * 8);
-    offset += m_len * 8;
-
-    return payload;
-}
-
-std::vector<uint8_t> Can::Frame_FirstFrame::dump() {
-    std::vector<uint8_t> payload(8, 0);
-    Writer writer(payload);
-
-    int offset = 0;
-
-    writer.write_8(static_cast<uint8_t>(FrameType::FirstFrame), offset, 4);
-    offset += 4;
-
-    writer.write_16(static_cast<uint16_t>(m_len), offset, 12);
-    offset += 12;
-
-    writer.write(m_data, offset, 64 - offset);
-    offset += 64 - offset;
-
-    return payload;
-}
-
-std::vector<uint8_t> Can::Frame_ConsecutiveFrame::dump() {
-    std::vector<uint8_t> payload(8, 0);
-    Writer writer(payload);
-
-    int offset = 0;
-
-    writer.write_8(static_cast<uint8_t>(FrameType::ConsecutiveFrame), offset,
-		   4);
-    offset += 4;
-
-    writer.write_8(static_cast<uint8_t>(m_seq_num), offset, 4);
-    offset += 4;
-
-    writer.write(m_data, offset, 64 - offset);
-    offset += 64 - offset;
-
-    return payload;
-}
-
-std::vector<uint8_t> Can::Frame_FlowControl::dump() {
-    std::vector<uint8_t> payload(8, 0);
-    Writer writer(payload);
-
-    int offset = 0;
-
-    writer.write_8(static_cast<uint8_t>(FrameType::FlowControl), offset, 4);
-    offset += 4;
-
-    writer.write_8(static_cast<uint8_t>(m_status), offset, 4);
-    offset += 4;
-
-    writer.write_8(static_cast<uint8_t>(m_block_size), offset, 8);
-    offset += 8;
-
-    writer.write_8(static_cast<uint8_t>(m_min_separation_time), offset, 8);
-    offset += 8;
-
-    return payload;
-}
+#define DUMP_INT(name, n, len)                                         \
+    writer.write_##n(static_cast<uint##n##_t>(m_##name), offset, len); \
+    offset += len;
+#define DUMP_VEC(name, n)              \
+    writer.write(m_##name, offset, n); \
+    offset += n;
+#define DUMP_BEGIN(type)                                                  \
+    std::vector<uint8_t> Can::Frame_##type::dump() {                      \
+	std::vector<uint8_t> payload(8, 0);                               \
+	Util::Writer writer(payload);                                     \
+	int offset = 0;                                                   \
+	writer.write_8(static_cast<uint8_t>(FrameType::type), offset, 4); \
+	offset += 4;
+#define DUMP_END()  \
+    return payload; \
+    }
+#define DUMP_ARG(func, ...) DUMP_##func(__VA_ARGS__)
+#define DUMP(type, ...)                    \
+    DUMP_BEGIN(type)                       \
+    EVAL(MAP_TUPLE(DUMP_ARG, __VA_ARGS__)) \
+    DUMP_END()
+DUMP(SingleFrame, (INT, len, 8, 4), (VEC, data, m_len * 8))
+DUMP(FirstFrame, (INT, len, 16, 12), (VEC, data, 64 - offset))
+DUMP(ConsecutiveFrame, (INT, seq_num, 8, 4), (VEC, data, 64 - offset))
+DUMP(FlowControl, (INT, status, 8, 4), (INT, block_size, 8, 8),
+     (INT, min_separation_time, 8, 8))
+#undef DUMP
+#undef DUMP_BEGIN
+#undef DUMP_END
+#undef DUMP_INT
+#undef DUMP_VEC

@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "can.h"
+#include "bytes.h"
 
 namespace Can {
 
@@ -24,7 +24,7 @@ private:
 class DataFactory {
 public:
     DataFactory(std::vector<uint8_t>);
-    DataFactory(Reader);
+    DataFactory(Util::Reader);
 
     Data* get();
 
@@ -33,7 +33,7 @@ private:
     Data* parse_UPASystemType();
 
     int m_offset;
-    Reader m_reader;
+    Util::Reader m_reader;
 };
 
 // --------------- Service Request --------------------
@@ -124,7 +124,7 @@ private:
     ServiceResponse* parse_WriteDataByIdentifier();
 
     int m_offset;
-    Reader m_reader;
+    Util::Reader m_reader;
 };
 
 }  // namespace Can

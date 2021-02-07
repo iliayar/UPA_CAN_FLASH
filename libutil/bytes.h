@@ -5,7 +5,7 @@
 
 #define BYTES(n) (((n) + 7) / 8)
 
-namespace Can {
+namespace Util {
 
 class Reader {
 public:

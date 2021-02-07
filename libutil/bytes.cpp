@@ -1,15 +1,15 @@
-#include "can.h"
+#include "bytes.h"
 
 #include <cstdint>
 #include <iostream>
 #include <stdexcept>
 
-Can::Reader::Reader(std::vector<uint8_t> payload)
+Util::Reader::Reader(std::vector<uint8_t> payload)
     : m_payload(payload), m_offset(0) {}
 
-void Can::Reader::add_offset(int offset) { m_offset += offset; }
+void Util::Reader::add_offset(int offset) { m_offset += offset; }
 
-std::vector<uint8_t> Can::Reader::read(int offset, int len) {
+std::vector<uint8_t> Util::Reader::read(int offset, int len) {
     offset += m_offset;
     if (len + offset > m_payload.size() * 8) {
 	throw std::runtime_error("Len with offset is greater than frame size");
@@ -33,7 +33,7 @@ std::vector<uint8_t> Can::Reader::read(int offset, int len) {
 }
 
 #define READ_N(N)                                                          \
-    uint##N##_t Can::Reader::read_##N(int offset, int len) {               \
+    uint##N##_t Util::Reader::read_##N(int offset, int len) {               \
 	if (len > N) {                                                     \
 	    throw std::runtime_error("Len is greater than size of uint" #N \
 				     "_t");                                \
@@ -55,12 +55,12 @@ READ_N(32)
 READ_N(64)
 #undef READ_N
 
-Can::Writer::Writer(std::vector<uint8_t>& payload)
+Util::Writer::Writer(std::vector<uint8_t>& payload)
     : m_payload(payload), m_offset(0) {}
 
-void Can::Writer::add_offset(int offset) { m_offset += offset; }
+void Util::Writer::add_offset(int offset) { m_offset += offset; }
 
-void Can::Writer::write(std::vector<uint8_t> data, int offset, int len) {
+void Util::Writer::write(std::vector<uint8_t> data, int offset, int len) {
     offset += m_offset;
     if (len + offset > m_payload.size() * 8) {
 	throw std::runtime_error("Len with offset is greater than frame size");
@@ -82,7 +82,7 @@ void Can::Writer::write(std::vector<uint8_t> data, int offset, int len) {
 }
 
 #define WRITE_N(N)                                                         \
-    void Can::Writer::write_##N(uint##N##_t data, int offset, int len) {   \
+    void Util::Writer::write_##N(uint##N##_t data, int offset, int len) {   \
 	if (len > N) {                                                     \
 	    throw std::runtime_error("Len is greater than size of uint" #N \
 				     "_t");                                \

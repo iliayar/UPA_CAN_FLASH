@@ -1,6 +1,4 @@
 set(libcan_SRCS
-    can.h
-    can.cpp
     frame.h
     frame.cpp
     communicator.h
@@ -9,7 +7,6 @@ set(libcan_SRCS
     service.cpp
     task.h
     task.cpp
-    util.h
 )
 
 # Declare the library
@@ -17,7 +14,9 @@ add_library(libcan STATIC
     ${libcan_SRCS}
 )
 
-target_link_libraries(libcan)
+target_link_libraries(libcan
+   libutil
+)
 
 # Specify here the include directories exported
 # by this library
