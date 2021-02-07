@@ -9,10 +9,14 @@
 Can::FrameFactory::FrameFactory(std::vector<uint8_t> frame)
     : m_reader(frame), m_offset(0) {}
 
-#define CASE(type)                   \
+#define DUMP(...)
+#define PARSE(...)
+#define FRAME_CLASS(...)
+#define CASE(type, _)		     \
     case Can::FrameType::type:       \
 	return this->parse_##type(); \
-	break
+	break;
+#define FRAMES(...) MAP_TUPLE(CASE, __VA_ARGS__)
 
 Can::Frame* Can::FrameFactory::get() {
     Can::FrameType frame_type =
@@ -20,16 +24,18 @@ Can::Frame* Can::FrameFactory::get() {
     m_offset += 4;
 
     switch (frame_type) {
-	CASE(SingleFrame);
-	CASE(FirstFrame);
-	CASE(ConsecutiveFrame);
-	CASE(FlowControl);
+#include "frame.inl"
     }
     return nullptr;
 }
 
+#undef FRAME_CLASS
+#undef FRAMES
 #undef CASE
+#undef PARSE
 
+#define FRAMES(...)
+#define FRAME_CLASS(...)
 #define PARSE_ENUM(name, type, n, len)                               \
     type name = static_cast<type>(m_reader.read_##n(m_offset, len)); \
     m_offset += len;
@@ -49,17 +55,15 @@ Can::Frame* Can::FrameFactory::get() {
     PARSE_BEGIN(type)                       \
     EVAL(MAP_TUPLE(PARSE_ARG, __VA_ARGS__)) \
     PARSE_RETURN(type, MAP_TUPLE_LIST(PARSE_FETCH_NAME, __VA_ARGS__))
-
-PARSE(SingleFrame, (INT, len, 8, 4), (VEC, data, len * 8))
-PARSE(FirstFrame, (INT, len, 16, 12), (VEC, data, 64 - m_offset))
-PARSE(ConsecutiveFrame, (INT, seq_num, 8, 4), (VEC, data, 64 - m_offset))
-PARSE(FlowControl, (ENUM, status, FlowStatus, 8, 4), (INT, block_size, 8, 8),
-      (INT, min_separation_time, 8, 8))
+#include "frame.inl"
 #undef PARSE_INT
 #undef PARSE_VEC
 #undef PARSE_BEGIN
 #undef PARSE_RETURN
+#undef DUMP
+#undef PARSE
 
+#define PARSE(...)
 #define DUMP_INT(name, n, len)                                         \
     writer.write_##n(static_cast<uint##n##_t>(m_##name), offset, len); \
     offset += len;
@@ -81,13 +85,13 @@ PARSE(FlowControl, (ENUM, status, FlowStatus, 8, 4), (INT, block_size, 8, 8),
     DUMP_BEGIN(type)                       \
     EVAL(MAP_TUPLE(DUMP_ARG, __VA_ARGS__)) \
     DUMP_END()
-DUMP(SingleFrame, (INT, len, 8, 4), (VEC, data, m_len * 8))
-DUMP(FirstFrame, (INT, len, 16, 12), (VEC, data, 64 - offset))
-DUMP(ConsecutiveFrame, (INT, seq_num, 8, 4), (VEC, data, 64 - offset))
-DUMP(FlowControl, (INT, status, 8, 4), (INT, block_size, 8, 8),
-     (INT, min_separation_time, 8, 8))
+#include "frame.inl"
 #undef DUMP
 #undef DUMP_BEGIN
 #undef DUMP_END
 #undef DUMP_INT
 #undef DUMP_VEC
+
+#undef FRAMES
+#undef FRAME_CLASS
+#undef PARSE
