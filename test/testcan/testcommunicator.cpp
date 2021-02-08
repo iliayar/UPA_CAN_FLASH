@@ -1,4 +1,5 @@
 #include "gtest/gtest.h"
+#include "service_all.h"
 #include "frame_all.h"
 #include "communicator.h"
 #include "task.h"

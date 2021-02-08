@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "service.h"
+#include "service_all.h"
 #include "util.h"
 
 using namespace Can;

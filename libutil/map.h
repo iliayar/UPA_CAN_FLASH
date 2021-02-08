@@ -72,4 +72,7 @@
 #define MAP_TUPLE(F, ...) EVAL(MAP(APPLY_TUPLE(F), __VA_ARGS__))
 #define MAP_TUPLE_LIST(F, ...) EVAL(MAP_LIST(APPLY_TUPLE(F), __VA_ARGS__))
 
+#define CONCAT1(a, b) a##b
+#define CONCAT(...) CONCAT1(__VA_ARGS__)
+
 #endif

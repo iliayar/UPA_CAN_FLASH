@@ -1,6 +1,6 @@
 
 #include "gtest/gtest.h"
-#include "service.h"
+#include "service_all.h"
 
 #include <vector>
 

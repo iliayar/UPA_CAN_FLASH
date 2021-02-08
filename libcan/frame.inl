@@ -12,7 +12,7 @@
 // - INT - One number value
 //   <field alias>, <Bit len of field>
 // - VEC - Array of bytes
-//   <field alias>, <Bit len of field>
+//   <field alias>, <Bit len of field|ALL>(ALL - the rest of bits)
 // - ENUM - Predefined enumeration
 //   <field alias>, <Predefined enum class name>, <Bit len of field>
 // -------------------
