@@ -1,16 +1,18 @@
-#define SERVICE // <Service Name>
-#define REQUEST_ID // <Service Request 8 bit identifier>
-#define RESPONSE_ID // <Service Response 8 bit indentifier>
+#define SERVICE SecuityAccess
+#define REQUEST_ID 0x27
+#define RESPONSE_ID 0x67
 
-// If Service has subfunction, there is must be SUBFUNCTION field
-#define REQUEST_FIELDS // [FIELD]...
-#define RESPONSE_FIELDS // [FIELD]...
+// 
+#define REQUEST_FIELDS SUBFUNCTION, (uint8_t, seed_par), (uint32_t, key)
+#define RESPONSE_FIELDS SUBFUNCTION, (uint32_t, seed)
 // --- FIELD ---
 // (<Type>, <Alias>)
 
 SERVICE_BEGIN
-
-// SUBFUNCTIONS( [(<subfunction name>, <8-bit value>)]... )
+SUBFUNCTIONS(
+	(requestSeed, 0x01),
+	(sendKey, 0x02)
+	)
 
 #ifdef EXTRA // Extra classes
 
@@ -26,10 +28,19 @@ SERVICE_BEGIN
 //         break;
 //        }]...
 //     }
-// - RETURN([Varible]...) - returns new request object
+// - RETURN([Varible]...) - returns new response object
 #ifdef PARSE // Parse Service Response
 {
-	// ...
+	FIELD(SUBFUNCTION) {
+		CASE(requestSeed) {
+			FIELD(INT, seed, 32);
+			RETURN(subfunction, seed);
+		}
+		CASE(sendKey) {
+			RETURN(subfunction, 0);
+		}
+	}
+	RETURN(subfunction, 0);
 }
 #endif
 
@@ -51,7 +62,18 @@ SERVICE_BEGIN
 // - RETURN - "return payload"
 #ifdef DUMP // Dump Service Request to std::vector<uint8_t>
 {
-	// ...
+	INIT;
+	FIELD(SUBFUNCTION) {
+		CASE(requestSeed) {
+			FIELD(INT, m_seed_par, 8);
+			break;
+		}
+		CASE(sendKey) {
+			FIELD(INT, m_key, 32);
+			break;
+		}
+	}
+	RETURN;
 }
 #endif
 

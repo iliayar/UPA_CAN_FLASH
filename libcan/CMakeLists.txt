@@ -1,13 +1,16 @@
 set(libcan_SRCS
     frame.h
-    frame_virt.h
+    frame_all.h
     frame.cpp
     communicator.h
     communicator.cpp
     service.h
+    service_all.h
     service.cpp
     task.h
     task.cpp
+    security.h
+    flash.h
 )
 
 # Declare the library

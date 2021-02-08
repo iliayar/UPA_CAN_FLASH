@@ -11,6 +11,7 @@
 #include "communicator.h"
 #include "frame.h"
 #include "task.h"
+#include "flash.h"
 
 #ifdef __MINGW32__
 #define CAN_PLUGIN "systeccan"
@@ -56,7 +57,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_device() {
 	    std::cout << m_device->state() << std::endl;
 	    connect(m_device, &QCanBusDevice::framesReceived, this,
 		    &MainWindow::processReceivedFrames);
-	    m_communicator = new Can::Communicator();
+	    m_communicator = new Can::Communicator(new Can::FramesStdLogger());
 	    m_communicator->set_task(new Can::ReadWriteThreadedTask{});
 	    m_communicator_thread = new CommunicatorThread(
 		this, m_communicator, m_communicator_mutex);
