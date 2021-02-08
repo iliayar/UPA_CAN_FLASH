@@ -36,6 +36,7 @@ private:
     ServiceResponse* parse_Negative();
 
     int m_offset;
+    int m_size;
     Util::Reader m_reader;
 };
 

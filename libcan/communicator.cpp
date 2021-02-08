@@ -23,8 +23,8 @@ Can::Frame* Can::Communicator::fetch_frame() {
     if (m_worker == nullptr) throw Can::NothingToFetch();
     Can::Frame* frame = m_worker->fetch_frame();
     if (frame == nullptr) throw Can::NothingToFetch();
-    update_task();
     m_logger->transmitted_frame(frame);
+    update_task();
     return frame;
 }
 
@@ -37,9 +37,13 @@ void Can::Communicator::update_task() {
 		case Can::CommunicatorStatus::Receive: {
 		    Can::ServiceResponse* response =
 			static_cast<Can::Receiver*>(m_worker)->get_response();
+            if(response == nullptr) {
+                delete static_cast<Can::Receiver*>(m_worker);
+                m_worker = nullptr;
+                return;
+            }
 		    m_logger->received_service_response(response);
 		    m_task->push_response(response);
-		    delete static_cast<Can::Receiver*>(m_worker);
 		    break;
 		}
 		case Can::CommunicatorStatus::Transmit:
@@ -51,7 +55,7 @@ void Can::Communicator::update_task() {
             m_worker = nullptr;
             Can::ServiceRequest* request = m_task->fetch_request();
 	    if (request != nullptr) m_worker = new Transmitter(request);
-	    m_logger->transmitted_serviec_request(request);
+	    m_logger->transmitted_service_request(request);
 	    break;
 	}
 	case Can::WorkerStatus::Error:

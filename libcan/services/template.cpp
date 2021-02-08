@@ -21,6 +21,7 @@ SERVICE_BEGIN
 // - FIELD(<TYPE>)
 //   - ENUM(<New variable name>, <Enum class>, <Field length>)
 //   - INT(<New variable name>, <Field length>)
+//   - VEC(<New variable name>, <Field length>)
 //   - SUBFUNCTION {
 //      [CASE(<subfunction>) {
 //         break;

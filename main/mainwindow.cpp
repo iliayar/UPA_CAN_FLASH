@@ -58,7 +58,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_device() {
 	    connect(m_device, &QCanBusDevice::framesReceived, this,
 		    &MainWindow::processReceivedFrames);
 	    m_communicator = new Can::Communicator(new Can::FramesStdLogger());
-	    m_communicator->set_task(new Can::ReadWriteThreadedTask{});
+	    m_communicator->set_task(new Can::FlashTask{});
 	    m_communicator_thread = new CommunicatorThread(
 		this, m_communicator, m_communicator_mutex);
 	    connect(m_communicator_thread,
@@ -104,6 +104,7 @@ void CommunicatorThread::run() {
         {
             std::unique_lock<std::mutex> lock(m_communicator_mutex);
             try {
+                m_communicator->get_status();
                 Can::Frame* frame = m_communicator->fetch_frame();
                 emit check_frames_to_write(frame);
             } catch (Can::NothingToFetch e) {
