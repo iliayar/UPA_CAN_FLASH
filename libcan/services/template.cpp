@@ -26,7 +26,7 @@ SERVICE_BEGIN
 //         break;
 //        }]...
 //     }
-// - RETURN([Varible]...) - returns new request object
+// - RETURN([Varible]...) - returns new response object
 #ifdef PARSE // Parse Service Response
 {
 	// ...
@@ -39,7 +39,7 @@ SERVICE_BEGIN
 //   Avaliable variables:
 //   - offset - number of written bits
 //   - payload - result data
-//   - writer - Writer class. Initializrd from payload
+//   - writer - Writer class. Initialized from payload
 // - FIELD(<TYPE>, ...)
 //   - INT(<Value>, <Field length>)
 //   - VEC(<Value>, <Field length>)
