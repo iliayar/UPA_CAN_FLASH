@@ -24,6 +24,7 @@ Can::Frame* Can::Communicator::fetch_frame() {
     Can::Frame* frame = m_worker->fetch_frame();
     if (frame == nullptr) throw Can::NothingToFetch();
     update_task();
+    m_logger->transmitted_frame(frame);
     return frame;
 }
 
@@ -34,18 +35,23 @@ void Can::Communicator::update_task() {
 	case Can::WorkerStatus::Done: {
 	    switch (m_worker->get_type()) {
 		case Can::CommunicatorStatus::Receive: {
-		    m_task->push_response(
-			static_cast<Can::Receiver*>(m_worker)->get_response());
-		    delete m_worker;
+		    Can::ServiceResponse* response =
+			static_cast<Can::Receiver*>(m_worker)->get_response();
+		    m_logger->received_service_response(response);
+		    m_task->push_response(response);
+		    delete static_cast<Can::Receiver*>(m_worker);
 		    break;
 		}
 		case Can::CommunicatorStatus::Transmit:
-		    delete m_worker;
+		    delete static_cast<Can::Transmitter*>(m_worker);
 		    break;
-	    }
-	    m_worker = nullptr;
-	    Can::ServiceRequest* request = m_task->fetch_request();
+		case Can::CommunicatorStatus::Idle:
+                    return;
+            }
+            m_worker = nullptr;
+            Can::ServiceRequest* request = m_task->fetch_request();
 	    if (request != nullptr) m_worker = new Transmitter(request);
+	    m_logger->transmitted_serviec_request(request);
 	    break;
 	}
 	case Can::WorkerStatus::Error:
@@ -60,6 +66,7 @@ void Can::Communicator::push_frame(Can::Frame* frame) {
     } else {
 	m_worker->push_frame(frame);
     }
+    m_logger->recevied_frame(frame);
     update_task();
 }
 
@@ -73,16 +80,21 @@ Can::ServiceResponse* Can::frames_to_service(std::vector<Can::Frame*> frames) {
 	    case Can::FrameType::SingleFrame:
 		len = static_cast<Can::Frame_SingleFrame*>(frame)->get_len();
 		data = static_cast<Can::Frame_SingleFrame*>(frame)->get_data();
+		break;
 	    case Can::FrameType::FirstFrame:
 		data = static_cast<Can::Frame_FirstFrame*>(frame)->get_data();
 		len = static_cast<Can::Frame_FirstFrame*>(frame)->get_len();
+		break;
 	    case Can::FrameType::ConsecutiveFrame:
 		data = static_cast<Can::Frame_ConsecutiveFrame*>(frame)
 			   ->get_data();
-	}
-	for (int i = 0; i < data.size() && payload.size() < len; ++i) {
-	    payload.push_back(data[i]);
-	}
+		break;
+	    default:
+                continue;
+        }
+        for (int i = 0; i < data.size() && payload.size() < len; ++i) {
+            payload.push_back(data[i]);
+        }
     }
 
     return Can::ServiceResponseFactory(payload).get();

@@ -28,9 +28,12 @@ public:
     ServiceResponse* get();
 
 private:
+#define SUBFUNCTIONS(...)
 #define SERVICE_BEGIN ServiceResponse* CONCAT(parse_, SERVICE)();
 #include "services/services.h"
 #undef SERVICE_BEGIN
+#undef SUBFUNCTIONS
+    ServiceResponse* parse_Negative();
 
     int m_offset;
     Util::Reader m_reader;

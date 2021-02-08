@@ -87,9 +87,28 @@ private:
     int m_block_begin;
 };
 
+class Logger {
+public:
+    virtual void recevied_frame(Frame*) = 0;
+    virtual void transmitted_frame(Frame*) = 0;
+    virtual void received_service_response(ServiceResponse*) = 0;
+    virtual void transmitted_serviec_request(ServiceRequest*) = 0;
+};
+
+class NoLogger : public Logger {
+public:
+    void recevied_frame(Frame* _) {}
+    void transmitted_frame(Frame* _) {}
+    void received_service_response(ServiceResponse* _) {}
+    void transmitted_serviec_request(ServiceRequest* _) {}
+};
+
 class Communicator {
 public:
-    Communicator() : m_worker(nullptr), m_task(nullptr) {}
+    Communicator() : Communicator(new NoLogger()) {}
+
+    Communicator(Logger* logger)
+	: m_worker(nullptr), m_task(nullptr), m_logger(logger) {}
 
     CommunicatorStatus get_status();
 
@@ -103,6 +122,7 @@ private:
 
     Worker* m_worker;
     Task* m_task;
+    Logger* m_logger;
 };
 
 }  // namespace Can
