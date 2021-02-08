@@ -19,10 +19,10 @@ SERVICE_BEGIN
 
 #ifdef DUMP
 {
-    INIT(1 + 2 + m_data->get_value().size());
-    FIELD(INTN, m_data->get_type(), 16, 16);
-    FIELD(VEC, m_data->get_value(), m_data->get_value().size()*8);
-    RETURN;
+	INIT;
+	FIELD(INT, m_data->get_type(), 16);
+	FIELD(VEC, m_data->get_value(), m_data->get_value().size()*8);
+	RETURN;
 }
 #endif
 

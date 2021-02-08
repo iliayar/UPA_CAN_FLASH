@@ -7,18 +7,20 @@
 
 // ---------- Service Request --------------
 #define RETURN return payload
-#define INIT(len)                                                          \
-    std::vector<uint8_t> payload(len, 0);                                  \
+#define INIT                                                               \
+    std::vector<uint8_t> payload(1, 0);                                    \
     Util::Writer writer(payload);                                          \
     int offset = 0;                                                        \
     writer.write_8(static_cast<uint8_t>(Can::ServiceRequestType::SERVICE), \
-                   offset, 8);                                             \
+		   offset, 8);                                             \
     offset += 8;
-#define FIELD_VEC(value, len)         \
-    writer.write(value, offset, len); \
+#define FIELD_VEC(value, len)                          \
+    payload.resize(payload.size() + (len + 7) / 8, 0); \
+    writer.write(value, offset, len);                  \
     offset += len;
-#define FIELD_INTN(value, n, len)                                   \
-    writer.write_##n(static_cast<uint##n##_t>(value), offset, len); \
+#define FIELD_INT(value, len)                                   \
+    payload.resize(payload.size() + (len + 7) / 8, 0);          \
+    writer.write_64(static_cast<uint64_t>(value), offset, len); \
     offset += len;
 #define FIELD(func, ...) FIELD_##func(__VA_ARGS__)
 #define DUMP

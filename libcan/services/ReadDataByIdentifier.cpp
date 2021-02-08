@@ -22,8 +22,8 @@ SERVICE_BEGIN
 
 #ifdef DUMP // {{{
 {
-    INIT(3);
-    FIELD(INTN, m_id, 16, 16);
+    INIT;
+    FIELD(INT, m_id, 16);
     RETURN;
 }
 #endif // }}}

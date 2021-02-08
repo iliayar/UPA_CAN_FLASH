@@ -26,14 +26,14 @@ SERVICE_BEGIN
 
 // --- DUMP ---
 // Avaliable fields: m_<Fields alias>
-// - FIELD(<TYPE>, ...)
-//   - INTN(<Value>, <Number type to dumo field in>(uintN_t), <Field length>)
-//   - VEC(<Value>, <Field length>)
-// - INIT(<Total length of dump>)
+// - INIT
 //   Avaliable variables:
 //   - offset - number of written bits
 //   - payload - result data
 //   - writer - Writer class. Initializrd from payload
+// - FIELD(<TYPE>, ...)
+//   - INTN(<Value>, <Field length>)
+//   - VEC(<Value>, <Field length>)
 // - RETURN - "return payload"
 #ifdef DUMP // Dump Service Request to std::vector<uint8_t>
 {
