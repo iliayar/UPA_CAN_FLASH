@@ -47,14 +47,18 @@
 // ---------- Service Response -------------
 Can::ServiceResponseFactory::ServiceResponseFactory(
     std::vector<uint8_t> payload)
-    : m_offset(0), m_reader(payload) {}
+    : m_offset(0), m_reader(payload), m_size(payload.size()) {}
 
+#define ALL m_size*8 - m_offset
 #define RETURN(...) \
     return new CONCAT(Can::ServiceResponse_, SERVICE)(__VA_ARGS__);
-#define FIELD_SUBFUNCTION()					       \
+#define FIELD_VEC(name, len)                                  \
+    std::vector<uint8_t> name = m_reader.read(m_offset, len); \
+    m_offset += len;
+#define FIELD_SUBFUNCTION()                                            \
     CONCAT(Can::SERVICE, _SubfunctionType)                             \
     subfunction = static_cast<CONCAT(Can::SERVICE, _SubfunctionType)>( \
-	m_reader.read_8(m_offset, 8));                                 \
+        m_reader.read_8(m_offset, 8));                                 \
     m_offset += 8;                                                     \
     switch (subfunction)
 #define CASE(name) case CONCAT(Can::SERVICE, _SubfunctionType)::name:
@@ -67,7 +71,8 @@ Can::ServiceResponseFactory::ServiceResponseFactory(
 #define FIELD(func, ...) FIELD_##func(__VA_ARGS__)
 
 #define PARSE
-#define SERVICE_BEGIN  Can::ServiceResponse* CONCAT(Can::ServiceResponseFactory::parse_, SERVICE)()
+#define SERVICE_BEGIN \
+    Can::ServiceResponse* CONCAT(Can::ServiceResponseFactory::parse_, SERVICE)()
 #include "services/services.h"
 #undef SERVICE_BEGIN
 #undef PARSE
@@ -83,6 +88,8 @@ Can::ServiceResponse* Can::ServiceResponseFactory::parse_Negative() {
 #undef FIELD
 #undef FIELD_ENUM
 #undef FIELD_INT
+#undef FIELD_VEC
+#undef ALL
 #undef FIELD_SUBFUNCTION
 #undef CASE
 #undef RETURN

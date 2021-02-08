@@ -1,18 +1,20 @@
-#define SERVICE SecurityAccess
-#define REQUEST_ID 0x27
-#define RESPONSE_ID 0x67
+#define SERVICE ControlDTCSettings
+#define REQUEST_ID 0x85
+#define RESPONSE_ID 0xc5
 
-// 
-#define REQUEST_FIELDS SUBFUNCTION, (uint8_t, seed_par), (uint32_t, key)
-#define RESPONSE_FIELDS SUBFUNCTION, (uint32_t, seed)
+// If Service has subfunction, there is must be SUBFUNCTION field
+#define REQUEST_FIELDS SUBFUNCTION
+#define RESPONSE_FIELDS SUBFUNCTION
 // --- FIELD ---
 // (<Type>, <Alias>)
 
 SERVICE_BEGIN
+
+// SUBFUNCTIONS( [(<subfunction name>, <8-bit value>)]... )
 SUBFUNCTIONS(
-	(requestSeed, 0x03),
-	(sendKey, 0x04),
-	)
+    (on, 0x01),
+    (off, 0x02)
+    )
 
 #ifdef EXTRA // Extra classes
 
@@ -31,16 +33,8 @@ SUBFUNCTIONS(
 // - RETURN([Varible]...) - returns new response object
 #ifdef PARSE // Parse Service Response
 {
-	FIELD(SUBFUNCTION) {
-		CASE(requestSeed) {
-			FIELD(INT, seed, 32);
-			RETURN(subfunction, seed);
-		}
-		CASE(sendKey) {
-			RETURN(subfunction, 0);
-		}
-	}
-	RETURN(subfunction, 0);
+    FIELD(SUBFUNCTION) { }
+    RETURN(subfunction);
 }
 #endif
 
@@ -50,7 +44,7 @@ SUBFUNCTIONS(
 //   Avaliable variables:
 //   - offset - number of written bits
 //   - payload - result data
-//   - writer - Writer class. Initializrd from payload
+//   - writer - Writer class. Initialized from payload
 // - FIELD(<TYPE>, ...)
 //   - INT(<Value>, <Field length>)
 //   - VEC(<Value>, <Field length>)
@@ -62,18 +56,9 @@ SUBFUNCTIONS(
 // - RETURN - "return payload"
 #ifdef DUMP // Dump Service Request to std::vector<uint8_t>
 {
-	INIT;
-	FIELD(SUBFUNCTION) {
-		CASE(requestSeed) {
-			FIELD(INT, m_seed_par, 8);
-			break;
-		}
-		CASE(sendKey) {
-			FIELD(INT, m_key, 32);
-			break;
-		}
-	}
-	RETURN;
+    INIT;
+    FIELD(SUBFUNCTION) { }
+    RETURN;
 }
 #endif
 

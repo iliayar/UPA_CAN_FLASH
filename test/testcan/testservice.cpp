@@ -29,14 +29,14 @@ TEST(testService, testServiceRequest) {
 	EXPECT_EQ(res, request.dump());
     }
     {
-        Can::ServiceRequest_SecuityAccess request(
-            Can::SecuityAccess_SubfunctionType::requestSeed, 0x42, 0);
+        Can::ServiceRequest_SecurityAccess request(
+            Can::SecurityAccess_SubfunctionType::requestSeed, 0x42, 0);
         std::vector<uint8_t> res = {0x27, 0x01, 0x42};
 	EXPECT_EQ(res, request.dump());
     }
     {
-        Can::ServiceRequest_SecuityAccess request(
-            Can::SecuityAccess_SubfunctionType::sendKey, 0, 0x13370132);
+        Can::ServiceRequest_SecurityAccess request(
+            Can::SecurityAccess_SubfunctionType::sendKey, 0, 0x13370132);
         std::vector<uint8_t> res = {0x27, 0x02, 0x13, 0x37, 0x01, 0x32};
 	EXPECT_EQ(res, request.dump());
     }
@@ -51,7 +51,7 @@ TEST(testService, testServiceResponse) {
 	EXPECT_EQ(response->get_type(), Can::ServiceResponseType::Negative);
 	EXPECT_EQ(static_cast<Can::ServiceResponse_Negative*>(response)
 		      ->get_service(),
-		  Can::ServiceRequestType::SecuityAccess);
+		  Can::ServiceRequestType::SecurityAccess);
 	EXPECT_EQ(
 	    static_cast<Can::ServiceResponse_Negative*>(response)->get_code(),
             0x10);
@@ -93,11 +93,11 @@ TEST(testService, testServiceResponse) {
 		std::vector<uint8_t>({0x67, 0x01, 0x13, 0x37, 0x01, 0x32}))
 		.get();
 	EXPECT_EQ(response->get_type(),
-		  Can::ServiceResponseType::SecuityAccess);
-	EXPECT_EQ(static_cast<Can::ServiceResponse_SecuityAccess*>(response)
+		  Can::ServiceResponseType::SecurityAccess);
+	EXPECT_EQ(static_cast<Can::ServiceResponse_SecurityAccess*>(response)
 		      ->get_subfunction(),
-		  Can::SecuityAccess_SubfunctionType::requestSeed);
-	EXPECT_EQ(static_cast<Can::ServiceResponse_SecuityAccess*>(response)
+		  Can::SecurityAccess_SubfunctionType::requestSeed);
+	EXPECT_EQ(static_cast<Can::ServiceResponse_SecurityAccess*>(response)
 		      ->get_seed(),
 		  0x13370132);
     }
@@ -107,9 +107,9 @@ TEST(testService, testServiceResponse) {
 	    Can::ServiceResponseFactory(std::vector<uint8_t>({0x67, 0x02}))
 		.get();
 	EXPECT_EQ(response->get_type(),
-		  Can::ServiceResponseType::SecuityAccess);
-        EXPECT_EQ(static_cast<Can::ServiceResponse_SecuityAccess*>(response)
+		  Can::ServiceResponseType::SecurityAccess);
+        EXPECT_EQ(static_cast<Can::ServiceResponse_SecurityAccess*>(response)
                       ->get_subfunction(),
-                  Can::SecuityAccess_SubfunctionType::sendKey);
+                  Can::SecurityAccess_SubfunctionType::sendKey);
     }
 }

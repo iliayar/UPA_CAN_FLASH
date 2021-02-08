@@ -1,18 +1,16 @@
-#define SERVICE SecurityAccess
-#define REQUEST_ID 0x27
-#define RESPONSE_ID 0x67
+#define SERVICE RequestDownload
+#define REQUEST_ID 0x34
+#define RESPONSE_ID 0x74
 
-// 
-#define REQUEST_FIELDS SUBFUNCTION, (uint8_t, seed_par), (uint32_t, key)
-#define RESPONSE_FIELDS SUBFUNCTION, (uint32_t, seed)
+// If Service has subfunction, there is must be SUBFUNCTION field
+#define REQUEST_FIELDS (uint8_t, data_format), (uint8_t, address_len_format), (std::vector<uint8_t>, memory_addr), (std::vector<uint8_t>, memory_size)
+#define RESPONSE_FIELDS (uint8_t, length_format), (std::vector<uint8_t>, max_blocks_number)
 // --- FIELD ---
 // (<Type>, <Alias>)
 
 SERVICE_BEGIN
-SUBFUNCTIONS(
-	(requestSeed, 0x03),
-	(sendKey, 0x04),
-	)
+
+// SUBFUNCTIONS( [(<subfunction name>, <8-bit value>)]... )
 
 #ifdef EXTRA // Extra classes
 
@@ -31,16 +29,9 @@ SUBFUNCTIONS(
 // - RETURN([Varible]...) - returns new response object
 #ifdef PARSE // Parse Service Response
 {
-	FIELD(SUBFUNCTION) {
-		CASE(requestSeed) {
-			FIELD(INT, seed, 32);
-			RETURN(subfunction, seed);
-		}
-		CASE(sendKey) {
-			RETURN(subfunction, 0);
-		}
-	}
-	RETURN(subfunction, 0);
+    FIELD(INT, length_format, 8);
+    FIELD(VEC, max_blocks_number, ALL);
+    RETURN(length_format, max_blocks_number);
 }
 #endif
 
@@ -50,7 +41,7 @@ SUBFUNCTIONS(
 //   Avaliable variables:
 //   - offset - number of written bits
 //   - payload - result data
-//   - writer - Writer class. Initializrd from payload
+//   - writer - Writer class. Initialized from payload
 // - FIELD(<TYPE>, ...)
 //   - INT(<Value>, <Field length>)
 //   - VEC(<Value>, <Field length>)
@@ -62,18 +53,12 @@ SUBFUNCTIONS(
 // - RETURN - "return payload"
 #ifdef DUMP // Dump Service Request to std::vector<uint8_t>
 {
-	INIT;
-	FIELD(SUBFUNCTION) {
-		CASE(requestSeed) {
-			FIELD(INT, m_seed_par, 8);
-			break;
-		}
-		CASE(sendKey) {
-			FIELD(INT, m_key, 32);
-			break;
-		}
-	}
-	RETURN;
+    INIT;
+    FIELD(INT, m_data_format, 8);
+    FIELD(INT, m_address_len_format, 8);
+    FIELD(VEC, m_memory_addr, m_memory_addr.size());
+    FIELD(VEC, m_memory_size, m_memory_size.size());
+    RETURN;
 }
 #endif
 

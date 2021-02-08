@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <cstdlib>
+#include <ctime>
 
 #define RND 0x33
 
@@ -9,7 +11,12 @@
 
 namespace Crypto {
 
-uint8_t get_RND() { return RND; }
+uint8_t get_RND() {
+    // std::srand(std::time(nullptr));
+
+    // return std::rand();
+    return RND;
+}
 
 static uint32_t seed_to_key(uint32_t seed, uint8_t rnd, uint32_t mask) {
     return key ^ seed;
