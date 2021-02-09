@@ -40,6 +40,17 @@ TEST(testService, testServiceRequest) {
         std::vector<uint8_t> res = {0x27, 0x04, 0x13, 0x37, 0x01, 0x32};
 	EXPECT_EQ(res, request.dump());
     }
+	{
+		Can::ServiceRequest_RequestDownload request(Can::DataFormatIdentifier(0x00, 0x00), Can::DataAndLengthFormatIdentifier(0x04,0x04), {0x08, 0x00, 0x40, 0x00}, {0x00, 0x00, 0x90, 0xE8});
+		std::vector<uint8_t> res = {0x34, 0x00, 0x44, 0x08, 0x00, 0x40, 0x00, 0x00, 0x00, 0x90, 0xE8};
+		EXPECT_EQ(res, request.dump());
+	}
+	{
+		Can::ServiceRequest_TransferData request(0x32, {0x27, 0x04, 0x13, 0x37, 0x01, 0x32});
+		std::vector<uint8_t> res = {0x36, 0x32, 0x27, 0x04, 0x13, 0x37, 0x01, 0x32};
+		EXPECT_EQ(res, request.dump());
+
+	}
 }
 
 TEST(testService, testServiceResponse) {
@@ -112,4 +123,20 @@ TEST(testService, testServiceResponse) {
                       ->get_subfunction(),
                   Can::SecurityAccess_SubfunctionType::sendKey);
     }
+
+	{
+		Can::ServiceResponse* response = Can::ServiceResponseFactory(std::vector<uint8_t>({0x76, 0x32, 0x67, 0x03, 0x13, 0x37, 0x01, 0x32})).get();
+		EXPECT_EQ(response->get_type(), Can::ServiceResponseType::TransferData);
+		EXPECT_EQ(static_cast<Can::ServiceResponse_TransferData*>(response)->get_block_counter(), 0x32);
+		EXPECT_EQ(static_cast<Can::ServiceResponse_TransferData*>(response)->get_data(), std::vector<uint8_t>({0x67, 0x03, 0x13, 0x37, 0x01, 0x32}));
+	}
+
+	{
+		Can::ServiceResponse* response = Can::ServiceResponseFactory(std::vector<uint8_t>({0x74, 0x20, 0x04, 0x02})).get();
+		EXPECT_EQ(response->get_type(), Can::ServiceResponseType::RequestDownload);
+		std::shared_ptr<Can::LengthFormatIdentifier> format = static_cast<Can::ServiceResponse_RequestDownload*>(response)->get_length_format();
+		EXPECT_EQ(format->get_reserved(), 0);
+		EXPECT_EQ(format->get_memory_size(), 0x02);
+		EXPECT_EQ(static_cast<Can::ServiceResponse_RequestDownload*>(response)->get_max_blocks_number(), std::vector<uint8_t>({0x04, 0x02}));
+	}
 }

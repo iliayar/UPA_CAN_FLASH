@@ -10,7 +10,8 @@
 
 SERVICE_BEGIN
 
-// SUBFUNCTIONS( [(<subfunction name>, <8-bit value>)]... )
+// [SUBFUNCTIONS( [(<subfunction name>, <8-bit value>)]... )]
+// [DATATYPE( [(<field type>, <field name>)]... )]...
 
 #ifdef EXTRA // Extra classes
 
@@ -22,6 +23,7 @@ SERVICE_BEGIN
 //   - ENUM(<New variable name>, <Enum class>, <Field length>)
 //   - INT(<New variable name>, <Field length>)
 //   - VEC(<New variable name>, <Field length>)
+//   - DATA(<New variable name>, <Data class>)
 //   - SUBFUNCTION {
 //      [CASE(<subfunction>) {
 //         break;
@@ -44,6 +46,7 @@ SERVICE_BEGIN
 // - FIELD(<TYPE>, ...)
 //   - INT(<Value>, <Field length>)
 //   - VEC(<Value>, <Field length>)
+//   - DATA(<Value>)
 //   - SUBFUNCTION {
 //      [CASE(<subfunction>) {
 //         break;

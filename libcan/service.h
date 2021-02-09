@@ -28,11 +28,13 @@ public:
     ServiceResponse* get();
 
 private:
+#define DATATYPE(...)
 #define SUBFUNCTIONS(...)
 #define SERVICE_BEGIN ServiceResponse* CONCAT(parse_, SERVICE)();
 #include "services/services.h"
 #undef SERVICE_BEGIN
 #undef SUBFUNCTIONS
+#undef DATATYPE
     ServiceResponse* parse_Negative();
 
     int m_offset;
