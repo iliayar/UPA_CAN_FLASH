@@ -9,6 +9,42 @@
 
 using namespace Can;
 
+Can::ServiceResponse* Can::AsyncTask::call_imp(Can::ServiceRequest* request) {
+    while (true) {
+        {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            if (m_request == nullptr) {
+                m_request = request;
+                m_wait_response = true;
+                break;
+            }
+        }
+    }
+    while (true) {
+        {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            if (m_response != nullptr) {
+                Can::ServiceResponse* response = m_response;
+                if (response->get_type() ==
+                    Can::ServiceResponseType::Negative) {
+                    if (static_cast<Can::ServiceResponse_Negative*>(response)
+                            ->get_service() != request->get_type()) {
+                        m_response = nullptr;
+                        continue;
+                    }
+                } else if (response->get_type() !=
+                           Can::request_to_response_type(request->get_type())) {
+                    m_response = nullptr;
+                    continue;
+                }
+                m_response = nullptr;
+                m_wait_response = false;
+                return response;
+            }
+        }
+    }
+}
+
 ServiceRequest* ReadWriteTask::fetch_request() {
     m_step++;
     switch (m_step - 1) {

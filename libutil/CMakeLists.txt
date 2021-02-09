@@ -1,5 +1,6 @@
 set(libutil_SRCS
     util.h
+    util.cpp
     map.h
     bytes.h
     bytes.cpp

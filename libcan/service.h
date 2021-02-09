@@ -40,4 +40,6 @@ private:
     Util::Reader m_reader;
 };
 
+ServiceResponseType request_to_response_type(ServiceRequestType);
+
 }  // namespace Can

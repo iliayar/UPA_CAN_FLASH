@@ -22,8 +22,9 @@ namespace Can {
 #undef SUBFUNCION_ENUM_ELEM
 
 #undef SERVICE_BEGIN
-// --------------- Service Request --------------------
 #define SUBFUNCTIONS(...)
+    
+// --------------- Service Request --------------------
 #define SERVICE_BEGIN SERVICE = REQUEST_ID,
 enum class ServiceRequestType {
 #include "services/services.h"
