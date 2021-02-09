@@ -21,7 +21,7 @@ public:
 	  m_communicator_mutex(communicator_mutex) {}
     void run() override;
 signals:
-    void check_frames_to_write(Can::Frame*);
+    void check_frames_to_write(std::shared_ptr<Can::Frame>);
 
 private:
     Can::Communicator* m_communicator;
@@ -35,9 +35,9 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     virtual ~MainWindow();
     void processReceivedFrames();
-
 private:
-    void check_frames_to_write(Can::Frame*);
+    void create_layout();
+    void check_frames_to_write(std::shared_ptr<Can::Frame>);
 
     QCanBusDevice* m_device;
     Can::Communicator* m_communicator;

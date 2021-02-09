@@ -18,15 +18,15 @@ enum class CommunicatorStatus { Idle, Receive, Transmit };
 
 enum WorkerStatus { Done, Work, Error };
 
-std::vector<Frame*> service_to_frames(ServiceRequest*);
-ServiceResponse* frames_to_service(std::vector<Frame*>);
+std::vector<std::shared_ptr<Frame>> service_to_frames(ServiceRequest*);
+ServiceResponse* frames_to_service(std::vector<std::shared_ptr<Frame>>);
 
 class Worker {
 public:
     virtual CommunicatorStatus get_type() = 0;
     virtual WorkerStatus get_status() = 0;
-    virtual Frame* fetch_frame() = 0;
-    virtual void push_frame(Frame*) = 0;
+    virtual std::shared_ptr<Frame> fetch_frame() = 0;
+    virtual void push_frame(std::shared_ptr<Frame>) = 0;
 
     std::chrono::milliseconds TIMEOUT{600};
 
@@ -50,16 +50,16 @@ protected:
 
 class Receiver : public Worker {
 public:
-    Receiver(Frame*);
+    Receiver(std::shared_ptr<Frame>);
 
     CommunicatorStatus get_type() { return CommunicatorStatus::Receive; }
     WorkerStatus get_status();
-    Frame* fetch_frame();
-    void push_frame(Frame*);
+    std::shared_ptr<Frame> fetch_frame();
+    void push_frame(std::shared_ptr<Frame>);
     ServiceResponse* get_response();
 
 private:
-    std::vector<Frame*> m_frames;
+    std::vector<std::shared_ptr<Frame>> m_frames;
     WorkerStatus m_status;
 
     int m_consecutive_len;
@@ -72,11 +72,11 @@ public:
 
     CommunicatorStatus get_type() { return CommunicatorStatus::Transmit; }
     WorkerStatus get_status();
-    Frame* fetch_frame();
-    void push_frame(Frame*);
+    std::shared_ptr<Frame> fetch_frame();
+    void push_frame(std::shared_ptr<Frame>);
 
 private:
-    std::vector<Frame*> m_frames;
+    std::vector<std::shared_ptr<Frame>> m_frames;
     WorkerStatus m_status;
 
     int m_fc_block_size;
@@ -90,8 +90,8 @@ private:
 
 class Logger {
 public:
-    virtual void recevied_frame(Frame*) = 0;
-    virtual void transmitted_frame(Frame*) = 0;
+    virtual void recevied_frame(std::shared_ptr<Frame>) = 0;
+    virtual void transmitted_frame(std::shared_ptr<Frame>) = 0;
     virtual void received_service_response(ServiceResponse*) = 0;
     virtual void transmitted_service_request(ServiceRequest*) = 0;
     // virtual void error(std::string);
@@ -99,8 +99,8 @@ public:
 
 class NoLogger : public Logger {
 public:
-    void recevied_frame(Frame* _) {}
-    void transmitted_frame(Frame* _) {}
+    void recevied_frame(std::shared_ptr<Frame> _) {}
+    void transmitted_frame(std::shared_ptr<Frame> _) {}
     void received_service_response(ServiceResponse* _) {}
     void transmitted_service_request(ServiceRequest* _) {}
     // void error(std::string _) {}
@@ -117,8 +117,8 @@ public:
 
     void set_task(Task*);
 
-    Frame* fetch_frame();
-    void push_frame(Frame*);
+    std::shared_ptr<Frame> fetch_frame();
+    void push_frame(std::shared_ptr<Frame>);
 
 private:
     void update_task();

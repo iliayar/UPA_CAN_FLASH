@@ -61,13 +61,13 @@ public:
         :m_start(std::chrono::high_resolution_clock::now()){
     }
     
-    void transmitted_frame(Frame* frame) override {
+    void transmitted_frame(std::shared_ptr<Frame> frame) override {
         std::cout << "Tester request: ";
         print_frame(frame);
         m_start = std::chrono::high_resolution_clock::now();
     }
 
-    void recevied_frame(Frame* frame) override {
+    void recevied_frame(std::shared_ptr<Frame> frame) override {
         std::cout << "ECU response:   ";
         print_frame(frame);
         m_start = std::chrono::high_resolution_clock::now();
@@ -86,7 +86,7 @@ public:
     // }
 
 private:
-    void print_frame(Frame* frame) {
+    void print_frame(std::shared_ptr<Frame> frame) {
         std::vector<uint8_t> payload = frame->dump();
         std::cout << std::setfill(' ') << std::dec << std::setw(4) << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_start).count() << " | ";
         for (uint8_t b : payload) {

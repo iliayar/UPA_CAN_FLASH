@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 
 #include "bytes.h"
 #include "map.h"
@@ -19,10 +20,10 @@ class FrameFactory {
 public:
     FrameFactory(std::vector<uint8_t>);
 
-    Frame* get();
+    std::shared_ptr<Frame> get();
 
 private:
-#define FRAME(type, ...) Frame* parse_##type();
+#define FRAME(type, ...) std::shared_ptr<Frame> parse_##type();
 #include "frame.inl"
 #undef FRAME
 

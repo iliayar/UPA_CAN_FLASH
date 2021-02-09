@@ -31,13 +31,13 @@ TEST(testService, testServiceRequest) {
     {
         Can::ServiceRequest_SecurityAccess request(
             Can::SecurityAccess_SubfunctionType::requestSeed, 0x42, 0);
-        std::vector<uint8_t> res = {0x27, 0x01, 0x42};
+        std::vector<uint8_t> res = {0x27, 0x03, 0x42};
 	EXPECT_EQ(res, request.dump());
     }
     {
         Can::ServiceRequest_SecurityAccess request(
             Can::SecurityAccess_SubfunctionType::sendKey, 0, 0x13370132);
-        std::vector<uint8_t> res = {0x27, 0x02, 0x13, 0x37, 0x01, 0x32};
+        std::vector<uint8_t> res = {0x27, 0x04, 0x13, 0x37, 0x01, 0x32};
 	EXPECT_EQ(res, request.dump());
     }
 }
@@ -90,7 +90,7 @@ TEST(testService, testServiceResponse) {
     {
 	Can::ServiceResponse* response =
 	    Can::ServiceResponseFactory(
-		std::vector<uint8_t>({0x67, 0x01, 0x13, 0x37, 0x01, 0x32}))
+		std::vector<uint8_t>({0x67, 0x03, 0x13, 0x37, 0x01, 0x32}))
 		.get();
 	EXPECT_EQ(response->get_type(),
 		  Can::ServiceResponseType::SecurityAccess);
@@ -104,7 +104,7 @@ TEST(testService, testServiceResponse) {
 
     {
 	Can::ServiceResponse* response =
-	    Can::ServiceResponseFactory(std::vector<uint8_t>({0x67, 0x02}))
+	    Can::ServiceResponseFactory(std::vector<uint8_t>({0x67, 0x04}))
 		.get();
 	EXPECT_EQ(response->get_type(),
 		  Can::ServiceResponseType::SecurityAccess);

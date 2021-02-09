@@ -15,7 +15,7 @@ Can::FrameFactory::FrameFactory(std::vector<uint8_t> frame)
 	return this->parse_##type(); \
 	break;
 
-Can::Frame* Can::FrameFactory::get() {
+std::shared_ptr<Can::Frame> Can::FrameFactory::get() {
 	Can::FrameType frame_type =
 		static_cast<Can::FrameType>(m_reader.read_8(m_offset, 4));
 	m_offset += 4;
@@ -39,9 +39,9 @@ Can::Frame* Can::FrameFactory::get() {
 #define PARSE_VEC(name, len)                                      \
 	std::vector<uint8_t> m_##name = m_reader.read(m_offset, len);	\
 	m_offset += len;
-#define PARSE_BEGIN(type) Can::Frame* Can::FrameFactory::parse_##type() {
+#define PARSE_BEGIN(type) std::shared_ptr<Can::Frame> Can::FrameFactory::parse_##type() {
 #define PARSE_RETURN(type, ...)           \
-	return new Frame_##type(__VA_ARGS__);	\
+	return std::make_shared<Frame_##type>(__VA_ARGS__);	\
 	}
 #define PARSE_ARG(func, ...) PARSE_##func(__VA_ARGS__)
 #define PARSE_FETCH_NAME(_, name, ...) m_##name

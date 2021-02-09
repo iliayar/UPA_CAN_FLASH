@@ -1,24 +1,38 @@
 #include "service.h"
-#include "service_all.h"
-#include "bytes.h"
 
 #include <stdexcept>
 
+#include "bytes.h"
+#include "service_all.h"
 
 // ---------- Service Request --------------
 #define SUBFUNCTIONS(...)
+
+Can::ServiceResponseType Can::request_to_response_type(
+    Can::ServiceRequestType type) {
+    switch (type) {
+#define SERVICE_BEGIN                      \
+    case Can::ServiceRequestType::SERVICE: \
+        return Can::ServiceResponseType::SERVICE;
+#include "services/services.h"
+#undef SERVICE_BEGIN
+        default:
+            return Can::ServiceResponseType::Negative;
+    }
+}
+
 #define RETURN return payload
 #define INIT                                                               \
     std::vector<uint8_t> payload(1, 0);                                    \
     Util::Writer writer(payload);                                          \
     int offset = 0;                                                        \
     writer.write_8(static_cast<uint8_t>(Can::ServiceRequestType::SERVICE), \
-		   offset, 8);                                             \
+                   offset, 8);                                             \
     offset += 8;
-#define FIELD_SUBFUNCTION()					      \
-    payload.resize(payload.size() + 1, 0);                            \
-    writer.write_8(static_cast<uint8_t>(m_subfunction), offset, 8);   \
-    offset += 8;						      \
+#define FIELD_SUBFUNCTION()                                         \
+    payload.resize(payload.size() + 1, 0);                          \
+    writer.write_8(static_cast<uint8_t>(m_subfunction), offset, 8); \
+    offset += 8;                                                    \
     switch (m_subfunction)
 #define CASE(name) case CONCAT(Can::SERVICE, _SubfunctionType)::name:
 #define FIELD_VEC(value, len)                          \
@@ -31,7 +45,8 @@
     offset += len;
 #define FIELD(func, ...) FIELD_##func(__VA_ARGS__)
 #define DUMP
-#define SERVICE_BEGIN std::vector<uint8_t> CONCAT(Can::ServiceRequest_, SERVICE)::dump()
+#define SERVICE_BEGIN \
+    std::vector<uint8_t> CONCAT(Can::ServiceRequest_, SERVICE)::dump()
 #include "services/services.h"
 #undef SERVICE_BEGIN
 #undef DUMP
@@ -49,7 +64,7 @@ Can::ServiceResponseFactory::ServiceResponseFactory(
     std::vector<uint8_t> payload)
     : m_offset(0), m_reader(payload), m_size(payload.size()) {}
 
-#define ALL m_size*8 - m_offset
+#define ALL m_size * 8 - m_offset
 #define RETURN(...) \
     return new CONCAT(Can::ServiceResponse_, SERVICE)(__VA_ARGS__);
 #define FIELD_VEC(name, len)                                  \
@@ -79,9 +94,9 @@ Can::ServiceResponseFactory::ServiceResponseFactory(
 
 #define SERVICE Negative
 Can::ServiceResponse* Can::ServiceResponseFactory::parse_Negative() {
-	FIELD(ENUM, service, ServiceRequestType, 8);
-	FIELD(INT, code, 8);
-	RETURN(service, code);	
+    FIELD(ENUM, service, ServiceRequestType, 8);
+    FIELD(INT, code, 8);
+    RETURN(service, code);
 }
 #undef SERVICE
 
@@ -96,19 +111,19 @@ Can::ServiceResponse* Can::ServiceResponseFactory::parse_Negative() {
 
 Can::ServiceResponse* Can::ServiceResponseFactory::get() {
     ServiceResponseType type =
-	static_cast<ServiceResponseType>(m_reader.read_8(m_offset, 8));
+        static_cast<ServiceResponseType>(m_reader.read_8(m_offset, 8));
     m_offset += 8;
 
     switch (type) {
 #define SERVICE_BEGIN                       \
     case Can::ServiceResponseType::SERVICE: \
-	return CONCAT(parse_, SERVICE)();
+        return CONCAT(parse_, SERVICE)();
 #include "services/services.h"
 #undef SERVICE_BEGIN
-    case Can::ServiceResponseType::Negative:
-	    return parse_Negative();
+        case Can::ServiceResponseType::Negative:
+            return parse_Negative();
         default:
-	    return nullptr;
+            return nullptr;
     }
 #undef SUBFUNCTIONS
 }

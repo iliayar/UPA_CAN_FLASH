@@ -85,29 +85,7 @@ private:
 	m_completed = true;
     }
 
-    ServiceResponse* call_imp(ServiceRequest* request) {
-	while (true) {
-	    {
-		std::unique_lock<std::mutex> lock(m_mutex);
-		if (m_request == nullptr) {
-		    m_request = request;
-		    m_wait_response = true;
-		    break;
-		}
-	    }
-	}
-	while (true) {
-	    {
-		std::unique_lock<std::mutex> lock(m_mutex);
-		if (m_response != nullptr) {
-		    ServiceResponse* response = m_response;
-		    m_response = nullptr;
-		    m_wait_response = false;
-		    return response;
-		}
-	    }
-	}
-    }
+    ServiceResponse* call_imp(ServiceRequest*);
 
     ServiceRequest* m_request;
     ServiceResponse* m_response;

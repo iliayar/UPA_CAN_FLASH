@@ -7,6 +7,7 @@
 #include <QThread>
 #include <iostream>
 #include <vector>
+#include <memory>
 
 #include "communicator.h"
 #include "frame.h"
@@ -73,7 +74,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_device() {
     setCentralWidget(window);
 }
 
-void MainWindow::check_frames_to_write(Can::Frame* frame) {
+void MainWindow::create_layout() {
+
+}
+
+void MainWindow::check_frames_to_write(std::shared_ptr<Can::Frame> frame) {
     std::vector<uint8_t> payload = frame->dump();
     QCanBusFrame qframe;
     qframe.setFrameId(TESTER_ID);
@@ -85,19 +90,23 @@ void MainWindow::check_frames_to_write(Can::Frame* frame) {
 void MainWindow::processReceivedFrames() {
     std::unique_lock<std::mutex> lock(m_communicator_mutex);
     while (m_device->framesAvailable()) {
-	QCanBusFrame qframe = m_device->readFrame();
-	if (qframe.frameId() == DEVICE_ID) {
-	    QByteArray payload = qframe.payload();
-	    Can::Frame* frame =
-		Can::FrameFactory(
-		    std::vector<uint8_t>(payload.begin(), payload.end()))
-		    .get();
-	    m_communicator->push_frame(frame);
-	}
+        QCanBusFrame qframe = m_device->readFrame();
+        if (qframe.frameId() == DEVICE_ID) {
+            QByteArray payload = qframe.payload();
+            std::shared_ptr<Can::Frame> frame =
+                std::move(Can::FrameFactory(std::vector<uint8_t>(
+                                                payload.begin(), payload.end()))
+                              .get());
+            m_communicator->push_frame(frame);
+        }
     }
 }
 
-MainWindow::~MainWindow() {}
+MainWindow::~MainWindow() {
+    delete m_device;
+    delete m_communicator;
+    delete m_communicator_thread;
+}
 
 void CommunicatorThread::run() {
     while (true) {
@@ -105,7 +114,7 @@ void CommunicatorThread::run() {
             std::unique_lock<std::mutex> lock(m_communicator_mutex);
             try {
                 m_communicator->get_status();
-                Can::Frame* frame = m_communicator->fetch_frame();
+                std::shared_ptr<Can::Frame> frame = m_communicator->fetch_frame();
                 emit check_frames_to_write(frame);
             } catch (Can::NothingToFetch e) {
             }
