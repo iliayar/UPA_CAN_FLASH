@@ -72,4 +72,5 @@ void Can::FlashTask::task() {
     }
 
     std::cout << "Successfully pased security access" << std::endl;
+
 }

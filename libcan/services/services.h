@@ -5,5 +5,6 @@
 #include "ControlDTCSettings.cpp"
 #include "CommunicationControl.cpp"
 #include "RequestDownload.cpp"
+#include "TransferData.cpp"
 
 #include "DID.cpp"
