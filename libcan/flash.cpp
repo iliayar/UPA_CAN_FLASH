@@ -36,22 +36,16 @@ void Can::FlashTask::task() {
     }
 
     uint8_t rnd = Crypto::get_RND();
-    response = call(new ServiceRequest_SecurityAccess(
-        SecurityAccess_SubfunctionType::requestSeed, rnd, 0));
+    response =
+        call(ServiceRequest_SecurityAccess::build()
+                 ->subfunction(SecurityAccess_SubfunctionType::requestSeed)
+                 ->seed_par(rnd)
+                 ->build());
 
     std::cout << "Seed parameter " << (int)rnd << std::endl;
 
     IF_NEGATIVE(response) {
         std::cout << "Failed ot request seed" << std::endl;
-    }
-
-    if(response->get_type() != ServiceResponseType::SecurityAccess) {
-        std::cout << "Invalid service response" << std::endl;
-        return;
-    }
-    if(static_cast<ServiceResponse_SecurityAccess*>(response)->get_subfunction() != SecurityAccess_SubfunctionType::requestSeed) {
-        std::cout << "Invalid subfunciton" << std::endl;
-        return;
     }
 
     uint32_t seed =
@@ -65,7 +59,10 @@ void Can::FlashTask::task() {
     std::cout << "Calculated key ";
     std::cout << std::hex << key << std::endl;
 
-    response = call(new ServiceRequest_SecurityAccess(SecurityAccess_SubfunctionType::sendKey, 0, key));
+    response = call(ServiceRequest_SecurityAccess::build()
+                        ->subfunction(SecurityAccess_SubfunctionType::sendKey)
+                        ->key(key)
+                        ->build());
 
     IF_NEGATIVE(response) {
         std::cout << "Security access failed key verification" << std::endl;

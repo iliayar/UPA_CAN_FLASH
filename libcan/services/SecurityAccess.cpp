@@ -3,8 +3,8 @@
 #define RESPONSE_ID 0x67
 
 // 
-#define REQUEST_FIELDS SUBFUNCTION, (uint8_t, seed_par), (uint32_t, key)
-#define RESPONSE_FIELDS SUBFUNCTION, (uint32_t, seed)
+#define REQUEST_FIELDS SUBFUNCTION, (INT, seed_par, 8), (INT, key, 32)
+#define RESPONSE_FIELDS SUBFUNCTION, (INT, seed, 32)
 // --- FIELD ---
 // (<Type>, <Alias>)
 

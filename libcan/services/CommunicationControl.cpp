@@ -3,7 +3,7 @@
 #define RESPONSE_ID 0x68
 
 // If Service has subfunction, there is must be SUBFUNCTION field
-#define REQUEST_FIELDS SUBFUNCTION, (uint8_t, communication_type)
+#define REQUEST_FIELDS SUBFUNCTION, (INT, communication_type, 8)
 #define RESPONSE_FIELDS SUBFUNCTION
 // --- FIELD ---
 // (<Type>, <Alias>)

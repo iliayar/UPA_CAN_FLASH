@@ -3,8 +3,8 @@
 #define RESPONSE_ID 0x76
 
 // If Service has subfunction, there is must be SUBFUNCTION field
-#define REQUEST_FIELDS (uint8_t, block_counter), (std::vector<uint8_t>, data)
-#define RESPONSE_FIELDS (uint8_t, block_counter), (std::vector<uint8_t>, data)
+#define REQUEST_FIELDS (INT, block_counter, 8), (VEC, data)
+#define RESPONSE_FIELDS (INT, block_counter, 8), (VEC, data)
 // --- FIELD ---
 // (<Type>, <Alias>)
 

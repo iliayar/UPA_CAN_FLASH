@@ -60,20 +60,42 @@ enum class ServiceRequestType {
 };
 #undef SERVICE_BEGIN
 
-#define SUBFUNCTION (CONCAT(SERVICE, _SubfunctionType), subfunction)
-#define SERVICE_ARG(type, name) type name
-#define SERVICE_ARG_INIT(_, name) m_##name(name)
-#define SERVICE_FIELD(type, name) type m_##name;
+#define FIELD_INT(n) uint##n##_t
+#define FIELD_RAW(a) a
+#define FIELD_DATA(a) a*
+#define FIELD_VEC() std::vector<uint8_t>
+
+#define DESTRUCT_INT(...)
+#define DESTRUCT_RAW(...)
+#define DESTRUCT_DATA(name, ...) delete m_##name;
+#define DESTRUCT_VEC(...)
+#define DESTRUCT(type, name, ...) DESTRUCT_##type(name, __VA_ARGS__)
+
+#define SUBFUNCTION (RAW, subfunction, CONCAT(SERVICE, _SubfunctionType))
+#define SERVICE_ARG(type, name, ...) FIELD_##type(__VA_ARGS__) name
+#define SERVICE_ARG_INIT(_, name, ...) m_##name(name)
+#define SERVICE_FIELD(type, name, ...) FIELD_##type(__VA_ARGS__) m_##name;
 #define SERVICE_BEGIN                                                         \
+    class CONCAT(CONCAT(ServiceRequest_, SERVICE), _Builder);                 \
     class CONCAT(ServiceRequest_, SERVICE) : public ServiceRequest {          \
     public:                                                                   \
-	CONCAT(ServiceRequest_, SERVICE)                                      \
-	(MAP_TUPLE_LIST(SERVICE_ARG, REQUEST_FIELDS))                         \
-	    : MAP_TUPLE_LIST(SERVICE_ARG_INIT, REQUEST_FIELDS) {}             \
+        CONCAT(ServiceRequest_, SERVICE)                                      \
+        (MAP_TUPLE_LIST(SERVICE_ARG, REQUEST_FIELDS))                         \
+            : MAP_TUPLE_LIST(SERVICE_ARG_INIT, REQUEST_FIELDS) {}             \
         ServiceRequestType get_type() { return ServiceRequestType::SERVICE; } \
         std::vector<uint8_t> dump();                                          \
+        static std::unique_ptr<CONCAT(CONCAT(ServiceRequest_, SERVICE),       \
+                                      _Builder)>                              \
+        build() {                                                             \
+            return std::make_unique<CONCAT(CONCAT(ServiceRequest_, SERVICE),  \
+                                           _Builder)>();                      \
+        }                                                                     \
+        ~CONCAT(ServiceRequest_, SERVICE)() {                                 \
+            MAP_TUPLE(DESTRUCT, REQUEST_FIELDS)                               \
+        }                                                                     \
                                                                               \
     private:                                                                  \
+        friend class CONCAT(CONCAT(ServiceRequest_, SERVICE), _Builder);      \
         MAP_TUPLE(SERVICE_FIELD, REQUEST_FIELDS)                              \
     };
 #include "services/services.h"
@@ -83,11 +105,21 @@ enum class ServiceRequestType {
 #undef SERVICE_BEGIN
 #undef SUBFUNCTION
 
-#define SUBFUNCTION (CONCAT(SERVICE, _SubfunctionType), subfunction)
-#define SERVICE_SETTER(type, name) \
-    void name(type value) { m_##name = value; }
-#define SERVICE_ARG_INIT(_, name) m_##name
-#define SERVICE_FIELD(type, name) type m_##name;
+#undef DESTRUCT_INT
+#undef DESTRUCT_RAW
+#undef DESTRUCT_DATA
+#undef DESTRUCT_VEC
+#undef DESTRUCT
+
+#define SUBFUNCTION (RAW, subfunction, CONCAT(SERVICE, _SubfunctionType))
+#define SERVICE_SETTER(type, name, ...)                  \
+    CONCAT(CONCAT(ServiceRequest_, SERVICE), _Builder) * \
+        name(FIELD_##type(__VA_ARGS__) value) {          \
+        m_##name = value;                                \
+        return this;                                     \
+    }
+#define SERVICE_ARG_INIT(_, name, ...) m_##name
+#define SERVICE_FIELD(type, name, ...) FIELD_##type(__VA_ARGS__) m_##name;
 #define SERVICE_BEGIN                                              \
     class CONCAT(CONCAT(ServiceRequest_, SERVICE), _Builder) {     \
     public:                                                        \
@@ -105,6 +137,8 @@ enum class ServiceRequestType {
 #undef SERVICE_FIELD
 #undef SERVICE_BEGIN
 #undef SUBFUNCTION
+#undef FIELD_DATA
+
 // --------------- Service Response -------------------
 
 #define SERVICE_BEGIN SERVICE = RESPONSE_ID,
@@ -114,11 +148,13 @@ enum class ServiceResponseType {
 };
 #undef SERVICE_BEGIN
 
-#define SUBFUNCTION (CONCAT(SERVICE, _SubfunctionType), subfunction)
-#define SERVICE_ARG(type, name) type name
-#define SERVICE_ARG_INIT(_, name) m_##name(name)
-#define SERVICE_FIELD(type, name) type m_##name;
-#define SERVICE_GETTER(type, name) type get_##name() { return m_##name; };
+#define FIELD_DATA(a) std::shared_ptr<a>
+
+#define SUBFUNCTION (RAW, subfunction, CONCAT(SERVICE, _SubfunctionType))
+#define SERVICE_ARG(type, name, ...) FIELD_##type(__VA_ARGS__) name
+#define SERVICE_ARG_INIT(_, name, ...) m_##name(name)
+#define SERVICE_FIELD(type, name, ...) FIELD_##type(__VA_ARGS__) m_##name;
+#define SERVICE_GETTER(type, name, ...) FIELD_##type(__VA_ARGS__) get_##name() { return m_##name; };
 #define SERVICE_BEGIN							\
 	class CONCAT(ServiceResponse_, SERVICE) : public ServiceResponse { \
 public: \
@@ -139,6 +175,11 @@ private: \
 #undef SUBFUNCTIONS
 #undef SUBFUNCTION
 #undef DATATYPE
+
+#undef FIELD_INT
+#undef FIELD_RAW
+#undef FIELD_DATA
+#undef FIELD_VEC
 
 class ServiceResponse_Negative : public ServiceResponse {
 public:
