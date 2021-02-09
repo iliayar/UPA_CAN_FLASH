@@ -103,7 +103,7 @@ Can::ServiceResponseType Can::request_to_response_type(
 #define CASE(name) case CONCAT(Can::SERVICE, _SubfunctionType)::name:
 #define FIELD_DATA(name)                              \
     {                                                 \
-        std::vector<uint8_t> payload_t = name.dump(); \
+        std::vector<uint8_t> payload_t = name->dump(); \
         FIELD_VEC(payload_t, payload_t.size());       \
     }
 #define FIELD_VEC(value, len)                          \

@@ -1,8 +1,8 @@
 #define SERVICE ReadDataByIdentifier
 #define REQUEST_ID 0x22
 #define RESPONSE_ID 0x62
-#define REQUEST_FIELDS (DataIdentifier, id)
-#define RESPONSE_FIELDS (Data*, data)
+#define REQUEST_FIELDS (RAW, id, DataIdentifier)
+#define RESPONSE_FIELDS (RAW, data, Data*)
 SERVICE_BEGIN
 
 #ifdef EXTRA // {{{

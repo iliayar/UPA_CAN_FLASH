@@ -3,8 +3,8 @@
 #define RESPONSE_ID 0x74
 
 // If Service has subfunction, there is must be SUBFUNCTION field
-#define REQUEST_FIELDS (DataFormatIdentifier, data_format), (DataAndLengthFormatIdentifier, address_len_format), (std::vector<uint8_t>, memory_addr), (std::vector<uint8_t>, memory_size)
-#define RESPONSE_FIELDS (std::shared_ptr<LengthFormatIdentifier>, length_format), (std::vector<uint8_t>, max_blocks_number)
+#define REQUEST_FIELDS (DATA, data_format, DataFormatIdentifier), (DATA, address_len_format, DataAndLengthFormatIdentifier), (VEC, memory_addr), (VEC, memory_size)
+#define RESPONSE_FIELDS (DATA, length_format, LengthFormatIdentifier), (VEC, max_blocks_number)
 // --- FIELD ---
 // (<Type>, <Alias>)
 
@@ -68,8 +68,8 @@ DATATYPE(LengthFormatIdentifier,
     INIT;
     FIELD(DATA, m_data_format);
     FIELD(DATA, m_address_len_format);
-    FIELD(VEC, m_memory_addr, m_address_len_format.get_memory_address()*8);
-    FIELD(VEC, m_memory_size, m_address_len_format.get_memory_size()*8);
+    FIELD(VEC, m_memory_addr, m_address_len_format->get_memory_address()*8);
+    FIELD(VEC, m_memory_size, m_address_len_format->get_memory_size()*8);
     RETURN;
 }
 #endif

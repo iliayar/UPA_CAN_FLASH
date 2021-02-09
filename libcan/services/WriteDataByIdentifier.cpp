@@ -1,8 +1,8 @@
 #define SERVICE WriteDataByIdentifier
 #define REQUEST_ID 0x2e
 #define RESPONSE_ID 0x6e
-#define REQUEST_FIELDS (Data*, data)
-#define RESPONSE_FIELDS (DataIdentifier, id)
+#define REQUEST_FIELDS (RAW, data, Data*)
+#define RESPONSE_FIELDS (RAW, id, DataIdentifier)
 SERVICE_BEGIN
 
 #ifdef EXTRA
