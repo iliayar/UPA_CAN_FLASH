@@ -79,14 +79,14 @@ private:
 class FileSource : public Source {
 public:
     using filepath = std::string;
-    FileSource(filepath);
+    FileSource(std::ifstream&);
 
     char get_char();
     void next_char();
     bool is_eof();
 
 private:
-    std::ifstream m_fin;
+    std::ifstream& m_fin;
     char* m_char;
 };
 
@@ -95,12 +95,16 @@ public:
     HexReader(Source* source);
     HexLine* read_line();
     bool is_eof();
+    uint32_t get_current_address() { return m_address; }
 
 private:
     void except(char);
     std::string read_chars(int);
 
     Source* m_source;
+    uint32_t m_address = 0;
+
+    int m_line_readed;
 };
 
 std::vector<uint8_t> str_to_bytes(std::string str);

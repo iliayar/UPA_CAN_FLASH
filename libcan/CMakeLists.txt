@@ -21,6 +21,7 @@ add_library(libcan STATIC
 )
 
 target_link_libraries(libcan
+   libhex
    libutil
 )
 

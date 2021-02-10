@@ -7,6 +7,12 @@
 #include "logger.h"
 #include "service.h"
 
+#define LOG(level, text)                            \
+    {                                               \
+        std::unique_lock<std::mutex> lock(m_mutex); \
+        m_logger->level(text);                      \
+    }
+
 namespace Can {
 
 class Task {
@@ -83,6 +89,8 @@ protected:
 
     Logger* m_logger;
 
+    std::mutex m_mutex;
+
 private:
     void task_imp() {
         task();
@@ -96,7 +104,6 @@ private:
     bool m_completed;
     bool m_wait_response;
     std::thread m_async;
-    std::mutex m_mutex;
 
     static constexpr std::chrono::milliseconds DELAY =
         static_cast<std::chrono::milliseconds>(2);

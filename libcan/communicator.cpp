@@ -20,6 +20,11 @@ void Can::Communicator::set_task(Can::Task* task) {
     m_worker = new Transmitter(m_task->fetch_request());
 }
 
+void Can::Communicator::reset_task() {
+    if (m_task != nullptr) delete m_task;
+	m_task = nullptr;
+}
+
 std::shared_ptr<Can::Frame> Can::Communicator::fetch_frame() {
     if (m_worker == nullptr) throw Can::NothingToFetch();
     std::shared_ptr<Can::Frame> frame = m_worker->fetch_frame();
@@ -29,9 +34,22 @@ std::shared_ptr<Can::Frame> Can::Communicator::fetch_frame() {
     return frame;
 }
 
+void Can::Communicator::push_frame(std::shared_ptr<Can::Frame> frame) {
+    if (m_worker == nullptr) {
+        m_worker = new Receiver(frame);
+    } else {
+	m_worker->push_frame(frame);
+    }
+    m_logger->received_frame(std::move(frame));
+    update_task();
+}
+
 void Can::Communicator::update_task() {
+    if (m_task == nullptr) {
+		// m_logger->warning("No task");
+		return;
+	}
     if (m_worker == nullptr) return;
-    if (m_task == nullptr) throw std::runtime_error("No task set");
     switch (m_worker->get_status()) {
 	case Can::WorkerStatus::Done: {
 	    switch (m_worker->get_type()) {
@@ -54,6 +72,10 @@ void Can::Communicator::update_task() {
                     return;
             }
             m_worker = nullptr;
+			if(m_task->is_completed()) {
+				m_logger->info("Task Done!");
+				return;
+			}
             Can::ServiceRequest* request = m_task->fetch_request();
 	    if (request != nullptr) m_worker = new Transmitter(request);
 	    m_logger->transmitted_service_request(request);
@@ -63,17 +85,6 @@ void Can::Communicator::update_task() {
 	    throw std::runtime_error("Worker have met an Error");
 	    break;
     }
-}
-
-void Can::Communicator::push_frame(std::shared_ptr<Can::Frame> frame) {
-
-    if (m_worker == nullptr) {
-        m_worker = new Receiver(frame);
-    } else {
-	m_worker->push_frame(frame);
-    }
-    m_logger->received_frame(std::move(frame));
-    update_task();
 }
 
 Can::ServiceResponse* Can::frames_to_service(std::vector<std::shared_ptr<Can::Frame>> frames) {

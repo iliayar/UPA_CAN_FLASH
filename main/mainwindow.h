@@ -3,6 +3,7 @@
 #include <QCanBus>
 #include <QMainWindow>
 #include <QThread>
+#include <QComboBox>
 #include <mutex>
 
 #include "communicator.h"
@@ -39,10 +40,16 @@ public:
 private:
     void create_layout(QWidget*);
     void check_frames_to_write(std::shared_ptr<Can::Frame>);
+    void connect_device();
+    void start_task();
 
     QCanBusDevice* m_device;
     Can::Communicator* m_communicator;
     std::mutex m_communicator_mutex;
     CommunicatorThread* m_communicator_thread;
-    QLogger* m_logger;
+    Can::Logger* m_logger;
+
+    // UI
+    QComboBox* m_device_list;
+    QComboBox* m_task_list;
 };

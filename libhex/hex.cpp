@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include <iostream>
+
 #include "bytes.h"
 
 Hex::StringSource::StringSource(std::string string)
@@ -39,7 +41,9 @@ std::vector<uint8_t> Hex::str_to_bytes(std::string str) {
 
 void Hex::HexReader::except(char c) {
     if (m_source->get_char() != c) {
-	throw std::runtime_error("Invalid HEX format");
+        std::cout << m_line_readed << " " << (int)m_source->get_char() << "(" << m_source->get_char() << ")"
+                  << std::endl;
+        throw std::runtime_error("Invalid HEX format");
     }
     m_source->next_char();
 }
@@ -53,7 +57,7 @@ std::string Hex::HexReader::read_chars(int n) {
     return str;
 }
 
-Hex::HexReader::HexReader(Hex::Source* source) : m_source(source) {}
+Hex::HexReader::HexReader(Hex::Source* source) : m_source(source), m_line_readed(0) {}
 
 std::vector<uint8_t> sum_proxy(uint8_t* sum, std::vector<uint8_t> data) {
     for (uint8_t d : data) *sum += d;
@@ -68,6 +72,8 @@ Hex::HexLine* Hex::HexReader::read_line() {
     except(':');
 
     uint8_t sum = 0;
+
+	m_line_readed++;
 
     uint8_t size = READ_INT(8);
     uint16_t address = READ_INT(16);
@@ -99,6 +105,9 @@ Hex::HexLine* Hex::HexReader::read_line() {
 	case Hex::HexLineType::ExtendLinearAddress: {
 	    uint16_t addr = READ_INT(16);
 	    line = new Hex::ExtendLinearAddressLine(addr);
+		uint32_t addr_t = addr;
+		m_address &= (uint32_t)0x0000ffff;
+		m_address |= (addr_t << 16);
 	    break;
 	}
 	case Hex::HexLineType::StartLinearAddress: {
@@ -111,23 +120,33 @@ Hex::HexLine* Hex::HexReader::read_line() {
     }
     READ_INT(8);
     if (sum != 0) throw std::runtime_error("Wrong HEX format: Invalid sum");
-    except('\n');
+    // except('\n');
     return line;
 }
 
-bool Hex::HexReader::is_eof() { return m_source->is_eof(); }
+bool Hex::HexReader::is_eof() { 
+	if(m_source == nullptr) return true;
+	if(m_source->is_eof()) {
+		delete m_source;
+		return true;
+	}
+	return false;
+ }
 
 #undef READ_INT
 #undef CHECK_SUM
 
-Hex::FileSource::FileSource(filepath path)
-	: m_fin(path) {}
+
+
+Hex::FileSource::FileSource(std::ifstream& fin)
+	: m_fin(fin) {}
 
 char Hex::FileSource::get_char() {
 	if(m_char == nullptr) {
 		m_char = new char();
 		m_fin >> *m_char;
 	}
+	// std::cout << "get_char " << (int)*m_char << "(" << *m_char << ")" << std::endl;
 	return *m_char;
 }
 

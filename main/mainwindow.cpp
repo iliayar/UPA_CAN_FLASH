@@ -40,50 +40,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_device() {
     m_communicator = nullptr;
     m_communicator_thread = nullptr;
 
-    // Listing devices
-    // QString errorString;
-    // QList<QCanBusDeviceInfo> devices = QCanBus::instance()->availableDevices(
-	// QStringLiteral(CAN_PLUGIN), &errorString);
-    // if (!errorString.isEmpty()) {
-	// std::cerr << errorString.toStdString() << std::endl;
-    // } else {
-	// std::cout << "Devices" << std::endl;
-	// for (auto device : devices) {
-	//     std::cout << "- " << device.name().toStdString() << std::endl;
-	//     std::cout << "  " << device.description().toStdString()
-	// 	      << std::endl;
-	// }
-    // }
-
-    // if (devices.size() == 0) {
-	// std::cerr << "No devices found" << std::endl;
-	// exit(1);
-    // }
-    // QString device_name = devices[0].name();
-
     // std::cout << "Using device " << device_name.toStdString() << std::endl;
-    // m_device = QCanBus::instance()->createDevice(QStringLiteral(CAN_PLUGIN),
-	// 					 device_name, &errorString);
-    // if (!m_device) {
-	// std::cerr << errorString.toStdString() << std::endl;
-    // } else {
-	// std::cout << "Connecting device" << std::endl;
-	// if (m_device->connectDevice()) {
-	//     std::cout << m_device->state() << std::endl;
-	//     connect(m_device, &QCanBusDevice::framesReceived, this,
-	// 	    &MainWindow::processReceivedFrames);
-	//     m_communicator = new Can::Communicator(new Can::FramesStdLogger());
-	//     m_communicator->set_task(new Can::FlashTask{});
-	//     m_communicator_thread = new CommunicatorThread(
-	// 	this, m_communicator, m_communicator_mutex);
-	//     connect(m_communicator_thread,
-	// 	    &CommunicatorThread::check_frames_to_write, this,
-	// 	    &MainWindow::check_frames_to_write);
-	//     m_communicator_thread->start();
-	// } else {
-	//     std::cerr << "Cannot connect device" << std::endl;
-	// }
-    // }
 
     setCentralWidget(window);
 }
@@ -147,10 +104,10 @@ void MainWindow::create_layout(QWidget* root) {
             devices_list->addItem(device.name());
         }
     }
-    devices_list->addItem("Test 1");
-    devices_list->addItem("Test 2");
 
-//   tasks options layout
+    m_device_list = devices_list;
+    connect(device_connect_btn, &QPushButton::released, this, &MainWindow::connect_device);
+    //   tasks options layout
 
     QGroupBox* tasks_group = new QGroupBox(tr("Tasks"));
 
@@ -159,7 +116,6 @@ void MainWindow::create_layout(QWidget* root) {
     QVBoxLayout* tasks_group_layout = new QVBoxLayout(tasks_group);
     QGroupBox* tasks_buttons_group = new QGroupBox();
     QHBoxLayout* tasks_buttons_layout = new QHBoxLayout(tasks_buttons_group);
-
     QComboBox* tasks_list = new QComboBox(tasks_group);
     tasks_group_layout->addWidget(tasks_list);
     tasks_group_layout->addWidget(tasks_buttons_group);
@@ -170,6 +126,52 @@ void MainWindow::create_layout(QWidget* root) {
     tasks_buttons_layout->addWidget(task_abort_btn);
 
     tasks_list->addItem("Flash");
+    tasks_list->addItem("Test");
+    m_task_list = tasks_list;
+
+    connect(task_start_btn, &QPushButton::released, this, &MainWindow::start_task);
+}
+
+void MainWindow::connect_device() {
+    QString errorString;
+    QString device_name = m_device_list->currentText();
+    m_device = QCanBus::instance()->createDevice(QStringLiteral(CAN_PLUGIN),
+                                                 device_name, &errorString);
+    if (!m_device) {
+        m_logger->error( errorString.toStdString() );
+        return;
+    } else {
+        m_logger->info("Connecting " + device_name.toStdString() );
+        if (m_device->connectDevice()) {
+            connect(m_device, &QCanBusDevice::framesReceived, this,
+                    &MainWindow::processReceivedFrames);
+            m_communicator = new Can::Communicator(new Can::FramesStdLogger());
+            m_logger = new Can::NoLogger();
+            m_logger->info(device_name.toStdString() + " successfuly connected");
+            m_communicator_thread = new CommunicatorThread(
+                this, m_communicator, m_communicator_mutex);
+            connect(m_communicator_thread,
+                    &CommunicatorThread::check_frames_to_write, this,
+                    &MainWindow::check_frames_to_write);
+            m_communicator_thread->start();
+        } else {
+            m_logger->error( "Cannot connect device" );
+        }
+    }
+}
+
+void MainWindow::start_task() {
+    QString task_name = m_task_list->currentText();
+    if(task_name == "Flash") {
+        m_logger->info("Starting task " + task_name.toStdString());
+        // :TODO: Select file
+        m_communicator->set_task(new Can::FlashTask("./test.hex", new Can::FramesStdLogger()));
+    } else if(task_name == "Test") {
+        m_logger->info("Starting task " + task_name.toStdString());
+        // :TODO: Select file
+        m_communicator->set_task(new Can::ReadWriteThreadedTask());
+    }
+
 }
 
 void MainWindow::check_frames_to_write(std::shared_ptr<Can::Frame> frame) {

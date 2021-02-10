@@ -2,6 +2,7 @@ set(libutil_SRCS
     util.h
     util.cpp
     map.h
+    crc.h
     bytes.h
     bytes.cpp
 )

@@ -443,6 +443,8 @@ TEST(testCommunicator, testTaskWriteRead)
 namespace Can {
     class TestAsyncTask : public AsyncTask {
     public:
+        TestAsyncTask(Logger* logger = new NoLogger()) :
+        AsyncTask(logger) {}
         void task() {
             ServiceResponse* response;
 

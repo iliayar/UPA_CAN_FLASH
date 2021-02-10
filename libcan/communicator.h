@@ -99,6 +99,7 @@ public:
     CommunicatorStatus get_status();
 
     void set_task(Task*);
+    void reset_task();
 
     std::shared_ptr<Frame> fetch_frame();
     void push_frame(std::shared_ptr<Frame>);
