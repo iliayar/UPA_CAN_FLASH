@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
     qRegisterMetaType<std::shared_ptr<Can::Frame>>();
     
     MainWindow main_window{};
-    // main_window.show();
+    main_window.show();
 
     return app.exec();
 }

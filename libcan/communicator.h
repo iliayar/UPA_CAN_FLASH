@@ -7,6 +7,7 @@
 #include "frame.h"
 #include "service.h"
 #include "task.h"
+#include "logger.h"
 
 namespace Can {
 
@@ -86,24 +87,6 @@ private:
     int m_i;
     bool m_wait_fc;
     int m_block_begin;
-};
-
-class Logger {
-public:
-    virtual void recevied_frame(std::shared_ptr<Frame>) = 0;
-    virtual void transmitted_frame(std::shared_ptr<Frame>) = 0;
-    virtual void received_service_response(ServiceResponse*) = 0;
-    virtual void transmitted_service_request(ServiceRequest*) = 0;
-    // virtual void error(std::string);
-};
-
-class NoLogger : public Logger {
-public:
-    void recevied_frame(std::shared_ptr<Frame> _) {}
-    void transmitted_frame(std::shared_ptr<Frame> _) {}
-    void received_service_response(ServiceResponse* _) {}
-    void transmitted_service_request(ServiceRequest* _) {}
-    // void error(std::string _) {}
 };
 
 class Communicator {

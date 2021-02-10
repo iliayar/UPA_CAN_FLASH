@@ -6,6 +6,9 @@
 #include "map.h"
 #include "service.h"
 
+
+// Macros magick
+
 namespace Can {
 
 #define SERVICE_BEGIN
