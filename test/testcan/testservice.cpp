@@ -40,12 +40,22 @@ TEST(testService, testServiceRequest) {
         std::vector<uint8_t> res = {0x27, 0x04, 0x13, 0x37, 0x01, 0x32};
 	EXPECT_EQ(res, request.dump());
     }
-	{
-		Can::ServiceRequest_RequestDownload request(new Can::DataFormatIdentifier(0x00, 0x00), new Can::DataAndLengthFormatIdentifier(0x04,0x04), {0x08, 0x00, 0x40, 0x00}, {0x00, 0x00, 0x90, 0xE8});
-		std::vector<uint8_t> res = {0x34, 0x00, 0x44, 0x08, 0x00, 0x40, 0x00, 0x00, 0x00, 0x90, 0xE8};
-		EXPECT_EQ(res, request.dump());
-	}
-	{
+    {
+        Can::ServiceRequest_RequestDownload request(
+            Can::DataFormatIdentifier::build()
+                ->compressionMethod(0)
+                ->encryptingMethod(0)
+                ->build(),
+            Can::DataAndLengthFormatIdentifier::build()
+                ->memory_address(0x04)
+                ->memory_size(0x04)
+                ->build(),
+            {0x08, 0x00, 0x40, 0x00}, {0x00, 0x00, 0x90, 0xE8});
+        std::vector<uint8_t> res = {0x34, 0x00, 0x44, 0x08, 0x00, 0x40,
+                                    0x00, 0x00, 0x00, 0x90, 0xE8};
+        EXPECT_EQ(res, request.dump());
+    }
+        {
 		Can::ServiceRequest_TransferData request(0x32, {0x27, 0x04, 0x13, 0x37, 0x01, 0x32});
 		std::vector<uint8_t> res = {0x36, 0x32, 0x27, 0x04, 0x13, 0x37, 0x01, 0x32};
 		EXPECT_EQ(res, request.dump());
