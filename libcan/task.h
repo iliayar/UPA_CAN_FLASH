@@ -4,6 +4,7 @@
 #include <iostream>
 #include <mutex>
 
+#include "logger.h"
 #include "service.h"
 
 namespace Can {
@@ -28,50 +29,51 @@ private:
 
 class AsyncTask : public Task {
 public:
-    AsyncTask()
-	: m_async(&AsyncTask::task_imp, this),
-	  m_completed(false),
-	  m_request(nullptr),
-	  m_response(nullptr) {}
+    AsyncTask(Logger* logger = new NoLogger())
+        : m_async(&AsyncTask::task_imp, this),
+          m_completed(false),
+          m_request(nullptr),
+          m_response(nullptr),
+          m_logger(logger) {}
 
     ServiceRequest* fetch_request() {
-	std::this_thread::sleep_for(
-	    static_cast<std::chrono::milliseconds>(DELAY));
-	while (true) {
-	    {
-		std::unique_lock<std::mutex> lock(m_mutex);
-		if (m_request != nullptr) {
-		    ServiceRequest* request = m_request;
-		    m_request = nullptr;
-		    return request;
-		}
-		if (m_wait_response) return nullptr;
-	    }
-	    if (is_completed()) return nullptr;
-	}
+        std::this_thread::sleep_for(
+            static_cast<std::chrono::milliseconds>(DELAY));
+        while (true) {
+            {
+                std::unique_lock<std::mutex> lock(m_mutex);
+                if (m_request != nullptr) {
+                    ServiceRequest* request = m_request;
+                    m_request = nullptr;
+                    return request;
+                }
+                if (m_wait_response) return nullptr;
+            }
+            if (is_completed()) return nullptr;
+        }
     }
 
     void push_response(ServiceResponse* response) {
-	std::this_thread::sleep_for(
-	    static_cast<std::chrono::milliseconds>(DELAY));
-	while (true) {
-	    {
-		std::unique_lock<std::mutex> lock(m_mutex);
-		if (m_response == nullptr) {
-		    m_response = response;
-		    return;
-		}
-		if (!m_wait_response) return;
-	    }
-	    if (is_completed()) return;
-	}
+        std::this_thread::sleep_for(
+            static_cast<std::chrono::milliseconds>(DELAY));
+        while (true) {
+            {
+                std::unique_lock<std::mutex> lock(m_mutex);
+                if (m_response == nullptr) {
+                    m_response = response;
+                    return;
+                }
+                if (!m_wait_response) return;
+            }
+            if (is_completed()) return;
+        }
     }
 
     // :FIXME: Wanna some race conditions ?!?!?
     bool is_completed() {
-	std::this_thread::sleep_for(
-	    static_cast<std::chrono::milliseconds>(DELAY));
-	return m_completed;
+        std::this_thread::sleep_for(
+            static_cast<std::chrono::milliseconds>(DELAY));
+        return m_completed;
     }
 
     virtual void task() = 0;
@@ -79,10 +81,12 @@ public:
 protected:
     ServiceResponse* call(ServiceRequest* request) { return call_imp(request); }
 
+    Logger* m_logger;
+
 private:
     void task_imp() {
-	task();
-	m_completed = true;
+        task();
+        m_completed = true;
     }
 
     ServiceResponse* call_imp(ServiceRequest*);
@@ -95,7 +99,7 @@ private:
     std::mutex m_mutex;
 
     static constexpr std::chrono::milliseconds DELAY =
-	static_cast<std::chrono::milliseconds>(2);
+        static_cast<std::chrono::milliseconds>(2);
 };
 
 class ReadWriteThreadedTask : public AsyncTask {

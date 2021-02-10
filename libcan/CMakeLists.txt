@@ -12,6 +12,7 @@ set(libcan_SRCS
     security.h
     flash.h
     flash.cpp
+    logger.h
 )
 
 # Declare the library

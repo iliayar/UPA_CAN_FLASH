@@ -72,7 +72,7 @@ void Can::Communicator::push_frame(std::shared_ptr<Can::Frame> frame) {
     } else {
 	m_worker->push_frame(frame);
     }
-    m_logger->recevied_frame(std::move(frame));
+    m_logger->received_frame(std::move(frame));
     update_task();
 }
 

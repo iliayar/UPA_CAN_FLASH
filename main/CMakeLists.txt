@@ -2,6 +2,8 @@ set(Main_SRCS
     main.cpp
     mainwindow.h
     mainwindow.cpp
+    can.h
+    can.cpp
 )
 
 

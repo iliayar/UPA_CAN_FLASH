@@ -5,7 +5,8 @@
 
 #include "bytes.h"
 #include "service_all.h"
-// #include "../libutil/map.h"
+
+// Macros magick
 
 // ---------- Service Request --------------
 #define SUBFUNCTIONS(...)

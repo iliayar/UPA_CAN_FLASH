@@ -6,6 +6,7 @@
 #include <mutex>
 
 #include "communicator.h"
+#include "can.h"
 
 namespace Ui {
 class MainWindow;
@@ -36,11 +37,12 @@ public:
     virtual ~MainWindow();
     void processReceivedFrames();
 private:
-    void create_layout();
+    void create_layout(QWidget*);
     void check_frames_to_write(std::shared_ptr<Can::Frame>);
 
     QCanBusDevice* m_device;
     Can::Communicator* m_communicator;
     std::mutex m_communicator_mutex;
     CommunicatorThread* m_communicator_thread;
+    QLogger* m_logger;
 };

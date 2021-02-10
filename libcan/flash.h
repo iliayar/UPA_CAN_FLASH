@@ -67,7 +67,7 @@ public:
         m_start = std::chrono::high_resolution_clock::now();
     }
 
-    void recevied_frame(std::shared_ptr<Frame> frame) override {
+    void received_frame(std::shared_ptr<Frame> frame) override {
         std::cout << "ECU response:   ";
         print_frame(frame);
         m_start = std::chrono::high_resolution_clock::now();
@@ -81,9 +81,14 @@ public:
         // std::cout << "Transmited request " << (int)r->get_type() << std::endl;
     }
 
-    // void error(std::string s) override {
-    //     std::cout << "ERROR: " << s << std::endl;
-    // }
+    void error(std::string s) override {
+        std::cout << "ERROR: " << s << std::endl;
+    }
+
+    void info(std::string s) override {
+    }
+    void warning(std::string s) override {
+    }
 
 private:
     void print_frame(std::shared_ptr<Frame> frame) {
