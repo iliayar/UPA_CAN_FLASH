@@ -21,15 +21,28 @@ void Can::FlashTask::task() {
         std::cout << "Failed ControlDTCSettings" << std::endl;
     }
 
-    response = call(new ServiceRequest_CommunicationControl(
-        CommunicationControl_SubfunctionType::disableRxAndTx, 0x03));
+    // response = call(new ServiceRequest_CommunicationControl(
+    //     CommunicationControl_SubfunctionType::disableRxAndTx, 0x03));
+    response = call(
+        ServiceRequest_CommunicationControl::build()
+            ->subfunction(CommunicationControl_SubfunctionType::disableRxAndTx)
+            ->communication_type(CommunicationType::build()
+                                     ->chanels(CommunicationTypeChanels::build()
+                                                   ->network_communication(1)
+                                                   ->normal_communication(1)
+                                                   ->build())
+                                     ->build())
+            ->build());
 
     IF_NEGATIVE(response) {
         std::cout << "Failed CommunicationControl" << std::endl;
     }
 
-    response = call(new ServiceRequest_DiagnosticSessionControl(
-        DiagnosticSessionControl_SubfunctionType::programmingSession));
+    response = call(
+        ServiceRequest_DiagnosticSessionControl::build()
+            ->subfunction(
+                DiagnosticSessionControl_SubfunctionType::programmingSession)
+            ->build());
 
     IF_NEGATIVE(response) {
         std::cout << "Failed ot enter programmingSession" << std::endl;

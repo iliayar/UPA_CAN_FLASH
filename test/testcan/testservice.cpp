@@ -55,12 +55,29 @@ TEST(testService, testServiceRequest) {
                                     0x00, 0x00, 0x00, 0x90, 0xE8};
         EXPECT_EQ(res, request.dump());
     }
-        {
-		Can::ServiceRequest_TransferData request(0x32, {0x27, 0x04, 0x13, 0x37, 0x01, 0x32});
-		std::vector<uint8_t> res = {0x36, 0x32, 0x27, 0x04, 0x13, 0x37, 0x01, 0x32};
-		EXPECT_EQ(res, request.dump());
-
-	}
+    {
+        Can::ServiceRequest_TransferData request(
+            0x32, {0x27, 0x04, 0x13, 0x37, 0x01, 0x32});
+        std::vector<uint8_t> res = {0x36, 0x32, 0x27, 0x04,
+                                    0x13, 0x37, 0x01, 0x32};
+        EXPECT_EQ(res, request.dump());
+    }
+    {
+        Can::ServiceRequest_CommunicationControl* request =
+            Can::ServiceRequest_CommunicationControl::build()
+                ->subfunction(
+                    Can::CommunicationControl_SubfunctionType::disableRxAndTx)
+                ->communication_type(
+                    Can::CommunicationType::build()
+                        ->chanels(Can::CommunicationTypeChanels::build()
+                                      ->network_communication(1)
+                                      ->normal_communication(1)
+                                      ->build())
+                        ->build())
+                ->build();
+        std::vector<uint8_t> res = {0x28, 0x03, 0x03};
+        EXPECT_EQ(res, request->dump());
+    }
 }
 
 TEST(testService, testServiceResponse) {

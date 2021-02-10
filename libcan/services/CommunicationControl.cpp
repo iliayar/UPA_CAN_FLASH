@@ -3,7 +3,7 @@
 #define RESPONSE_ID 0x68
 
 // If Service has subfunction, there is must be SUBFUNCTION field
-#define REQUEST_FIELDS SUBFUNCTION, (INT, communication_type, 8)
+#define REQUEST_FIELDS SUBFUNCTION, (DATA, communication_type, CommunicationType)
 #define RESPONSE_FIELDS SUBFUNCTION
 // --- FIELD ---
 // (<Type>, <Alias>)
@@ -15,13 +15,22 @@ SUBFUNCTIONS(
     (disableRxAndTx, 0x03)
     )
 
+    DATATYPE(CommunicationTypeChanels,
+             (INT, normal_communication, 1),
+             (INT, network_communication, 1))
+
+DATATYPE(CommunicationType,
+         (INT, smth, 4),
+         (INT, reserved, 2),
+         (DATA, chanels, CommunicationTypeChanels))
+
 #ifdef EXTRA // Extra classes
 
-enum class CommunicationType {
-    normalCommunicationMessages = 0x01,
-    networkManagementCommunicationMessages = 0x02,
-    toggleCommunicationType = 0x00,
-};
+// enum class CommunicationType {
+//     normalCommunicationMessages = 0x01,
+//     networkManagementCommunicationMessages = 0x02,
+//     toggleCommunicationType = 0x00,
+// };
 
 
 #endif
@@ -64,7 +73,7 @@ enum class CommunicationType {
 {
     INIT;
     FIELD(SUBFUNCTION) { }
-    FIELD_INT(m_communication_type, 8);
+    FIELD(DATA, m_communication_type);
     RETURN;
 }
 #endif
