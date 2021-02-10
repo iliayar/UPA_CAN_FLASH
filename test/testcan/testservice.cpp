@@ -166,4 +166,10 @@ TEST(testService, testServiceResponse) {
 		EXPECT_EQ(format->get_memory_size(), 0x02);
 		EXPECT_EQ(static_cast<Can::ServiceResponse_RequestDownload*>(response)->get_max_blocks_number(), std::vector<uint8_t>({0x04, 0x02}));
 	}
+
+    {
+        Can::ServiceResponse* response = Can::ServiceResponseFactory(std::vector<uint8_t>({0x77, 0x01, 0x02})).get();
+        EXPECT_EQ(response->get_type(), Can::ServiceResponseType::RequestTransferExit);
+        EXPECT_EQ(static_cast<Can::ServiceResponse_RequestTransferExit*>(response)->get_crc(), 0x0102);
+    }
 }

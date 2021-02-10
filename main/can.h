@@ -39,4 +39,6 @@ private:
     
     QTextEdit* m_frame_log;
     QTextEdit* m_message_log;
+
+    std::mutex m_mutex;
 };

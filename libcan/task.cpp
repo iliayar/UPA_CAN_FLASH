@@ -33,6 +33,12 @@ Can::ServiceResponse* Can::AsyncTask::call_imp(Can::ServiceRequest* request) {
                         m_logger->warning("Invalid error service code");
                         continue;
                     }
+                    if (static_cast<Can::ServiceResponse_Negative*>(response)
+                            ->get_code() == 0x78) {
+                        m_response = nullptr;
+                        m_logger->warning("Waiting for positive resposnse");
+                        continue;
+                    }
                 } else if (response->get_type() !=
                            Can::request_to_response_type(request->get_type())) {
                     m_response = nullptr;

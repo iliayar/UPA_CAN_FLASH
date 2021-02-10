@@ -15,21 +15,22 @@ void QFlashTask::task() {
 }
 
 QLogger::QLogger(QObject* parent, QTextEdit* frame_log, QTextEdit* message_log)
-    : QObject(parent), m_frame_log(frame_log), m_message_log(message_log), m_timer() {
+    : QObject(parent), m_frame_log(frame_log), m_message_log(message_log), m_timer(), m_mutex() {
 
     m_timer.start();
     
-    received_frame(std::make_shared<Can::Frame_SingleFrame>(3, std::vector<uint8_t>({0x01, 0x02, 0x03})));
-    transmitted_frame(std::make_shared<Can::Frame_SingleFrame>(3, std::vector<uint8_t>({0x01, 0xa2, 0x03})));
-    received_frame(std::make_shared<Can::Frame_SingleFrame>(3, std::vector<uint8_t>({0x01, 0x02, 0x03})));
-    transmitted_frame(std::make_shared<Can::Frame_SingleFrame>(3, std::vector<uint8_t>({0x01, 0x02, 0x03})));
-    error("Test error");
-    info("Test info");
-    warning("Test warning");
+    // received_frame(std::make_shared<Can::Frame_SingleFrame>(3, std::vector<uint8_t>({0x01, 0x02, 0x03})));
+    // transmitted_frame(std::make_shared<Can::Frame_SingleFrame>(3, std::vector<uint8_t>({0x01, 0xa2, 0x03})));
+    // received_frame(std::make_shared<Can::Frame_SingleFrame>(3, std::vector<uint8_t>({0x01, 0x02, 0x03})));
+    // transmitted_frame(std::make_shared<Can::Frame_SingleFrame>(3, std::vector<uint8_t>({0x01, 0x02, 0x03})));
+    // error("Test error");
+    // info("Test info");
+    // warning("Test warning");
 }
 
 void QLogger::received_frame(std::shared_ptr<Can::Frame> frame)
 {
+    std::unique_lock<std::mutex> lock(m_mutex);
     m_frame_log->setTextColor(QColor("blue"));
     std::vector<uint8_t> payload = frame->dump();
     QString payload_str ="ECU:    ";
@@ -54,6 +55,7 @@ QString QLogger::vec_to_qstr(std::vector<uint8_t> vec) {
 
 void QLogger::transmitted_frame(std::shared_ptr<Can::Frame> frame)
 {
+    std::unique_lock<std::mutex> lock(m_mutex);
     std::vector<uint8_t> payload = frame->dump();
     QString payload_str ="Tester: ";
     payload_str.append(vec_to_qstr(payload));
@@ -70,18 +72,21 @@ QString get_date_str() {
 
 void QLogger::info(std::string message)
 {
+    std::unique_lock<std::mutex> lock(m_mutex);
     m_message_log->setTextColor(QColor("gray"));
     m_message_log->append(get_date_str() + "    INFO: " + QString::fromStdString(message));
     m_message_log->setTextColor(QColor("black"));
 }
 void QLogger::error(std::string message)
 {
+    std::unique_lock<std::mutex> lock(m_mutex);
     m_message_log->setTextColor(QColor("red"));
     m_message_log->append(get_date_str() + "   ERROR: " + QString::fromStdString(message));
     m_message_log->setTextColor(QColor("black"));
 }
 void QLogger::warning(std::string message)
 {
+    std::unique_lock<std::mutex> lock(m_mutex);
     m_message_log->setTextColor(QColor("orange"));
     m_message_log->append(get_date_str() + " WARNING: " + QString::fromStdString(message));
     m_message_log->setTextColor(QColor("black"));

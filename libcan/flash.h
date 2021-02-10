@@ -86,8 +86,10 @@ public:
     }
 
     void info(std::string s) override {
+        std::cout << "INFO: " << s << std::endl;
     }
     void warning(std::string s) override {
+        std::cout << "WARNING: " << s << std::endl;
     }
 
 private:
@@ -106,7 +108,11 @@ private:
 
 class FlashTask : public AsyncTask {
 public:
+    FlashTask(std::string file, Logger* logger = new NoLogger())
+        : AsyncTask(logger), m_file(file) {}
     void task();
+private:
+    std::string m_file;
 };
 
 }  // namespace Can

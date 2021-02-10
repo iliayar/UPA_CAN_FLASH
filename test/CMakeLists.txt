@@ -42,4 +42,5 @@ include_directories("${source_dir}/googletest/include"
 
 add_subdirectory(testcan)
 add_subdirectory(testhex)
+add_subdirectory(testhexcrc)
 add_subdirectory(testutil)
