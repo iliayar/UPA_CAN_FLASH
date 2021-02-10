@@ -18,11 +18,12 @@ namespace Can {
 #define TYPE_INT(...) int
 #define TYPE_VEC(...) std::vector<uint8_t>
 #define TYPE_ENUM(type, ...) type
+#define TYPE_DATA(type, ...) std::shared_ptr<type>
 #define DATATYPE_FIELD_GETTER(type, name, ...) \
     TYPE_##type(__VA_ARGS__) get_##name() { return m_##name; }
 #define DATATYPE_FIELD(type, name, ...) TYPE_##type(__VA_ARGS__) m_##name;
 #define DATATYPE_FIELD_SETTER(type, name, ...)            \
-    constexpr auto name(TYPE_##type(__VA_ARGS__) value) { \
+    auto name(TYPE_##type(__VA_ARGS__) value) { \
         m_##name = value;                                 \
         return this;                                      \
     }
@@ -37,7 +38,7 @@ namespace Can {
         name(MAP_TUPLE_LIST(DATATYPE_CTR_FIELD, __VA_ARGS__))         \
             : MAP_TUPLE_LIST(DATATYPE_CTR_FIELD_INIT, __VA_ARGS__) {} \
         MAP_TUPLE(DATATYPE_FIELD_GETTER, __VA_ARGS__)                 \
-        std::vector<uint8_t> dump();                                  \
+        std::vector<uint8_t> dump(int*);                    \
         static std::unique_ptr<name##_Builder> build() {              \
             return std::make_unique<name##_Builder>();                \
         }                                                             \
@@ -72,6 +73,7 @@ namespace Can {
 #undef TYPE_INT
 #undef TYPE_VEC
 #undef TYPE_ENUM
+#undef TYPE_DATA
 
 #undef SERVICE_BEGIN
 #define DATATYPE(...)

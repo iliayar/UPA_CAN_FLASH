@@ -3,6 +3,13 @@
 #define RESPONSE_ID // <Service Response 8 bit indentifier>
 
 // If Service has subfunction, there is must be SUBFUNCTION field
+// --- FIELDS ---
+// (TYPE, name, [type related params]...)
+// --- TYPE ---
+// - INT(<8|16|32|64>(bit length))
+// - VEC() - array
+// - DATA(<declared DATATYPE>)
+// - RAW(<raw C++ type>)
 #define REQUEST_FIELDS // [FIELD]...
 #define RESPONSE_FIELDS // [FIELD]...
 // --- FIELD ---

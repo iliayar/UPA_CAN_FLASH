@@ -5,6 +5,7 @@
 
 #include "bytes.h"
 #include "service_all.h"
+// #include "../libutil/map.h"
 
 // ---------- Service Request --------------
 #define SUBFUNCTIONS(...)
@@ -21,6 +22,10 @@
 #define PARSE_VEC(name, len)                                    \
     std::vector<uint8_t> m_##name = reader.read(offset, len); \
     offset += len;
+#define PARSE_DATA(name, type)                   \
+    reader.add_offset(offset);               \
+    std::shared_ptr<Can::type> m_##name = Can::type::parse(reader); \
+    offset = 0;
 #define PARSE_BEGIN(type)                                               \
     std::shared_ptr<Can::type> Can::type::parse(Util::Reader& reader) { \
         int offset = 0;
@@ -37,22 +42,31 @@
 #include "services/services.h"
 #undef PARSE_INT
 #undef PARSE_VEC
+#undef PARSE_DATA
 #undef PARSE_BEGIN
 #undef PARSE_RETURN
 #undef DATATYPE
 
-#define DUMP_INT(name, len)                                          \
-    writer.write_64(static_cast<uint64_t>(m_##name), offset, len); \
-    offset += len;
+#define DUMP_INT(name, len)                                         \
+    writer.write_64(static_cast<uint64_t>(m_##name), offset, len);  \
+    offset += len;                                                  \
+    if(res_len != nullptr) *res_len += len;
 #define DUMP_ENUM(name, _, len) DUMP_INT(name, len)
 #define DUMP_VEC(name, len)                                             \
     while (m_##name.size() < ((len) + 7) / 8) m_##name.push_back(0x00); \
-    writer.write(m_##name, offset, len);                              \
-    offset += len;
-#define DUMP_BEGIN(type)                                                  \
-    std::vector<uint8_t> Can::type::dump() {                              \
-        std::vector<uint8_t> payload(8, 0);                               \
-        Util::Writer writer(payload);                                     \
+    writer.write(m_##name, offset, len);                                \
+    offset += len;                                                      \
+    if(res_len != nullptr) *res_len += len;
+#define DUMP_DATA(name, _)                                          \
+    {                                                               \
+        int len_t = 0;                                              \
+        std::vector<uint8_t> m_payload = m_##name->dump(&len_t);    \
+        DUMP_VEC(payload, len_t);                                   \
+    }
+#define DUMP_BEGIN(type)                                                \
+    std::vector<uint8_t> Can::type::dump(int *res_len = nullptr) {   \
+    std::vector<uint8_t> payload(8, 0);                                 \
+    Util::Writer writer(payload);                                       \
         int offset = 0;
 #define DUMP_END()  \
     return payload; \
@@ -66,6 +80,7 @@
 #undef DATATYPE
 #undef DUMP_BEGIN
 #undef DUMP_END
+#undef DUMP_DATA
 #undef DUMP_INT
 #undef DUMP_VEC
 #undef DUMP_ENUM
@@ -101,10 +116,11 @@ Can::ServiceResponseType Can::request_to_response_type(
     offset += 8;                                                    \
     switch (m_subfunction)
 #define CASE(name) case CONCAT(Can::SERVICE, _SubfunctionType)::name:
-#define FIELD_DATA(name)                              \
-    {                                                 \
-        std::vector<uint8_t> payload_t = name->dump(); \
-        FIELD_VEC(payload_t, payload_t.size());       \
+#define FIELD_DATA(name)                                        \
+    {                                                           \
+        int len_t = 0;                                          \
+        std::vector<uint8_t> payload_t = name->dump(&len_t);    \
+        FIELD_VEC(payload_t, len_t);                            \
     }
 #define FIELD_VEC(value, len)                          \
     payload.resize(payload.size() + (len + 7) / 8, 0); \
