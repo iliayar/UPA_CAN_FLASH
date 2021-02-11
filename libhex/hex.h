@@ -99,6 +99,7 @@ public:
 
 private:
     void except(char);
+    bool test(char);
     std::string read_chars(int);
 
     Source* m_source;

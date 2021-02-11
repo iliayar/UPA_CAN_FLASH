@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <sstream>
 
 #include <iostream>
 
@@ -39,11 +40,19 @@ std::vector<uint8_t> Hex::str_to_bytes(std::string str) {
     return res;
 }
 
+
+bool Hex::HexReader::test(char c) {
+    if (m_source->get_char() != c) {
+        return false;
+    }
+    m_source->next_char();
+    return true;
+}
 void Hex::HexReader::except(char c) {
     if (m_source->get_char() != c) {
-        std::cout << m_line_readed << " " << (int)m_source->get_char() << "(" << m_source->get_char() << ")"
-                  << std::endl;
-        throw std::runtime_error("Invalid HEX format");
+        std::stringstream ss;
+        ss << std::hex << (int)c << ", got " << (int)m_source->get_char();
+        throw std::runtime_error("Invalid HEX format. Expect " + ss.str());
     }
     m_source->next_char();
 }
@@ -120,17 +129,13 @@ Hex::HexLine* Hex::HexReader::read_line() {
     }
     READ_INT(8);
     if (sum != 0) throw std::runtime_error("Wrong HEX format: Invalid sum");
-    // except('\n');
+    test('\r');
+    except('\n');
     return line;
 }
 
 bool Hex::HexReader::is_eof() { 
-	if(m_source == nullptr) return true;
-	if(m_source->is_eof()) {
-		delete m_source;
-		return true;
-	}
-	return false;
+	return m_source->is_eof();
  }
 
 #undef READ_INT
@@ -144,7 +149,7 @@ Hex::FileSource::FileSource(std::ifstream& fin)
 char Hex::FileSource::get_char() {
 	if(m_char == nullptr) {
 		m_char = new char();
-		m_fin >> *m_char;
+        *m_char = m_fin.get();
 	}
 	// std::cout << "get_char " << (int)*m_char << "(" << *m_char << ")" << std::endl;
 	return *m_char;
@@ -154,7 +159,7 @@ void Hex::FileSource::next_char() {
 	if(m_char == nullptr) {
 		m_char = new char();
 	}
-	m_fin >> *m_char;
+    *m_char = m_fin.get();
 }
 
 bool Hex::FileSource::is_eof() {
