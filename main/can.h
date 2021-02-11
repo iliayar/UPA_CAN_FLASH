@@ -10,18 +10,12 @@
 #include "service.h"
 #include "task.h"
 
-class QFlashTask : public QObject, public Can::AsyncTask {
+class QLoggerWorker : public QObject {
     Q_OBJECT
 public:
-    QFlashTask(QObject* parent) : QObject(parent) {}
+    QLoggerWorker(QObject*, QTextEdit*, QTextEdit*);
 
-    void task();
-};
-
-class QLogger : public QObject, public Can::Logger {
-    Q_OBJECT
-public:
-    QLogger(QObject*, QTextEdit*, QTextEdit*);
+public slots:
 
     void received_frame(std::shared_ptr<Can::Frame>);
     void transmitted_frame(std::shared_ptr<Can::Frame>);
@@ -41,4 +35,58 @@ private:
     QTextEdit* m_message_log;
 
     std::mutex m_mutex;
+};
+
+class QLogger : public QObject, public Can::Logger {
+    Q_OBJECT
+public:
+#define CONNECT(sig) connect(this, &QLogger::signal_##sig, worker, &QLoggerWorker::sig)
+    QLogger(QLoggerWorker* worker) : m_worker(worker) {
+        CONNECT(info);
+        CONNECT(error);
+        CONNECT(warning);
+        CONNECT(received_frame);
+        CONNECT(transmitted_frame);
+        CONNECT(received_service_response);
+        CONNECT(transmitted_service_request);
+    }
+#undef CONNECT
+
+    void received_frame(std::shared_ptr<Can::Frame> frame) {
+        emit signal_received_frame(frame);
+    }
+    void transmitted_frame(std::shared_ptr<Can::Frame> frame) {
+        emit signal_transmitted_frame(frame);
+    }
+    void received_service_response(Can::ServiceResponse* response) {
+        emit signal_received_service_response(response);
+    }
+    void transmitted_service_request(Can::ServiceRequest* request) {
+        emit signal_transmitted_service_request(request);
+    }
+
+    void error(std::string s) {
+        emit signal_error(s);
+    }
+    void info(std::string s) {
+        emit signal_info(s);
+    }
+    void warning(std::string s) {
+        emit signal_warning(s);
+    }
+
+signals:
+    
+    void signal_received_frame(std::shared_ptr<Can::Frame> frame);
+    void signal_transmitted_frame(std::shared_ptr<Can::Frame>);
+    void signal_received_service_response(Can::ServiceResponse*);
+    void signal_transmitted_service_request(Can::ServiceRequest*);
+
+    void signal_error(std::string);
+    void signal_info(std::string);
+    void signal_warning(std::string);
+
+private:
+    QLoggerWorker* m_worker;
+
 };

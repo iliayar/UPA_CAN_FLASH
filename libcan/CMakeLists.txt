@@ -10,8 +10,6 @@ set(libcan_SRCS
     task.h
     task.cpp
     security.h
-    flash.h
-    flash.cpp
     logger.h
 )
 

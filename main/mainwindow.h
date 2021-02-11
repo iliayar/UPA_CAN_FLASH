@@ -51,6 +51,7 @@ private:
     std::mutex m_communicator_mutex;
     CommunicatorThread* m_communicator_thread;
     Can::Logger* m_logger;
+    QLoggerWorker* m_logger_worker;
     std::string m_file;
 
     // UI

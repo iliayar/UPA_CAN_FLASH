@@ -4,6 +4,8 @@ set(Main_SRCS
     mainwindow.cpp
     can.h
     can.cpp
+    flash.h
+    flash.cpp
 )
 
 

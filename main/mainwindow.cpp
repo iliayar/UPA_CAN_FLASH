@@ -87,7 +87,8 @@ void MainWindow::create_layout(QWidget* root) {
     log_layout->addWidget(log_messages);
     log_layout->addWidget(log_frames);
 
-    m_logger = new QLogger(this, log_frames, log_messages);
+    m_logger_worker = new QLoggerWorker(this, log_frames, log_messages);
+    m_logger = new QLogger(m_logger_worker);
 
 // Options layout
     QVBoxLayout* options_layout = new QVBoxLayout(options_group);
@@ -205,7 +206,7 @@ void MainWindow::connect_device() {
             connect(m_device, &QCanBusDevice::framesReceived, this,
                     &MainWindow::processReceivedFrames);
             // m_communicator = new Can::Communicator(new Can::FramesStdLogger());
-            m_communicator = new Can::Communicator(m_logger);
+            m_communicator = new Can::Communicator(new QLogger(m_logger_worker));
             // m_logger = new Can::NoLogger();
             m_logger->info(device_name.toStdString() + " successfuly connected");
             m_communicator_thread = new CommunicatorThread(
@@ -230,8 +231,8 @@ void MainWindow::start_task() {
     QString task_name = m_task_list->currentText();
     if(task_name == "Flash") {
         m_logger->info("Starting task " + task_name.toStdString());
-        // m_communicator->set_task(new Can::FlashTask("./test.hex", new Can::FramesStdLogger()));
-        m_communicator->set_task(new Can::FlashTask(m_file, m_logger));
+        // m_communicator->set_task(new FlashTask(m_file, new Can::FramesStdLogger()));
+        m_communicator->set_task(new FlashTask(m_file, new QLogger(m_logger_worker)));
     } else if(task_name == "Test") {
         m_logger->info("Starting task " + task_name.toStdString());
         m_communicator->set_task(new Can::ReadWriteThreadedTask());

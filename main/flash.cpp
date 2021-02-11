@@ -6,6 +6,8 @@
 
 #include <sstream>
 
+using namespace Can;
+
 #define IF_NEGATIVE(res) if(res->get_type() == Can::ServiceResponseType::Negative)
 
 std::string int_to_hex(int n) {
@@ -15,7 +17,7 @@ std::string int_to_hex(int n) {
     return s.str();
 } 
 
-void Can::FlashTask::task() {
+void FlashTask::task() {
     ServiceResponse* response;
 
     response = call(new ServiceRequest_DiagnosticSessionControl(
@@ -97,19 +99,17 @@ void Can::FlashTask::task() {
 
     LOG(info, "Successfully pased security access");
 
-    const std::vector<uint8_t> BEGIN_ADDRESS = {0x08, 0x00, 0x2C, 0x00};
-    uint32_t data_size = 0; 
-
     std::ifstream fin(m_file);
-    Hex::HexReader reader{new Hex::FileSource(fin)};
-    while(!reader.is_eof()) {
-        Hex::HexLine *line = reader.read_line();
-        if(line->get_type() == Hex::HexLineType::Data) {
-                data_size += static_cast<Hex::DataLine*>(line)->get_data().size();
-        }
-    }
+    Hex::HexReader reader(new Hex::FileSource(fin));
+    Hex::HexInfo hex_info = Hex::read_hex_info(reader);
     fin.close();
-
+        
+    uint32_t data_size = hex_info.size;
+    uint32_t begin_address = hex_info.start_addr;
+    uint16_t crc = hex_info.crc;
+    
+    std::vector<uint8_t> BEGIN_ADDRESS(4, 0);
+    Util::Writer(BEGIN_ADDRESS).write_32(begin_address, 0, 32);
     std::vector<uint8_t> DATA_SIZE(4, 0);
     Util::Writer(DATA_SIZE).write_32(data_size, 0, 32);
 
@@ -152,9 +152,6 @@ void Can::FlashTask::task() {
     std::vector<uint8_t> data(max_block_size, 0);
     int i = 0;
     int block_counter = 1;
-    uint16_t crc = 0xffff; // ???
-    std::vector<uint8_t> last_4(4, 0);
-    int last_4_i = 0;
     int n_size = 0;
     while(!reader.is_eof()) {
         Hex::HexLine *line = reader.read_line();
@@ -170,11 +167,6 @@ void Can::FlashTask::task() {
                 for(uint8_t d : line_data) {
                     data[i++] = d;
                     n_size++;
-                    last_4[last_4_i++] = d;
-                    if(last_4_i >= 4) {
-                        crc = Util::crc16_block(last_4, crc);
-                        last_4_i = 0;
-                    }
                     if (i >= data.size()) {
                         LOG(info, "Transfering block " + int_to_hex(block_counter));
                         response =
