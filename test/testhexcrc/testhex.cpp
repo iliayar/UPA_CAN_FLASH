@@ -15,9 +15,9 @@ TEST(tesHexCRC, testCRC)
 
 TEST(testHexCRC, testHexCRC)
 {
-    std::ifstream fin("test.hex");
+    std::ifstream fin("./test.hex");
+    EXPECT_EQ(!fin, false);
     Hex::HexReader reader{new Hex::FileSource(fin)};
-    fin.close();
     int size = 0;
     uint16_t crc = 0xffff; 
     std::vector<uint8_t> last_4(4, 0);
@@ -41,6 +41,7 @@ TEST(testHexCRC, testHexCRC)
             }
         }
     }
+    fin.close();
     if(last_4_i != 0) {
         while(last_4_i < 4) last_4[last_4_i++] = 0;
         crc = Util::crc16_block(last_4, crc);

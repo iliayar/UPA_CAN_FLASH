@@ -145,8 +145,9 @@ void MainWindow::connect_device() {
         if (m_device->connectDevice()) {
             connect(m_device, &QCanBusDevice::framesReceived, this,
                     &MainWindow::processReceivedFrames);
-            m_communicator = new Can::Communicator(new Can::FramesStdLogger());
-            m_logger = new Can::NoLogger();
+            // m_communicator = new Can::Communicator(new Can::FramesStdLogger());
+            m_communicator = new Can::Communicator(m_logger);
+            // m_logger = new Can::NoLogger();
             m_logger->info(device_name.toStdString() + " successfuly connected");
             m_communicator_thread = new CommunicatorThread(
                 this, m_communicator, m_communicator_mutex);
@@ -165,7 +166,8 @@ void MainWindow::start_task() {
     if(task_name == "Flash") {
         m_logger->info("Starting task " + task_name.toStdString());
         // :TODO: Select file
-        m_communicator->set_task(new Can::FlashTask("./test.hex", new Can::FramesStdLogger()));
+        // m_communicator->set_task(new Can::FlashTask("./test.hex", new Can::FramesStdLogger()));
+        m_communicator->set_task(new Can::FlashTask("./test.hex", m_logger));
     } else if(task_name == "Test") {
         m_logger->info("Starting task " + task_name.toStdString());
         // :TODO: Select file
