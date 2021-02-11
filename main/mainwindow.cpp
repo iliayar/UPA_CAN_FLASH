@@ -117,9 +117,13 @@ void MainWindow::create_layout(QWidget* root) {
     QGroupBox* devices_buttons_group = new QGroupBox();
     QHBoxLayout* devices_buttons_layout = new QHBoxLayout(devices_buttons_group);
 
+    devices_group_layout->addWidget(devices_buttons_group);
+
     QComboBox* devices_list = new QComboBox(devices_group);
     devices_group_layout->addWidget(devices_list);
-    devices_group_layout->addWidget(devices_buttons_group);
+
+    QComboBox* bitrate_list = new QComboBox(devices_group);
+    devices_group_layout->addWidget(bitrate_list);
     
     QPushButton* device_connect_btn = new QPushButton("Connect");
     QPushButton* device_disconnect_btn = new QPushButton("Disconnect");
@@ -139,6 +143,10 @@ void MainWindow::create_layout(QWidget* root) {
 
     m_device_list = devices_list;
     connect(device_connect_btn, &QPushButton::released, this, &MainWindow::connect_device);
+    bitrate_list->addItem("125000");
+    bitrate_list->addItem("250000");
+    bitrate_list->addItem("500000");
+    m_bitrate_list = bitrate_list;
     //   tasks options layout
 
     QGroupBox* tasks_group = new QGroupBox(tr("Tasks"));
@@ -168,6 +176,7 @@ void MainWindow::create_layout(QWidget* root) {
 void MainWindow::choose_file() {
     m_file = QFileDialog::getOpenFileName(this, tr("Open HEX"), "./", tr("Intel HEX file (*.hex)")).toStdString();
     std::ifstream fin(m_file);
+    if(!fin) return;
     Hex::HexReader reader(new Hex::FileSource(fin));
     Hex::HexInfo info = Hex::read_hex_info(reader);
     fin.close();
@@ -202,12 +211,13 @@ void MainWindow::connect_device() {
         return;
     } else {
         m_logger->info("Connecting " + device_name.toStdString() );
+        m_device->setConfigurationParameter(QCanBusDevice::ConfigurationKey::BitRateKey, m_bitrate_list->currentText());
         if (m_device->connectDevice()) {
             connect(m_device, &QCanBusDevice::framesReceived, this,
                     &MainWindow::processReceivedFrames);
             // m_communicator = new Can::Communicator(new Can::FramesStdLogger());
             m_communicator = new Can::Communicator(new QLogger(m_logger_worker));
-            // m_logger = new Can::NoLogger();
+            // m_logger = new Can::FrameStdLogger();
             m_logger->info(device_name.toStdString() + " successfuly connected");
             m_communicator_thread = new CommunicatorThread(
                 this, m_communicator, m_communicator_mutex);

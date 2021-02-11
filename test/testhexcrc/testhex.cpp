@@ -15,37 +15,13 @@ TEST(tesHexCRC, testCRC)
 
 TEST(testHexCRC, testHexCRC)
 {
-    std::ifstream fin("./test.hex");
-    EXPECT_EQ(!fin, false);
-    Hex::HexReader reader{new Hex::FileSource(fin)};
-    int size = 0;
-    uint16_t crc = 0xffff; 
-    std::vector<uint8_t> last_4(4, 0);
-    int last_4_i = 0;
-    while (!reader.is_eof()) {
-        Hex::HexLine *line = reader.read_line();
-        if (line->get_type() == Hex::HexLineType::Data) {
-            std::vector<uint8_t> line_data = static_cast<Hex::DataLine*>(line)->get_data();
-            for (uint8_t d : line_data) {
-                last_4[last_4_i++] = d;
-                size++;
-                if (last_4_i >= 4) {
-                    crc = Util::crc16_block(last_4, crc);
-                    // std::cout << "CRC: " << std::hex << crc << std::endl;
-                    last_4_i = 0;
-                }
-            }
-            if (line->get_type() == Hex::HexLineType::EndOfFile) {
-                EXPECT_EQ(reader.is_eof(), true);
-                break;
-            }
-        }
-    }
-    fin.close();
-    if(last_4_i != 0) {
-        while(last_4_i < 4) last_4[last_4_i++] = 0;
-        crc = Util::crc16_block(last_4, crc);
-    }
-    EXPECT_EQ(size, 0x12578);
-    EXPECT_EQ(0xe78e, crc);
+    std::string hex = ":020000040800F2\n\
+:045170000000000437\n\
+:0400000508002CEDD6\n\
+:00000001FF\n";
+    Hex::HexReader reader(new Hex::StringSource(hex));
+    Hex::HexInfo info = Hex::read_hex_info(reader);
+    EXPECT_EQ(info.size, 4);
+    EXPECT_EQ(info.crc, 0xC444);
+    EXPECT_EQ(info.start_addr, 0x08005170);
 }

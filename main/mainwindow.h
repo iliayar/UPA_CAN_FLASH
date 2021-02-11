@@ -56,6 +56,7 @@ private:
 
     // UI
     QComboBox* m_device_list;
+    QComboBox* m_bitrate_list;
     QComboBox* m_task_list;
     QAction* m_file_menu_act;
     

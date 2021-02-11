@@ -4,9 +4,8 @@
 
 #include "task.h"
 #include "logger.h"
-#include "can.h"
 
-class FlashTask : public QAsyncTaskThread {
+class FlashTask : public Can::AsyncTask {
 public:
     FlashTask(std::string file, Can::Logger* logger = new Can::NoLogger())
         : AsyncTask(logger), m_file(file) {}

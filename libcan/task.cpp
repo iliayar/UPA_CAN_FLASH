@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <sstream>
 
 #include "service_all.h"
 #include "util.h"
@@ -10,7 +11,6 @@
 using namespace Can;
 
 Can::ServiceResponse* Can::AsyncTask::call_imp(Can::ServiceRequest* request) {
-    m_logger->info("call_imp");
     while (true) {
         {
             std::unique_lock<std::mutex> lock(m_mutex);
@@ -104,23 +104,28 @@ void ReadWriteTask::push_response(ServiceResponse* response) {
 
 void ReadWriteThreadedTask::task() {
     ServiceResponse* response;
+    m_logger->info("Reading UPASystemType");
     response = call(
 	new ServiceRequest_ReadDataByIdentifier(DataIdentifier::UPASystemType));
     uint8_t type = static_cast<ServiceResponse_ReadDataByIdentifier*>(response)
 		       ->get_data()
 		       ->get_value()[0];
-    std::cout << "UPASystemType = " << (int)type << std::endl;
+    std::stringstream ss;
+    ss << "UPASystemType = " << std::hex << (int)type;
+    m_logger->info(ss.str());
 
-    // call(new ServiceRequest_WriteDataByIdentifier(new Data(
-	// DataIdentifier::VIN, ::Util::str_to_vec("HELLO ANYBODY ..."))));
+    m_logger->info("Writing VIN");
+    call(new ServiceRequest_WriteDataByIdentifier(new Data(
+	DataIdentifier::VIN, ::Util::str_to_vec("HELLO ANYBODY ..."))));
 
-    // response =
-    //     call(new ServiceRequest_ReadDataByIdentifier(DataIdentifier::VIN));
-    // std::string VIN = ::Util::vec_to_str(
-    //     static_cast<ServiceResponse_ReadDataByIdentifier*>(response)
-    //         ->get_data()
-    //         ->get_value());
-    // std::cout << "VIN = " << VIN << std::endl;
+    m_logger->info("Reading VIN");
+    response =
+        call(new ServiceRequest_ReadDataByIdentifier(DataIdentifier::VIN));
+    std::string VIN = ::Util::vec_to_str(
+        static_cast<ServiceResponse_ReadDataByIdentifier*>(response)
+            ->get_data()
+            ->get_value());
+    m_logger->info("VIN = " + VIN);
 }
 
 bool ReadWriteTask::is_completed() { return m_step == 6; }
