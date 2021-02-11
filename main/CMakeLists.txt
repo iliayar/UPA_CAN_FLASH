@@ -13,7 +13,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt5 COMPONENTS Widgets Core SerialBus Network SerialPort REQUIRED)
+find_package(Qt5 COMPONENTS Widgets Core SerialBus Network SerialPort Test REQUIRED)
 
 if(WIN32)
 add_executable(canFlash WIN32
@@ -103,6 +103,7 @@ target_link_libraries(canFlash
     libcan
     Qt5::Widgets
     Qt5::SerialBus
+    Qt5::Test
 )
 
 

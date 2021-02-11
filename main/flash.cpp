@@ -3,6 +3,7 @@
 #include "security.h"
 #include "hex.h"
 #include "crc.h"
+#include "can.h"
 
 #include <sstream>
 
@@ -22,6 +23,7 @@ void FlashTask::task() {
 
     response = call(new ServiceRequest_DiagnosticSessionControl(
         DiagnosticSessionControl_SubfunctionType::extendDiagnosticSession));
+
 
     IF_NEGATIVE(response) {
         LOG(error, "Failed ot enter extendDiagnosticSession");
@@ -65,7 +67,7 @@ void FlashTask::task() {
 
     uint8_t rnd = Crypto::get_RND();
 
-    LOG(info, "Seed parameter " + int_to_hex(rnd));
+    m_logger->info("Seed parameter " + int_to_hex(rnd));
     response =
         call(ServiceRequest_SecurityAccess::build()
                  ->subfunction(SecurityAccess_SubfunctionType::requestSeed)

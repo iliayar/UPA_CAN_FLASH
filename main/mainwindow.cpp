@@ -235,7 +235,7 @@ void MainWindow::start_task() {
         m_communicator->set_task(new FlashTask(m_file, new QLogger(m_logger_worker)));
     } else if(task_name == "Test") {
         m_logger->info("Starting task " + task_name.toStdString());
-        m_communicator->set_task(new Can::ReadWriteThreadedTask());
+        m_communicator->set_task(new Can::ReadWriteThreadedTask(new QLogger(m_logger_worker)));
     }
 
 }

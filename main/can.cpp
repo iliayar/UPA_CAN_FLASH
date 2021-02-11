@@ -13,7 +13,6 @@ QLoggerWorker::QLoggerWorker(QObject* parent, QTextEdit* frame_log, QTextEdit* m
 
 void QLoggerWorker::received_frame(std::shared_ptr<Can::Frame> frame)
 {
-    std::unique_lock<std::mutex> lock(m_mutex);
     m_frame_log->setTextColor(QColor("blue"));
     std::vector<uint8_t> payload = frame->dump();
     QString payload_str ="ECU:    ";
@@ -38,7 +37,6 @@ QString QLoggerWorker::vec_to_qstr(std::vector<uint8_t> vec) {
 
 void QLoggerWorker::transmitted_frame(std::shared_ptr<Can::Frame> frame)
 {
-    std::unique_lock<std::mutex> lock(m_mutex);
     std::vector<uint8_t> payload = frame->dump();
     QString payload_str ="Tester: ";
     payload_str.append(vec_to_qstr(payload));
@@ -55,22 +53,54 @@ QString get_date_str() {
 
 void QLoggerWorker::info(std::string message)
 {
-    std::unique_lock<std::mutex> lock(m_mutex);
     m_message_log->setTextColor(QColor("gray"));
     m_message_log->append(get_date_str() + "    INFO: " + QString::fromStdString(message));
     m_message_log->setTextColor(QColor("black"));
 }
 void QLoggerWorker::error(std::string message)
 {
-    std::unique_lock<std::mutex> lock(m_mutex);
     m_message_log->setTextColor(QColor("red"));
     m_message_log->append(get_date_str() + "   ERROR: " + QString::fromStdString(message));
     m_message_log->setTextColor(QColor("black"));
 }
 void QLoggerWorker::warning(std::string message)
 {
-    std::unique_lock<std::mutex> lock(m_mutex);
     m_message_log->setTextColor(QColor("orange"));
     m_message_log->append(get_date_str() + " WARNING: " + QString::fromStdString(message));
     m_message_log->setTextColor(QColor("black"));
+}
+
+Can::ServiceResponse* QAsyncTaskThread::call(Can::ServiceRequest* r) {
+    m_logger->transmitted_service_request(r);
+    emit request(r);
+
+    while (m_response == nullptr) {
+        QSignalSpy spy(m_parent, &QAsyncTask::response);
+        spy.wait(RESPONSE_TIMEOUT);
+
+        if (m_response->get_type() == Can::ServiceResponseType::Negative) {
+            if (static_cast<Can::ServiceResponse_Negative*>(m_response)
+                    ->get_service() != r->get_type()) {
+                m_response = nullptr;
+                m_logger->warning("Invalid error service code");
+                continue;
+            }
+            if (static_cast<Can::ServiceResponse_Negative*>(m_response)
+                    ->get_code() == 0x78) {
+                m_response = nullptr;
+                m_logger->warning("Waiting for positive resposnse");
+                continue;
+            }
+        } else if (m_response->get_type() !=
+                   Can::request_to_response_type(r->get_type())) {
+            m_response = nullptr;
+            m_logger->warning("Invalid m_response code");
+            continue;
+        }
+    }
+
+    Can::ServiceResponse* res = m_response;
+    m_response = nullptr;
+    m_logger->received_service_response(res);
+    return res;
 }
