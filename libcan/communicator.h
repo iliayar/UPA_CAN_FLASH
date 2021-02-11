@@ -65,6 +65,7 @@ private:
 
     int m_consecutive_len;
     int m_consecutive_last;
+    bool m_was_fc;
 };
 
 class Transmitter : public Worker {

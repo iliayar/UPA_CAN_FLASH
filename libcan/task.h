@@ -43,7 +43,6 @@ public:
           m_response(nullptr){}
 
     ServiceRequest* fetch_request() {
-        m_logger->info("Fetching request from task");
         std::this_thread::sleep_for(
             static_cast<std::chrono::milliseconds>(DELAY));
         while (true) {
@@ -61,7 +60,6 @@ public:
     }
 
     void push_response(ServiceResponse* response) {
-        m_logger->info("Pushing response to task");
         std::this_thread::sleep_for(
             static_cast<std::chrono::milliseconds>(DELAY));
         while (true) {

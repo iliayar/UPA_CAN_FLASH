@@ -69,14 +69,22 @@ void QLoggerWorker::warning(std::string message)
     m_message_log->append(get_date_str() + " WARNING: " + QString::fromStdString(message));
     m_message_log->setTextColor(QColor("black"));
 }
+void QLoggerWorker::important(std::string message)
+{
+    m_message_log->setStyleSheet("font-weight: bold;");
+    m_message_log->append(get_date_str() + "    INFO: " + QString::fromStdString(message));
+    m_message_log->setStyleSheet("font-weight: regular;");
+}
 
 Can::ServiceResponse* QAsyncTaskThread::call(Can::ServiceRequest* r) {
     m_logger->transmitted_service_request(r);
     emit request(r);
+    emit wait_response();
 
     while (m_response == nullptr) {
         QSignalSpy spy(m_parent, &QAsyncTask::response);
         spy.wait(RESPONSE_TIMEOUT);
+        if(m_response == nullptr) continue;
 
         if (m_response->get_type() == Can::ServiceResponseType::Negative) {
             if (static_cast<Can::ServiceResponse_Negative*>(m_response)
@@ -98,6 +106,8 @@ Can::ServiceResponse* QAsyncTaskThread::call(Can::ServiceRequest* r) {
             continue;
         }
     }
+
+    emit unwait_response();
 
     Can::ServiceResponse* res = m_response;
     m_response = nullptr;

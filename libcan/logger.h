@@ -31,6 +31,7 @@ public:
     virtual void error(std::string) = 0;
     virtual void info(std::string) = 0;
     virtual void warning(std::string) = 0;
+    virtual void important(std::string) = 0;
 
     template<typename T>
     void log(LogLevel level, T data) {
@@ -69,6 +70,7 @@ public:
     void error(std::string _) {}
     void info(std::string _) {}
     void warning(std::string _) {}
+    void important(std::string _) {}
 };
 
 class FramesStdLogger : public Logger {
@@ -105,6 +107,9 @@ public:
     }
     void warning(std::string s) override {
         std::cout << "WARNING: " << s << std::endl;
+    }
+    void important(std::string s) override {
+        info(s);
     }
 
 private:

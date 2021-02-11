@@ -24,7 +24,6 @@ void FlashTask::task() {
     response = call(new ServiceRequest_DiagnosticSessionControl(
         DiagnosticSessionControl_SubfunctionType::extendDiagnosticSession));
 
-
     IF_NEGATIVE(response) {
         LOG(error, "Failed ot enter extendDiagnosticSession");
         return;
@@ -170,7 +169,7 @@ void FlashTask::task() {
                     data[i++] = d;
                     n_size++;
                     if (i >= data.size()) {
-                        LOG(info, "Transfering block " + int_to_hex(block_counter));
+                        LOG(important, "Transfering block " + int_to_hex(block_counter));
                         response =
                             call(Can::ServiceRequest_TransferData::build()
                                      ->block_counter(block_counter++)

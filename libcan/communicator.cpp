@@ -46,45 +46,45 @@ void Can::Communicator::push_frame(std::shared_ptr<Can::Frame> frame) {
 
 void Can::Communicator::update_task() {
     if (m_task == nullptr) {
-		// m_logger->warning("No task");
-		return;
-	}
+        // m_logger->warning("No task");
+        return;
+    }
     if (m_worker == nullptr) return;
     switch (m_worker->get_status()) {
-	case Can::WorkerStatus::Done: {
-	    switch (m_worker->get_type()) {
-		case Can::CommunicatorStatus::Receive: {
-		    Can::ServiceResponse* response =
-			static_cast<Can::Receiver*>(m_worker)->get_response();
-            if(response == nullptr) {
-                delete static_cast<Can::Receiver*>(m_worker);
-                m_worker = nullptr;
-                return;
-            }
-		    m_logger->received_service_response(response);
-		    m_task->push_response(response);
-		    break;
-		}
-		case Can::CommunicatorStatus::Transmit:
-		    delete static_cast<Can::Transmitter*>(m_worker);
-            m_worker = nullptr;
-		    break;
-		case Can::CommunicatorStatus::Idle:
+        case Can::WorkerStatus::Done: {
+            switch (m_worker->get_type()) {
+                case Can::CommunicatorStatus::Receive: {
+                    Can::ServiceResponse* response =
+                        static_cast<Can::Receiver*>(m_worker)->get_response();
+                    if (response == nullptr) {
+                        delete static_cast<Can::Receiver*>(m_worker);
+                        m_worker = nullptr;
+                        return;
+                    }
+                    m_logger->received_service_response(response);
+                    m_task->push_response(response);
+                    break;
+                }
+                case Can::CommunicatorStatus::Transmit:
+                    delete static_cast<Can::Transmitter*>(m_worker);
+                    m_worker = nullptr;
+                    break;
+                case Can::CommunicatorStatus::Idle:
                     return;
             }
             m_worker = nullptr;
-			if(m_task->is_completed()) {
-				m_logger->info("Task Done!");
-				return;
-			}
+            if (m_task->is_completed()) {
+                m_logger->info("Task Done!");
+                return;
+            }
             Can::ServiceRequest* request = m_task->fetch_request();
-	    if (request != nullptr) m_worker = new Transmitter(request);
-	    m_logger->transmitted_service_request(request);
-	    break;
-	}
-	case Can::WorkerStatus::Error:
-	    throw std::runtime_error("Worker have met an Error");
-	    break;
+            if (request != nullptr) m_worker = new Transmitter(request);
+            m_logger->transmitted_service_request(request);
+            break;
+        }
+        case Can::WorkerStatus::Error:
+            throw std::runtime_error("Worker have met an Error");
+            break;
     }
 }
 
@@ -250,6 +250,7 @@ Can::Receiver::Receiver(std::shared_ptr<Can::Frame> frame) {
 	case Can::FrameType::SingleFrame: {
 	    m_frames = {frame};
 	    m_status = Can::WorkerStatus::Done;
+		m_was_fc = true;
 	    break;
 	}
 	case Can::FrameType::FirstFrame: {
@@ -258,6 +259,7 @@ Can::Receiver::Receiver(std::shared_ptr<Can::Frame> frame) {
 	    m_consecutive_len =
 		static_cast<Can::Frame_FirstFrame*>(frame.get())->get_len();
 	    m_consecutive_last = 0x0;
+		m_was_fc = false;
 	    break;
 	}
 	default:
@@ -275,18 +277,18 @@ Can::ServiceResponse* Can::Receiver::get_response() {
 
 void Can::Receiver::push_frame(std::shared_ptr<Can::Frame> frame) {
     switch (frame->get_type()) {
-	case Can::FrameType::ConsecutiveFrame: {
-	    m_consecutive_last = (m_consecutive_last + 1) & 0xf;
-	    m_frames.push_back(frame);
-	    if (m_consecutive_last !=
-		static_cast<Can::Frame_ConsecutiveFrame*>(frame.get())
-		    ->get_seq_num()) {
-		m_status = Can::WorkerStatus::Error;
-		break;
-	    }
-	    update_imp();
-	    if (6 + (m_frames.size() - 1) * 7 >= m_consecutive_len) {
-		m_status = Can::WorkerStatus::Done;
+        case Can::FrameType::ConsecutiveFrame: {
+            m_consecutive_last = (m_consecutive_last + 1) & 0xf;
+            m_frames.push_back(frame);
+            if (m_consecutive_last !=
+                static_cast<Can::Frame_ConsecutiveFrame*>(frame.get())
+                    ->get_seq_num()) {
+                m_status = Can::WorkerStatus::Error;
+                break;
+            }
+            update_imp();
+            if (6 + (m_frames.size() - 1) * 7 >= m_consecutive_len) {
+                m_status = Can::WorkerStatus::Done;
             }
             break;
         }
@@ -297,8 +299,10 @@ void Can::Receiver::push_frame(std::shared_ptr<Can::Frame> frame) {
 }
 
 std::shared_ptr<Can::Frame> Can::Receiver::fetch_frame() {
-    // Only the FlowControl frame has posibility to be fetched
-    // :TODO: Various error handling
+	if(m_was_fc) {
+		throw NothingToFetch();
+	}
+	m_was_fc = true;
     update_imp();
     return std::make_shared<Frame_FlowControl>(Can::FlowStatus::ContinueToSend, 0, 0);
 }
