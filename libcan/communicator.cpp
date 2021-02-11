@@ -67,6 +67,7 @@ void Can::Communicator::update_task() {
 		}
 		case Can::CommunicatorStatus::Transmit:
 		    delete static_cast<Can::Transmitter*>(m_worker);
+            m_worker = nullptr;
 		    break;
 		case Can::CommunicatorStatus::Idle:
                     return;
