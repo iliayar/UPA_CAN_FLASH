@@ -3,12 +3,17 @@
 #include <QObject>
 #include <QTextEdit>
 #include <QElapsedTimer>
+#include <QThread>
+#include <QSignalSpy>
 #include <memory>
 
 #include "communicator.h"
 #include "frame.h"
 #include "service.h"
+#include "service_all.h"
 #include "task.h"
+
+#define RESPONSE_TIMEOUT 10000
 
 class QLoggerWorker : public QObject {
     Q_OBJECT
@@ -52,6 +57,7 @@ public:
     }
 #undef CONNECT
 
+    QLoggerWorker* get_worker() { return m_worker; }
     void received_frame(std::shared_ptr<Can::Frame> frame) {
         emit signal_received_frame(frame);
     }
@@ -89,4 +95,85 @@ signals:
 private:
     QLoggerWorker* m_worker;
 
+};
+
+class QAsyncTask;
+
+class QAsyncTaskThread : public QThread {
+    Q_OBJECT
+public:
+    QAsyncTaskThread(QAsyncTask* parent, Can::Logger* logger = new Can::NoLogger)
+        : m_logger(logger), m_response(nullptr), m_parent(parent) {}
+
+    void run() override {
+    }
+
+    virtual void task() = 0;
+
+protected:
+    Can::ServiceResponse* call(Can::ServiceRequest* r);
+
+    Can::Logger* m_logger;
+signals:
+    void request(Can::ServiceRequest*);
+
+public slots:
+    void response(Can::ServiceResponse* r) {
+        m_response = r;
+    }
+
+private:
+    QAsyncTask* m_parent;
+    Can::ServiceResponse* m_response;
+};
+
+class QAsyncTask : public QObject, public Can::Task {
+Q_OBJECT
+public:
+    QAsyncTask(QAsyncTaskThread* thread, QLogger* logger)
+        : m_completed(false), m_thread(thread) {
+        connect(this, &QAsyncTask::response, thread,
+                &QAsyncTaskThread::response);
+        connect(thread, &QAsyncTaskThread::request, this, &QAsyncTask::request);
+        connect(thread, &QAsyncTaskThread::finished, this,
+                &QAsyncTask::thread_finished);
+        logger->moveToThread(thread);
+        thread->start();
+    }
+
+    Can::ServiceRequest* fetch_request() {
+        while(m_request == nullptr) {
+            QSignalSpy spy(m_thread, &QAsyncTaskThread::request);
+            spy.wait(RESPONSE_TIMEOUT);
+        }
+
+        Can::ServiceRequest* r = m_request;
+        m_request = nullptr;
+        return r;
+    }
+
+    void push_response(Can::ServiceResponse* r) {       
+        emit response(r);
+    }
+
+    bool is_completed() {
+        return m_completed;
+    }
+
+signals:
+    void response(Can::ServiceResponse*);
+
+public slots:
+    void request(Can::ServiceRequest* r) {
+        m_request = r;
+    }
+
+    void thread_finished() {
+        m_completed = true;
+    }
+
+private:
+    bool m_completed;
+    Can::ServiceRequest* m_request;
+    QAsyncTaskThread* m_thread;
 };

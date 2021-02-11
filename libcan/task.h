@@ -36,13 +36,14 @@ private:
 class AsyncTask : public Task {
 public:
     AsyncTask(Logger* logger = new NoLogger())
-        : m_async(&AsyncTask::task_imp, this),
-          m_completed(false),
+        : m_completed(false),
           m_request(nullptr),
-          m_response(nullptr),
-          m_logger(logger) {}
+          m_logger(logger),
+          m_thread(&AsyncTask::task_imp, this),
+          m_response(nullptr){}
 
     ServiceRequest* fetch_request() {
+        m_logger->info("Fetching request from task");
         std::this_thread::sleep_for(
             static_cast<std::chrono::milliseconds>(DELAY));
         while (true) {
@@ -60,6 +61,7 @@ public:
     }
 
     void push_response(ServiceResponse* response) {
+        m_logger->info("Pushing response to task");
         std::this_thread::sleep_for(
             static_cast<std::chrono::milliseconds>(DELAY));
         while (true) {
@@ -103,7 +105,7 @@ private:
     ServiceResponse* m_response;
     bool m_completed;
     bool m_wait_response;
-    std::thread m_async;
+    std::thread m_thread;
 
     static constexpr std::chrono::milliseconds DELAY =
         static_cast<std::chrono::milliseconds>(2);
@@ -111,6 +113,8 @@ private:
 
 class ReadWriteThreadedTask : public AsyncTask {
 public:
+    ReadWriteThreadedTask(Logger* logger = new NoLogger())
+        : AsyncTask(logger) {}
     void task();
 };
 }  // namespace Can

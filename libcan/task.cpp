@@ -10,6 +10,7 @@
 using namespace Can;
 
 Can::ServiceResponse* Can::AsyncTask::call_imp(Can::ServiceRequest* request) {
+    m_logger->info("call_imp");
     while (true) {
         {
             std::unique_lock<std::mutex> lock(m_mutex);
@@ -110,16 +111,16 @@ void ReadWriteThreadedTask::task() {
 		       ->get_value()[0];
     std::cout << "UPASystemType = " << (int)type << std::endl;
 
-    call(new ServiceRequest_WriteDataByIdentifier(new Data(
-	DataIdentifier::VIN, ::Util::str_to_vec("HELLO ANYBODY ..."))));
+    // call(new ServiceRequest_WriteDataByIdentifier(new Data(
+	// DataIdentifier::VIN, ::Util::str_to_vec("HELLO ANYBODY ..."))));
 
-    response =
-        call(new ServiceRequest_ReadDataByIdentifier(DataIdentifier::VIN));
-    std::string VIN = ::Util::vec_to_str(
-        static_cast<ServiceResponse_ReadDataByIdentifier*>(response)
-            ->get_data()
-            ->get_value());
-    std::cout << "VIN = " << VIN << std::endl;
+    // response =
+    //     call(new ServiceRequest_ReadDataByIdentifier(DataIdentifier::VIN));
+    // std::string VIN = ::Util::vec_to_str(
+    //     static_cast<ServiceResponse_ReadDataByIdentifier*>(response)
+    //         ->get_data()
+    //         ->get_value());
+    // std::cout << "VIN = " << VIN << std::endl;
 }
 
 bool ReadWriteTask::is_completed() { return m_step == 6; }
