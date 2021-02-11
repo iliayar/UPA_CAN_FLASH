@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QThread>
 #include <QComboBox>
+#include <QLabel>
 #include <mutex>
 
 #include "communicator.h"
@@ -38,18 +39,27 @@ public:
     virtual ~MainWindow();
     void processReceivedFrames();
 private:
+
     void create_layout(QWidget*);
     void check_frames_to_write(std::shared_ptr<Can::Frame>);
     void connect_device();
     void start_task();
+    void choose_file();
 
     QCanBusDevice* m_device;
     Can::Communicator* m_communicator;
     std::mutex m_communicator_mutex;
     CommunicatorThread* m_communicator_thread;
     Can::Logger* m_logger;
+    std::string m_file;
 
     // UI
     QComboBox* m_device_list;
     QComboBox* m_task_list;
+    QAction* m_file_menu_act;
+    
+    QLabel* m_filename_label;
+    QLabel* m_crc_label;
+    QLabel* m_size_label;
+    QLabel* m_addr_label;
 };

@@ -20,6 +20,10 @@ add_library(libcan STATIC
     ${libcan_SRCS}
 )
 
+IF(WIN32)
+target_link_libraries(libcan -static)
+endif()
+
 target_link_libraries(libcan
    libhex
    libutil

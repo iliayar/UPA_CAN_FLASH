@@ -8,6 +8,10 @@ add_library(libhex STATIC
     ${libhex_SRCS}
 )
 
+IF(WIN32)
+target_link_libraries(libhex -static)
+endif()
+
 target_link_libraries(libhex
 	libutil
 	libcan
