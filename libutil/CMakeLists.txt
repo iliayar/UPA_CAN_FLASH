@@ -3,6 +3,7 @@ set(libutil_SRCS
     util.cpp
     map.h
     crc.h
+    crc.cpp
     bytes.h
     bytes.cpp
 )
@@ -11,6 +12,10 @@ set(libutil_SRCS
 add_library(libutil STATIC
     ${libutil_SRCS}
 )
+
+IF(WIN32)
+target_link_libraries(libutil -static)
+endif()
 
 set_target_properties(libutil PROPERTIES LINKER_LANGUAGE CXX)
 

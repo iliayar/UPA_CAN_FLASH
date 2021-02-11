@@ -39,6 +39,9 @@ SERVICE_BEGIN
 // - RETURN([Varible]...) - returns new response object
 #ifdef PARSE // Parse Service Response
 {
+    if(m_size < 3*8) {
+        RETURN(0);
+    }
     FIELD(INT, crc, 16);
     RETURN(crc);
 }

@@ -8,6 +8,7 @@
 #include <iostream>
 
 #include "bytes.h"
+#include "crc.h"
 
 Hex::StringSource::StringSource(std::string string)
     : m_string(string), m_pos(0) {}
@@ -144,14 +145,13 @@ bool Hex::HexReader::is_eof() {
 
 
 Hex::FileSource::FileSource(std::ifstream& fin)
-	: m_fin(fin) {}
+	: m_fin(fin), m_char(nullptr) {}
 
 char Hex::FileSource::get_char() {
 	if(m_char == nullptr) {
 		m_char = new char();
         *m_char = m_fin.get();
 	}
-	// std::cout << "get_char " << (int)*m_char << "(" << *m_char << ")" << std::endl;
 	return *m_char;
 }
 
@@ -164,4 +164,46 @@ void Hex::FileSource::next_char() {
 
 bool Hex::FileSource::is_eof() {
 	return m_fin.eof();
+}
+
+Hex::HexInfo Hex::read_hex_info(Hex::HexReader& reader) {
+    int size = 0;
+    uint16_t crc = 0xffff; 
+    std::vector<uint8_t> last_4(4, 0);
+    int last_4_i = 0;
+	bool high_addr = false;
+	bool low_addr = false;
+	uint32_t addr = 0;
+    while (!reader.is_eof()) {
+        Hex::HexLine *line = reader.read_line();
+        if (line->get_type() == Hex::HexLineType::Data) {
+			if(!low_addr) {
+				low_addr = true;
+				uint32_t l_addr = static_cast<Hex::DataLine*>(line)->get_address();
+				addr |= l_addr;
+			}
+            std::vector<uint8_t> line_data = static_cast<Hex::DataLine*>(line)->get_data();
+            for (uint8_t d : line_data) {
+                last_4[last_4_i++] = d;
+                size++;
+                if (last_4_i >= 4) {
+                    crc = Util::crc16_block(last_4, crc);
+                    last_4_i = 0;
+                }
+            }
+        }
+		if(!high_addr && line->get_type() == Hex::HexLineType::ExtendLinearAddress) {	
+			high_addr = true;
+			uint32_t h_addr = static_cast<Hex::ExtendLinearAddressLine*>(line)->get_address();
+			addr |= (h_addr << 16);
+		}
+        if (line->get_type() == Hex::HexLineType::EndOfFile) {
+            break;
+        }
+    }
+    if(last_4_i != 0) {
+        while(last_4_i < 4) last_4[last_4_i++] = 0;
+        crc = Util::crc16_block(last_4, crc);
+    }
+	return {addr, size, crc};
 }

@@ -12,15 +12,22 @@
 #include <QFontDatabase>
 #include <QComboBox>
 #include <QPushButton>
+#include <QMenu>
+#include <QMenuBar>
+#include <QContextMenuEvent>
+#include <QFileDialog>
+#include <QLabel>
 #include <iostream>
 #include <vector>
 #include <memory>
+#include <sstream>
 
 #include "communicator.h"
 #include "frame.h"
 #include "task.h"
 #include "flash.h"
 #include "can.h"
+#include "hex.h"
 
 #ifdef __MINGW32__
 #define CAN_PLUGIN "systeccan"
@@ -44,8 +51,17 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_device() {
 
     setCentralWidget(window);
 }
-
 void MainWindow::create_layout(QWidget* root) {
+
+// Actions
+
+    m_file_menu_act = new QAction(tr("&Choose"), this);
+    connect(m_file_menu_act, &QAction::triggered, this, &MainWindow::choose_file);
+
+// Menu
+    QMenu* file_menu = new QMenu(tr("File"));
+    file_menu->addAction(m_file_menu_act);
+    menuBar()->addMenu(file_menu);
 
 // Main layout
     
@@ -74,9 +90,24 @@ void MainWindow::create_layout(QWidget* root) {
     m_logger = new QLogger(this, log_frames, log_messages);
 
 // Options layout
-//   devices options layout
     QVBoxLayout* options_layout = new QVBoxLayout(options_group);
+//   file options layout
+    QGroupBox* file_group = new QGroupBox(tr("File"));
 
+    options_layout->addWidget(file_group);
+
+    QVBoxLayout* file_layout = new QVBoxLayout(file_group);
+    m_filename_label = new QLabel("Choose file..");
+    m_crc_label = new QLabel("CRC: ???");
+    m_size_label = new QLabel("Size: ???");
+    m_addr_label = new QLabel("Begin address: ???");
+
+    file_layout->addWidget(m_filename_label);
+    file_layout->addWidget(m_crc_label);
+    file_layout->addWidget(m_size_label);
+    file_layout->addWidget(m_addr_label);
+
+//   devices options layout
     QGroupBox *devices_group = new QGroupBox(tr("Devices"));
 
     options_layout->addWidget(devices_group);
@@ -130,6 +161,32 @@ void MainWindow::create_layout(QWidget* root) {
     m_task_list = tasks_list;
 
     connect(task_start_btn, &QPushButton::released, this, &MainWindow::start_task);
+
+}
+
+void MainWindow::choose_file() {
+    m_file = QFileDialog::getOpenFileName(this, tr("Open HEX"), "./", tr("Intel HEX file (*.hex)")).toStdString();
+    std::ifstream fin(m_file);
+    Hex::HexReader reader(new Hex::FileSource(fin));
+    Hex::HexInfo info = Hex::read_hex_info(reader);
+    fin.close();
+    m_logger->info("Reading file " + m_file);
+    m_filename_label->setText(QString::fromStdString("File: " + m_file));
+    {
+        std::stringstream ss;
+        ss << "CRC: 0x" << std::setfill('0') << std::setw(4) << std::hex << info.crc;
+        m_crc_label->setText(QString::fromStdString(ss.str()));
+    }
+    {
+        std::stringstream ss;
+        ss << "Size: " << info.size;
+        m_size_label->setText(QString::fromStdString(ss.str()));
+    }
+    {
+        std::stringstream ss;
+        ss << "Start address: 0x" << std::setfill('0') << std::setw(8) << std::hex << info.start_addr;
+        m_addr_label->setText(QString::fromStdString(ss.str()));
+    }
 }
 
 void MainWindow::connect_device() {
@@ -165,12 +222,10 @@ void MainWindow::start_task() {
     QString task_name = m_task_list->currentText();
     if(task_name == "Flash") {
         m_logger->info("Starting task " + task_name.toStdString());
-        // :TODO: Select file
         // m_communicator->set_task(new Can::FlashTask("./test.hex", new Can::FramesStdLogger()));
-        m_communicator->set_task(new Can::FlashTask("./test.hex", m_logger));
+        m_communicator->set_task(new Can::FlashTask(m_file, m_logger));
     } else if(task_name == "Test") {
         m_logger->info("Starting task " + task_name.toStdString());
-        // :TODO: Select file
         m_communicator->set_task(new Can::ReadWriteThreadedTask());
     }
 

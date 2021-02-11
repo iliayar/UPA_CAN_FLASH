@@ -108,6 +108,14 @@ private:
     int m_line_readed;
 };
 
+struct HexInfo {
+    uint64_t start_addr;
+    int size;
+    uint16_t crc;
+};
+
+HexInfo read_hex_info(HexReader& reader);
+
 std::vector<uint8_t> str_to_bytes(std::string str);
 
 }  // namespace Hex
