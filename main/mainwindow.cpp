@@ -196,6 +196,8 @@ void MainWindow::connect_device() {
                                                  device_name, &errorString);
     if (!m_device) {
         m_logger->error( errorString.toStdString() );
+        delete m_device;
+        m_device = nullptr;
         return;
     } else {
         m_logger->info("Connecting " + device_name.toStdString() );
@@ -214,11 +216,17 @@ void MainWindow::connect_device() {
             m_communicator_thread->start();
         } else {
             m_logger->error( "Cannot connect device" );
+            delete m_device;
+            m_device = nullptr;
         }
     }
 }
 
 void MainWindow::start_task() {
+    if(m_device == nullptr) {
+        m_logger->warning("Choose device first");
+        return;
+    }
     QString task_name = m_task_list->currentText();
     if(task_name == "Flash") {
         m_logger->info("Starting task " + task_name.toStdString());
