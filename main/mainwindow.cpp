@@ -117,13 +117,13 @@ void MainWindow::create_layout(QWidget* root) {
     QGroupBox* devices_buttons_group = new QGroupBox();
     QHBoxLayout* devices_buttons_layout = new QHBoxLayout(devices_buttons_group);
 
-    devices_group_layout->addWidget(devices_buttons_group);
 
     QComboBox* devices_list = new QComboBox(devices_group);
-    devices_group_layout->addWidget(devices_list);
-
     QComboBox* bitrate_list = new QComboBox(devices_group);
+
+    devices_group_layout->addWidget(devices_list);
     devices_group_layout->addWidget(bitrate_list);
+    devices_group_layout->addWidget(devices_buttons_group);
     
     QPushButton* device_connect_btn = new QPushButton("Connect");
     QPushButton* device_disconnect_btn = new QPushButton("Disconnect");
