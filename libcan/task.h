@@ -7,11 +7,9 @@
 #include "logger.h"
 #include "service.h"
 
-#define LOG(level, text)                            \
-    {                                               \
-        std::unique_lock<std::mutex> lock(m_mutex); \
-        m_logger->level(text);                      \
-    }
+#define LOG(level, text) \
+    DEBUG(level, text);  \
+    m_logger->level(text);
 
 namespace Can {
 
@@ -40,16 +38,18 @@ public:
           m_request(nullptr),
           m_logger(logger),
           m_thread(&AsyncTask::task_imp, this),
-          m_response(nullptr){}
+          m_response(nullptr) {}
 
     ServiceRequest* fetch_request() {
         std::this_thread::sleep_for(
             static_cast<std::chrono::milliseconds>(DELAY));
+        DEBUG(info, "task");
         while (true) {
             {
                 std::unique_lock<std::mutex> lock(m_mutex);
                 if (m_request != nullptr) {
                     ServiceRequest* request = m_request;
+                    DEBUG(info, "task fetched request");
                     m_request = nullptr;
                     return request;
                 }
@@ -62,11 +62,13 @@ public:
     void push_response(ServiceResponse* response) {
         std::this_thread::sleep_for(
             static_cast<std::chrono::milliseconds>(DELAY));
+        DEBUG(info, "task");
         while (true) {
             {
                 std::unique_lock<std::mutex> lock(m_mutex);
                 if (m_response == nullptr) {
                     m_response = response;
+                    DEBUG(info, "task pushing response");
                     return;
                 }
                 if (!m_wait_response) return;

@@ -11,43 +11,51 @@
 using namespace Can;
 
 Can::ServiceResponse* Can::AsyncTask::call_imp(Can::ServiceRequest* request) {
+    DEBUG(info, "task");
     while (true) {
         {
             std::unique_lock<std::mutex> lock(m_mutex);
             if (m_request == nullptr) {
                 m_request = request;
                 m_wait_response = true;
+                DEBUG(info, "task pushed request");
                 break;
             }
         }
     }
+    DEBUG(info, "task waiting response");
     while (true) {
         {
             std::unique_lock<std::mutex> lock(m_mutex);
             if (m_response != nullptr) {
+                DEBUG(info, "task get response");
                 Can::ServiceResponse* response = m_response;
                 if (response->get_type() ==
                     Can::ServiceResponseType::Negative) {
                     if (static_cast<Can::ServiceResponse_Negative*>(response)
                             ->get_service() != request->get_type()) {
                         m_response = nullptr;
+                        DEBUG(info, "task response invalid error service code");
                         m_logger->warning("Invalid error service code");
                         continue;
                     }
                     if (static_cast<Can::ServiceResponse_Negative*>(response)
                             ->get_code() == 0x78) {
                         m_response = nullptr;
+                        DEBUG(info, "task response error service code = 0x78");
                         m_logger->warning("Waiting for positive resposnse");
                         continue;
                     }
                 } else if (response->get_type() !=
                            Can::request_to_response_type(request->get_type())) {
                     m_response = nullptr;
+                    DEBUG(info, "task response code wrong");
                     m_logger->warning("Invalid response code");
                     continue;
                 }
                 m_response = nullptr;
                 m_wait_response = false;
+                DEBUG(info, "task fetching response");
                 return response;
             }
         }
