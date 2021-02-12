@@ -11,6 +11,7 @@ set(libcan_SRCS
     task.cpp
     security.h
     logger.h
+    logger.cpp
 )
 
 # Declare the library

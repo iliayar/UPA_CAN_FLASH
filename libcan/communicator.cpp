@@ -18,6 +18,7 @@ void Can::Communicator::set_task(Can::Task* task) {
     m_task = task;
     if (m_worker != nullptr) delete m_worker;
     m_worker = new Transmitter(m_task->fetch_request());
+    DEBUG(info, "Transmitter created")
 }
 
 void Can::Communicator::reset_task() {
@@ -28,6 +29,7 @@ void Can::Communicator::reset_task() {
 std::shared_ptr<Can::Frame> Can::Communicator::fetch_frame() {
     if (m_worker == nullptr) throw Can::NothingToFetch();
     std::shared_ptr<Can::Frame> frame = m_worker->fetch_frame();
+    DEBUG(info, "frame fetched from worker");
     if (frame == nullptr) throw Can::NothingToFetch();
     m_logger->transmitted_frame(frame);
     update_task();
@@ -37,9 +39,11 @@ std::shared_ptr<Can::Frame> Can::Communicator::fetch_frame() {
 void Can::Communicator::push_frame(std::shared_ptr<Can::Frame> frame) {
     if (m_worker == nullptr) {
         m_worker = new Receiver(frame);
+        DEBUG(info, "receiver created");
     } else {
-	m_worker->push_frame(frame);
+        m_worker->push_frame(frame);
     }
+    DEBUG(info, "frame pushed");
     m_logger->received_frame(std::move(frame));
     update_task();
 }
@@ -52,6 +56,7 @@ void Can::Communicator::update_task() {
     if (m_worker == nullptr) return;
     switch (m_worker->get_status()) {
         case Can::WorkerStatus::Done: {
+            DEBUG(info, "worker done");
             switch (m_worker->get_type()) {
                 case Can::CommunicatorStatus::Receive: {
                     Can::ServiceResponse* response =
@@ -62,7 +67,9 @@ void Can::Communicator::update_task() {
                         return;
                     }
                     m_logger->received_service_response(response);
+                    DEBUG(info, "pushing response to task");
                     m_task->push_response(response);
+                    DEBUG(info, "response pushed");
                     break;
                 }
                 case Can::CommunicatorStatus::Transmit:
@@ -77,7 +84,9 @@ void Can::Communicator::update_task() {
                 m_logger->info("Task Done!");
                 return;
             }
+            DEBUG(info, "fetching request");
             Can::ServiceRequest* request = m_task->fetch_request();
+            DEBUG(info, "request fetched");
             if (request != nullptr) m_worker = new Transmitter(request);
             m_logger->transmitted_service_request(request);
             break;
@@ -153,86 +162,93 @@ std::vector<std::shared_ptr<Can::Frame>> Can::service_to_frames(Can::ServiceRequ
 
 Can::Transmitter::Transmitter(Can::ServiceRequest* request) {
     if (request == nullptr) {
-	m_status = Can::WorkerStatus::Done;
+        m_status = Can::WorkerStatus::Done;
     }
 
     m_frames = Can::service_to_frames(request);
     if (m_frames.size() == 0) {
-	throw std::runtime_error("Failed to disassemble request to frames");
+        throw std::runtime_error("Failed to disassemble request to frames");
     }
     switch (m_frames[0]->get_type()) {
-	case Can::FrameType::SingleFrame: {
-	    m_status = Can::WorkerStatus::Work;
-	    break;
-	}
-	case Can::FrameType::FirstFrame: {
-	    m_status = Can::WorkerStatus::Work;
-	    m_i = 0;
-	    m_wait_fc = false;
-	    m_fc_min_time = static_cast<std::chrono::milliseconds>(0);
-	    break;
-	}
-	default:
-	    m_status = Can::WorkerStatus::Error;
-	    break;
+        case Can::FrameType::SingleFrame: {
+            m_status = Can::WorkerStatus::Work;
+            DEBUG(info, "transmitter single frame");
+            break;
+        }
+        case Can::FrameType::FirstFrame: {
+            DEBUG(info, "transmitter first frame");
+            m_status = Can::WorkerStatus::Work;
+            m_i = 0;
+            m_wait_fc = false;
+            m_fc_min_time = static_cast<std::chrono::milliseconds>(0);
+            break;
+        }
+        default:
+            DEBUG(info, "transmitter error frame");
+            m_status = Can::WorkerStatus::Error;
+            break;
     }
 }
 
 void Can::Transmitter::push_frame(std::shared_ptr<Can::Frame> frame) {
+    DEBUG(info, "transmitter pushing")
     if (m_wait_fc && frame->get_type() == Can::FrameType::FlowControl) {
-	m_wait_fc = false;
-	Can::FlowStatus status =
-	    static_cast<Can::Frame_FlowControl*>(frame.get())->get_status();
-	update_imp();
-	if (status ==
-	    Can::FlowStatus::WaitForAnotherFlowControlMessageBeforeContinuing) {
-	    m_wait_fc = true;
-	    return;
-	} else if (status == Can::FlowStatus::OverflowAbortTransmission) {
-	    m_status = Can::WorkerStatus::Error;
-	    return;
-	}
-	m_fc_block_size =
-	    static_cast<Can::Frame_FlowControl*>(frame.get())->get_block_size();
-	if (m_fc_block_size == 0) m_fc_block_size = m_frames.size();
-	m_fc_min_time = static_cast<std::chrono::milliseconds>(
-	    static_cast<Can::Frame_FlowControl*>(frame.get())
-		->get_min_separation_time());
-	m_last_frame_time = std::chrono::high_resolution_clock::now();
+        DEBUG(info, "transmitter pushing with m_wait_fc and flow control frame")
+        m_wait_fc = false;
+        Can::FlowStatus status =
+            static_cast<Can::Frame_FlowControl*>(frame.get())->get_status();
+        update_imp();
+        if (status ==
+            Can::FlowStatus::WaitForAnotherFlowControlMessageBeforeContinuing) {
+            m_wait_fc = true;
+            return;
+        } else if (status == Can::FlowStatus::OverflowAbortTransmission) {
+            m_status = Can::WorkerStatus::Error;
+            return;
+        }
+        m_fc_block_size =
+            static_cast<Can::Frame_FlowControl*>(frame.get())->get_block_size();
+        if (m_fc_block_size == 0) m_fc_block_size = m_frames.size();
+        m_fc_min_time = static_cast<std::chrono::milliseconds>(
+            static_cast<Can::Frame_FlowControl*>(frame.get())
+                ->get_min_separation_time());
+        m_last_frame_time = std::chrono::high_resolution_clock::now();
     }
 }
 
 std::shared_ptr<Can::Frame> Can::Transmitter::fetch_frame() {
     if (m_frames.size() == 1) {
-	m_status = Can::WorkerStatus::Done;
-	return m_frames[0];
+        m_status = Can::WorkerStatus::Done;
+        return m_frames[0];
     }
 
     if (m_wait_fc) {
-	return nullptr;
+        DEBUG(info, "transmitter fetch m_wait_fc");
+        return nullptr;
     } else {
-	if (m_i == 0) {
-	    m_i++;
-	    m_wait_fc = true;
-	    m_block_begin = 1;
-	    return m_frames[0];
-	} else {
-	    if (std::chrono::duration_cast<std::chrono::milliseconds>(
-		    std::chrono::high_resolution_clock::now() -
-		    m_last_frame_time) < m_fc_min_time) {
-		return nullptr;
-	    }
-	    m_i++;
-	    if (m_i - m_block_begin + 1 >= m_fc_block_size) {
-		m_wait_fc = true;
-	    }
-	    if (m_i == m_frames.size()) {
-		m_status = Can::WorkerStatus::Done;
-	    }
-	    if (m_i > m_frames.size()) return nullptr;
-	    m_last_frame_time = std::chrono::high_resolution_clock::now();
-	    return m_frames[m_i - 1];
-	}
+        DEBUG(info, "transmitter fetch no m_wait_fc");
+        if (m_i == 0) {
+            m_i++;
+            m_wait_fc = true;
+            m_block_begin = 1;
+            return m_frames[0];
+        } else {
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::high_resolution_clock::now() -
+                    m_last_frame_time) < m_fc_min_time) {
+                return nullptr;
+            }
+            m_i++;
+            if (m_i - m_block_begin + 1 >= m_fc_block_size) {
+                m_wait_fc = true;
+            }
+            if (m_i == m_frames.size()) {
+                m_status = Can::WorkerStatus::Done;
+            }
+            if (m_i > m_frames.size()) return nullptr;
+            m_last_frame_time = std::chrono::high_resolution_clock::now();
+            return m_frames[m_i - 1];
+        }
     }
 }
 
@@ -247,30 +263,34 @@ Can::WorkerStatus Can::Transmitter::get_status() {
 
 Can::Receiver::Receiver(std::shared_ptr<Can::Frame> frame) {
     switch (frame->get_type()) {
-	case Can::FrameType::SingleFrame: {
-	    m_frames = {frame};
-	    m_status = Can::WorkerStatus::Done;
-		m_was_fc = true;
-	    break;
-	}
-	case Can::FrameType::FirstFrame: {
-	    m_frames.push_back(frame);
-	    m_status = Can::WorkerStatus::Work;
-	    m_consecutive_len =
-		static_cast<Can::Frame_FirstFrame*>(frame.get())->get_len();
-	    m_consecutive_last = 0x0;
-		m_was_fc = false;
-	    break;
-	}
-	default:
-	    // Taking that communicator won't continue with an Error status
-	    m_status = Can::WorkerStatus::Error;
-	    break;
+        case Can::FrameType::SingleFrame: {
+            DEBUG(info, "receiver single frame");
+            m_frames = {frame};
+            m_status = Can::WorkerStatus::Done;
+            m_was_fc = true;
+            break;
+        }
+        case Can::FrameType::FirstFrame: {
+            DEBUG(info, "receiver first frame");
+            m_frames.push_back(frame);
+            m_status = Can::WorkerStatus::Work;
+            m_consecutive_len =
+                static_cast<Can::Frame_FirstFrame*>(frame.get())->get_len();
+            m_consecutive_last = 0x0;
+            m_was_fc = false;
+            break;
+        }
+        default:
+            DEBUG(info, "receiver error creating");
+            // Taking that communicator won't continue with an Error status
+            m_status = Can::WorkerStatus::Error;
+            break;
     }
 }
 
 Can::ServiceResponse* Can::Receiver::get_response() {
     // Taking that communicator only fetch response when status is Ready
+    DEBUG(info, "receiver");
     Can::ServiceResponse* response = Can::frames_to_service(m_frames);
     return response;
 }
@@ -278,6 +298,7 @@ Can::ServiceResponse* Can::Receiver::get_response() {
 void Can::Receiver::push_frame(std::shared_ptr<Can::Frame> frame) {
     switch (frame->get_type()) {
         case Can::FrameType::ConsecutiveFrame: {
+            DEBUG(info, "pushing consecutive frame");
             m_consecutive_last = (m_consecutive_last + 1) & 0xf;
             m_frames.push_back(frame);
             if (m_consecutive_last !=
@@ -299,12 +320,15 @@ void Can::Receiver::push_frame(std::shared_ptr<Can::Frame> frame) {
 }
 
 std::shared_ptr<Can::Frame> Can::Receiver::fetch_frame() {
-	if(m_was_fc) {
-		throw NothingToFetch();
-	}
-	m_was_fc = true;
+    if (m_was_fc) {
+        DEBUG(info, "receiver m_was_fs");
+        throw NothingToFetch();
+    }
+    m_was_fc = true;
     update_imp();
-    return std::make_shared<Frame_FlowControl>(Can::FlowStatus::ContinueToSend, 0, 0);
+    DEBUG(info, "receiver no m_was_fs");
+    return std::make_shared<Frame_FlowControl>(Can::FlowStatus::ContinueToSend,
+                                               0, 0);
 }
 
 Can::WorkerStatus Can::Receiver::get_status() {

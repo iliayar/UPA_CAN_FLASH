@@ -17,6 +17,8 @@
 #include <QContextMenuEvent>
 #include <QFileDialog>
 #include <QLabel>
+#include <QSettings>
+#include <QSpinBox>
 #include <iostream>
 #include <vector>
 #include <memory>
@@ -28,6 +30,7 @@
 #include "flash.h"
 #include "can.h"
 #include "hex.h"
+#include "logger.h"
 
 #ifdef __MINGW32__
 #define CAN_PLUGIN "systeccan"
@@ -35,10 +38,7 @@
 #define CAN_PLUGIN "socketcan"
 #endif
 
-#define DEVICE_ID 0x76E
-#define TESTER_ID 0x74E
-
-MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_device() {
+MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_device(), m_settings("canFlash", "Some cool organization name") {
     QWidget* window = new QWidget();
 
     create_layout(window);
@@ -52,7 +52,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_device() {
     setCentralWidget(window);
 }
 void MainWindow::create_layout(QWidget* root) {
-
+    DEBUG(info, "Creating layout");
 // Actions
 
     m_file_menu_act = new QAction(tr("&Choose"), this);
@@ -69,8 +69,8 @@ void MainWindow::create_layout(QWidget* root) {
     QGroupBox* log_group = new QGroupBox(tr("Logs"));
     QGroupBox* options_group = new QGroupBox(tr("Options"));
 
-    main_layout->addWidget(log_group);
-    main_layout->addWidget(options_group);
+    main_layout->addWidget(log_group, 70);
+    main_layout->addWidget(options_group, 30);
 
 // Log layout
     
@@ -103,7 +103,7 @@ void MainWindow::create_layout(QWidget* root) {
     m_size_label = new QLabel("Size: ???");
     m_addr_label = new QLabel("Begin address: ???");
 
-    file_layout->addWidget(m_filename_label);
+    // file_layout->addWidget(m_filename_label);
     file_layout->addWidget(m_crc_label);
     file_layout->addWidget(m_size_label);
     file_layout->addWidget(m_addr_label);
@@ -146,7 +146,13 @@ void MainWindow::create_layout(QWidget* root) {
     bitrate_list->addItem("125000");
     bitrate_list->addItem("250000");
     bitrate_list->addItem("500000");
+    QString bitrate_last = m_settings.value("device/bitrate").toString();
+    int bitrate_id = bitrate_list->findText(bitrate_last);
+    if(bitrate_id != -1) bitrate_list->setCurrentIndex(bitrate_id);
     m_bitrate_list = bitrate_list;
+    connect(m_bitrate_list, &QComboBox::currentTextChanged, [&]() {
+        m_settings.setValue("device/bitrate", m_bitrate_list->currentText());
+    });
     //   tasks options layout
 
     QGroupBox* tasks_group = new QGroupBox(tr("Tasks"));
@@ -157,6 +163,37 @@ void MainWindow::create_layout(QWidget* root) {
     QGroupBox* tasks_buttons_group = new QGroupBox();
     QHBoxLayout* tasks_buttons_layout = new QHBoxLayout(tasks_buttons_group);
     QComboBox* tasks_list = new QComboBox(tasks_group);
+
+    QSpinBox* tester_id_box = new QSpinBox();
+    QSpinBox* ecu_id_box = new QSpinBox();
+
+    QFrame* tester_id_frame = new QFrame();
+    QFrame* ecu_id_frame = new QFrame();
+
+    QHBoxLayout* tester_id_layout = new QHBoxLayout(tester_id_frame);
+    QHBoxLayout* ecu_id_layout = new QHBoxLayout(ecu_id_frame);
+
+    tester_id_layout->addWidget(new QLabel("Tester:"));
+    ecu_id_layout->addWidget(new QLabel("ECU:"));
+    tester_id_layout->addWidget(tester_id_box);
+    ecu_id_layout->addWidget(ecu_id_box);
+    tester_id_box->setPrefix("0x");
+    ecu_id_box->setPrefix("0x");
+
+    QString tester_id_str = m_settings.value("task/testerId").toString();
+    QString ecu_id_str = m_settings.value("task/ecuId").toString();
+    int tester_id = tester_id_str.right(tester_id_str.size() - 2).toLong(nullptr, 16);
+    int ecu_id = ecu_id_str.right(ecu_id_str.size() - 2).toLong(nullptr, 16);
+
+    tester_id_box->setRange(0x000, 0xfff);
+    ecu_id_box->setRange(0x000, 0xfff);
+    tester_id_box->setDisplayIntegerBase(16);
+    ecu_id_box->setDisplayIntegerBase(16);
+    tester_id_box->setValue(tester_id);
+    ecu_id_box->setValue(ecu_id);
+
+    tasks_group_layout->addWidget(tester_id_frame);
+    tasks_group_layout->addWidget(ecu_id_frame);
     tasks_group_layout->addWidget(tasks_list);
     tasks_group_layout->addWidget(tasks_buttons_group);
     
@@ -169,17 +206,32 @@ void MainWindow::create_layout(QWidget* root) {
     tasks_list->addItem("Test");
     m_task_list = tasks_list;
 
+    m_tester_id_box = tester_id_box;
+    m_ecu_id_box = ecu_id_box;
+
+    connect(m_tester_id_box, &QSpinBox::textChanged, [&](QString v) {
+        m_settings.setValue("task/testerId", v);
+    });
+    connect(m_ecu_id_box, &QSpinBox::textChanged, [&](QString v) {
+        m_settings.setValue("task/ecuId", v);
+    });
+
     connect(task_start_btn, &QPushButton::released, this, &MainWindow::start_task);
+    DEBUG(info, "Layout created");
 
 }
 
 void MainWindow::choose_file() {
-    m_file = QFileDialog::getOpenFileName(this, tr("Open HEX"), "./", tr("Intel HEX file (*.hex)")).toStdString();
+    DEBUG(info, "Choosing file");
+    QString path = m_settings.value("general/file").toString();
+    m_file = QFileDialog::getOpenFileName(this, tr("Open HEX"), path, tr("Intel HEX file (*.hex)")).toStdString();
     std::ifstream fin(m_file);
     if(!fin) return;
     Hex::HexReader reader(new Hex::FileSource(fin));
+    DEBUG(info, "Reading file");
     Hex::HexInfo info = Hex::read_hex_info(reader);
     fin.close();
+    DEBUG(info, "File readed and closed");
     m_logger->info("Reading file " + m_file);
     m_filename_label->setText(QString::fromStdString("File: " + m_file));
     {
@@ -197,9 +249,11 @@ void MainWindow::choose_file() {
         ss << "Start address: 0x" << std::setfill('0') << std::setw(8) << std::hex << info.start_addr;
         m_addr_label->setText(QString::fromStdString(ss.str()));
     }
+    m_settings.setValue("general/file", QString::fromStdString(m_file));
 }
 
 void MainWindow::connect_device() {
+    DEBUG(info, "Connecting device");
     QString errorString;
     QString device_name = m_device_list->currentText();
     m_device = QCanBus::instance()->createDevice(QStringLiteral(CAN_PLUGIN),
@@ -219,6 +273,7 @@ void MainWindow::connect_device() {
             m_communicator = new Can::Communicator(new QLogger(m_logger_worker));
             // m_logger = new Can::FrameStdLogger();
             m_logger->info(device_name.toStdString() + " successfuly connected");
+            DEBUG(info, "Device connected");
             m_communicator_thread = new CommunicatorThread(
                 this, m_communicator, m_communicator_mutex);
             connect(m_communicator_thread,
@@ -238,8 +293,11 @@ void MainWindow::start_task() {
         m_logger->warning("Choose device first");
         return;
     }
+    m_tester_id = m_tester_id_box->value();
+    m_ecu_id = m_ecu_id_box->value();
     QString task_name = m_task_list->currentText();
     if(task_name == "Flash") {
+        DEBUG(info, "Starting FLash task");
         m_logger->info("Starting task " + task_name.toStdString());
         // m_communicator->set_task(new FlashTask(m_file, new Can::FramesStdLogger()));
         m_communicator->set_task(new FlashTask(m_file, new QLogger(m_logger_worker)));
@@ -253,7 +311,7 @@ void MainWindow::start_task() {
 void MainWindow::check_frames_to_write(std::shared_ptr<Can::Frame> frame) {
     std::vector<uint8_t> payload = frame->dump();
     QCanBusFrame qframe;
-    qframe.setFrameId(TESTER_ID);
+    qframe.setFrameId(m_tester_id);
     qframe.setPayload(QByteArray(reinterpret_cast<const char*>(payload.data()),
 				 payload.size()));
     m_device->writeFrame(qframe);
@@ -263,12 +321,13 @@ void MainWindow::processReceivedFrames() {
     std::unique_lock<std::mutex> lock(m_communicator_mutex);
     while (m_device->framesAvailable()) {
         QCanBusFrame qframe = m_device->readFrame();
-        if (qframe.frameId() == DEVICE_ID) {
+        if (qframe.frameId() == m_ecu_id) {
             QByteArray payload = qframe.payload();
             std::shared_ptr<Can::Frame> frame =
                 std::move(Can::FrameFactory(std::vector<uint8_t>(
                                                 payload.begin(), payload.end()))
                               .get());
+            DEBUG(info, "pushing frame to cmmunicator");
             m_communicator->push_frame(frame);
         }
     }
@@ -287,9 +346,11 @@ void CommunicatorThread::run() {
             try {
                 m_communicator->get_status();
                 std::shared_ptr<Can::Frame> frame = m_communicator->fetch_frame();
+                DEBUG(info, "fetched frame from communicator");
                 emit check_frames_to_write(frame);
             } catch (Can::NothingToFetch e) {
             }
         }
+        usleep(50);
     }
 }

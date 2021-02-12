@@ -5,6 +5,8 @@
 #include <QThread>
 #include <QComboBox>
 #include <QLabel>
+#include <QSettings>
+#include <QSpinBox>
 #include <mutex>
 
 #include "communicator.h"
@@ -53,15 +55,23 @@ private:
     Can::Logger* m_logger;
     QLoggerWorker* m_logger_worker;
     std::string m_file;
+    QSettings m_settings;
 
     // UI
     QComboBox* m_device_list;
     QComboBox* m_bitrate_list;
     QComboBox* m_task_list;
+
+    QSpinBox* m_tester_id_box;
+    QSpinBox* m_ecu_id_box;
+
     QAction* m_file_menu_act;
     
     QLabel* m_filename_label;
     QLabel* m_crc_label;
     QLabel* m_size_label;
     QLabel* m_addr_label;
+
+    int m_tester_id;
+    int m_ecu_id;
 };
