@@ -10,6 +10,7 @@ public:
     FlashTask(std::string file, Can::Logger* logger = new Can::NoLogger())
         : AsyncTask(logger), m_file(file) {}
     void task();
+    void task_main();
 private:
     std::string m_file;
 };

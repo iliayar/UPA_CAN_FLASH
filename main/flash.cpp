@@ -16,9 +16,19 @@ std::string int_to_hex(int n) {
     std::stringstream s;
     s << std::hex << n;    
     return s.str();
-} 
+}
 
 void FlashTask::task() {
+    task_main();
+    ServiceResponse* response =
+        call(ServiceRequest_ECUReset::build()
+                 ->subfunction(ECUReset_SubfunctionType::hardReset)
+                 ->build());
+    IF_NEGATIVE(response) {
+        m_logger->error("Failed to hardReset device");
+    }
+}
+void FlashTask::task_main() {
     ServiceResponse* response;
 
     response = call(new ServiceRequest_DiagnosticSessionControl(
