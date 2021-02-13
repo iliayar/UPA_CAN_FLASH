@@ -114,7 +114,6 @@ void MainWindow::create_layout(QWidget* root) {
     file_layout->addWidget(m_addr_label);
 
     auto update_device_list = [=](const QString& str) {
-        std::cout << "updating device list " << std::endl;
         m_device_list->clear();
         QString errorString;
         QList<QCanBusDeviceInfo> devices =
@@ -335,7 +334,6 @@ void MainWindow::check_frames_to_write(std::shared_ptr<Can::Frame> frame) {
     qframe.setPayload(QByteArray(reinterpret_cast<const char*>(payload.data()),
 				 payload.size()));
     bool res = m_device->writeFrame(qframe);
-    std::cout << "Writing frame. status: " << res << std::endl;
 }
 
 void MainWindow::processReceivedFrames() {
