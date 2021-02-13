@@ -33,9 +33,9 @@
 #include "logger.h"
 
 #ifdef __MINGW32__
-#define CAN_PLUGIN "ixxatcan"
+#define CAN_PLUGINS { "systeccan", "ixxatcan" }
 #elif __linux__
-#define CAN_PLUGIN "socketcam"
+#define CAN_PLUGINS { "socketcan" }
 #endif
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_device(), m_settings("canFlash", "Some cool organization name") {
@@ -93,8 +93,13 @@ void MainWindow::create_layout(QWidget* root) {
 // Options layout
     QVBoxLayout* options_layout = new QVBoxLayout(options_group);
 //   file options layout
+    QComboBox* plugins_list = new QComboBox();
+    for(std::string plugin : std::vector<std::string>(CAN_PLUGINS)) {
+        plugins_list->addItem(QString::fromStdString(plugin));
+    }
     QGroupBox* file_group = new QGroupBox(tr("File"));
 
+    options_layout->addWidget(plugins_list);
     options_layout->addWidget(file_group);
 
     QVBoxLayout* file_layout = new QVBoxLayout(file_group);
@@ -108,7 +113,25 @@ void MainWindow::create_layout(QWidget* root) {
     file_layout->addWidget(m_size_label);
     file_layout->addWidget(m_addr_label);
 
-//   devices options layout
+    auto update_device_list = [=](const QString& str) {
+        std::cout << "updating device list " << std::endl;
+        m_device_list->clear();
+        QString errorString;
+        QList<QCanBusDeviceInfo> devices =
+            QCanBus::instance()->availableDevices(m_plugin_list->currentText(), &errorString);
+        if (!errorString.isEmpty()) {
+            m_logger->error(errorString.toStdString());
+        } else {
+            for (auto device : devices) {
+                m_device_list->addItem(device.name());
+            }
+        }
+    };
+
+    
+    connect(plugins_list, &QComboBox::textActivated, update_device_list);
+
+    //   devices options layout
     QGroupBox *devices_group = new QGroupBox(tr("Devices"));
 
     options_layout->addWidget(devices_group);
@@ -129,17 +152,6 @@ void MainWindow::create_layout(QWidget* root) {
     QPushButton* device_disconnect_btn = new QPushButton("Disconnect");
     devices_buttons_layout->addWidget(device_connect_btn);
     devices_buttons_layout->addWidget(device_disconnect_btn);
-
-    QString errorString;
-    QList<QCanBusDeviceInfo> devices = QCanBus::instance()->availableDevices(
-        QStringLiteral(CAN_PLUGIN), &errorString);
-    if (!errorString.isEmpty()) {
-        m_logger->error(errorString.toStdString());
-    } else {
-        for (auto device : devices) {
-            devices_list->addItem(device.name());
-        }
-    }
 
     m_device_list = devices_list;
     connect(device_connect_btn, &QPushButton::released, this, &MainWindow::connect_device);
@@ -209,6 +221,8 @@ void MainWindow::create_layout(QWidget* root) {
     m_tester_id_box = tester_id_box;
     m_ecu_id_box = ecu_id_box;
 
+    m_plugin_list = plugins_list;
+
     connect(m_tester_id_box, &QSpinBox::textChanged, [&](QString v) {
         m_settings.setValue("task/testerId", v);
     });
@@ -218,6 +232,11 @@ void MainWindow::create_layout(QWidget* root) {
 
     connect(task_start_btn, &QPushButton::released, this, &MainWindow::start_task);
     DEBUG(info, "Layout created");
+
+    update_device_list(std::vector<QString>(CAN_PLUGINS)[0]);
+}
+
+void MainWindow::update_devices_list() {
 
 }
 
@@ -256,10 +275,10 @@ void MainWindow::connect_device() {
     DEBUG(info, "Connecting device");
     QString errorString;
     QString device_name = m_device_list->currentText();
-    m_device = QCanBus::instance()->createDevice(QStringLiteral(CAN_PLUGIN),
+    m_device = QCanBus::instance()->createDevice(m_plugin_list->currentText(),
                                                  device_name, &errorString);
     if (!m_device) {
-        m_logger->error( errorString.toStdString() );
+        m_logger->error(errorString.toStdString());
         delete m_device;
         m_device = nullptr;
 	m_logger->error("Cannot connect device");

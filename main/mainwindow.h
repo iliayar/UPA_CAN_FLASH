@@ -47,6 +47,7 @@ private:
     void connect_device();
     void start_task();
     void choose_file();
+    void update_devices_list();
 
     QCanBusDevice* m_device;
     Can::Communicator* m_communicator;
@@ -61,6 +62,7 @@ private:
     QComboBox* m_device_list;
     QComboBox* m_bitrate_list;
     QComboBox* m_task_list;
+    QComboBox* m_plugin_list;
 
     QSpinBox* m_tester_id_box;
     QSpinBox* m_ecu_id_box;
