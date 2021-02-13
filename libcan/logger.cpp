@@ -7,5 +7,5 @@ Can::Logger* Can::GlobalLogger::instance(){
 std::string appdata = getenv("APPDATA");
 Can::Logger* Can::GlobalLogger::m_logger = new Can::FileLogger(appdata + "\\canFlash\\canFlash.log");
 #else
-Can::Logger* Can::GlobalLogger::m_logger = new Can::FileLogger(".local/canFlash.log");
+Can::Logger* Can::GlobalLogger::m_logger = new Can::FileLogger("/tmp/canFlash.log");
 #endif
