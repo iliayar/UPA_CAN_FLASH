@@ -135,7 +135,7 @@ void FlashTask::task() {
        LOG(error, "Cannot request download");
        return; 
     }
-    // return; // :FIXME: Test address
+
     int block_length_fomat = static_cast<Can::ServiceResponse_RequestDownload*>(response)->get_length_format()->get_memory_size();
     if(block_length_fomat > 8) {
         LOG(error, "Too long max block length");
@@ -162,8 +162,8 @@ void FlashTask::task() {
                     line_data = static_cast<Hex::DataLine *>(line)->get_data();
                 } else {
                     line_data = {data.back()};
-                    i--;
                     data.resize(i);
+                    i--;
                 }
                 for(uint8_t d : line_data) {
                     data[i++] = d;
