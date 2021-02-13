@@ -44,7 +44,7 @@ TEST(testHecCTC, testReadingData) {
             if (line->get_type() == Hex::HexLineType::Data) {
                 line_data = static_cast<Hex::DataLine *>(line)->get_data();
             } else {
-                line_data = {data.back()};
+                line_data = {data[i-1]};
                 data.resize(i);
                 i--;
             }

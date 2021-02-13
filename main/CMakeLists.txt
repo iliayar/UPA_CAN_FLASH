@@ -133,10 +133,10 @@ install(
 set (CPACK_PACKAGE_NAME "CanFlash")
 set (CPACK_PACKAGE_VENDOR "Some cool vendor")
 set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "CanFlash - flash something")
-set (CPACK_PACKAGE_VERSION "0.5.4")
+set (CPACK_PACKAGE_VERSION "0.5.6")
 set (CPACK_PACKAGE_VERSION_MAJOR "0")
 set (CPACK_PACKAGE_VERSION_MINOR "5")
-set (CPACK_PACKAGE_VERSION_PATCH "4")
+set (CPACK_PACKAGE_VERSION_PATCH "6")
 set (CPACK_PACKAGE_INSTALL_DIRECTORY "CanFlash")
 
 # Define components and their display names
