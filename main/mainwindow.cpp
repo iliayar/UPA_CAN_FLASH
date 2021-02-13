@@ -33,9 +33,9 @@
 #include "logger.h"
 
 #ifdef __MINGW32__
-#define CAN_PLUGIN "systeccan"
+#define CAN_PLUGIN "ixxatcan"
 #elif __linux__
-#define CAN_PLUGIN "socketcan"
+#define CAN_PLUGIN "socketcam"
 #endif
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_device(), m_settings("canFlash", "Some cool organization name") {
@@ -262,6 +262,7 @@ void MainWindow::connect_device() {
         m_logger->error( errorString.toStdString() );
         delete m_device;
         m_device = nullptr;
+	m_logger->error("Cannot connect device");
         return;
     } else {
         m_logger->info("Connecting " + device_name.toStdString() );
@@ -314,13 +315,15 @@ void MainWindow::check_frames_to_write(std::shared_ptr<Can::Frame> frame) {
     qframe.setFrameId(m_tester_id);
     qframe.setPayload(QByteArray(reinterpret_cast<const char*>(payload.data()),
 				 payload.size()));
-    m_device->writeFrame(qframe);
+    bool res = m_device->writeFrame(qframe);
+    std::cout << "Writing frame. status: " << res << std::endl;
 }
 
 void MainWindow::processReceivedFrames() {
     std::unique_lock<std::mutex> lock(m_communicator_mutex);
     while (m_device->framesAvailable()) {
         QCanBusFrame qframe = m_device->readFrame();
+	if(!qframe.isValid()) continue;
         if (qframe.frameId() == m_ecu_id) {
             QByteArray payload = qframe.payload();
             std::shared_ptr<Can::Frame> frame =

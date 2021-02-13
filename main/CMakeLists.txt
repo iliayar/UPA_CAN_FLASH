@@ -36,6 +36,7 @@ if(WIN32)
     get_filename_component(MINGW_DLL_DIR ${CMAKE_CXX_COMPILER} PATH)
 #    get_target_property(QtCore_LOCATION Qt5::Core LOCATION)
 #    get_filename_component(QT_DLL_DIR ${QtCore_LOCATION} PATH)
+#	qt_import_plugins(canFlash INCLUDE Qt5::IXXAT)
     add_custom_command(
         TARGET canFlash POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
