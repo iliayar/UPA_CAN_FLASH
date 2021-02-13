@@ -1,6 +1,6 @@
-#define SERVICE // <Service Name>
-#define REQUEST_ID // <Service Request 8 bit identifier>
-#define RESPONSE_ID // <Service Response 8 bit indentifier>
+#define SERVICE ECUReset
+#define REQUEST_ID 0x11
+#define RESPONSE_ID 0x51
 
 // If Service has subfunction, there is must be SUBFUNCTION field
 // --- FIELDS ---
@@ -10,8 +10,8 @@
 // - VEC() - array
 // - DATA(<declared DATATYPE>)
 // - RAW(<raw C++ type>)
-#define REQUEST_FIELDS // [FIELD]...
-#define RESPONSE_FIELDS // [FIELD]...
+#define REQUEST_FIELDS SUBFUNCTION
+#define RESPONSE_FIELDS SUBFUNCTION, (INT, power_down_timer, 8)
 // --- FIELD ---
 // (<Type>, <Alias>)
 
@@ -19,6 +19,13 @@ SERVICE_BEGIN
 
 // [SUBFUNCTIONS( [(<subfunction name>, <8-bit value>)]... )]
 // [DATATYPE( [(<field type>, <field name>)]... )]...
+SUBFUNCTIONS(
+    (hardReset, 0x01),
+    (keyOffOnReset, 0x02),
+    (softReset, 0x03),
+    (enableRapidPowerShutDown, 0x04),
+    (disableRapidPowerShutDown, 0x05)
+    )
 
 #ifdef EXTRA // Extra classes
 
@@ -31,15 +38,21 @@ SERVICE_BEGIN
 //   - INT(<New variable name>, <Field length>)
 //   - VEC(<New variable name>, <Field length>)
 //   - DATA(<New variable name>, <Data class>)
-// - SUBFUNCTION {
-//    [CASE(<subfunction>) {
-//       break;
-//      }]...
-//   }
+//   - SUBFUNCTION {
+//      [CASE(<subfunction>) {
+//         break;
+//        }]...
+//     }
 // - RETURN([Varible]...) - returns new response object
 #ifdef PARSE // Parse Service Response
 {
-	// ...
+    FIELD(SUBFUNCTION) {
+        CASE(enableRapidPowerShutDown) {
+            FIELD(INT, power_down_timer, 8);
+            RETURN(subfunction, power_down_timer);
+        }
+    }
+    RETURN(subfunction, 0);
 }
 #endif
 
@@ -54,15 +67,17 @@ SERVICE_BEGIN
 //   - INT(<Value>, <Field length>)
 //   - VEC(<Value>, <Field length>)
 //   - DATA(<Value>)
-// - SUBFUNCTION {
-//    [CASE(<subfunction>) {
-//       break;
-//      }]...
-//   }
+//   - SUBFUNCTION {
+//      [CASE(<subfunction>) {
+//         break;
+//        }]...
+//     }
 // - RETURN - "return payload"
 #ifdef DUMP // Dump Service Request to std::vector<uint8_t>
 {
-	// ...
+    INIT;
+    FIELD(SUBFUNCTION) {}
+    RETURN;
 }
 #endif
 

@@ -7,5 +7,6 @@
 #include "RequestDownload.cpp"
 #include "TransferData.cpp"
 #include "RequestTransferExit.cpp"
+#include "ECUReset.cpp"
 
 #include "DID.cpp"
