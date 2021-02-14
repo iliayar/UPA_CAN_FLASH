@@ -105,10 +105,15 @@ private:
 };
 
 
-class QTask : public QObject {
+class QTask : public QThread {
 Q_OBJECT
 public:
     QTask(QLogger* logger) : m_logger(logger) {}
+
+    void run() override {
+        std::cout << "QTask starting task" << std::endl;
+        task();
+    }
 
     virtual void task() = 0;
 
@@ -132,5 +137,6 @@ protected:
 class QTestTask : public QTask {
 Q_OBJECT
 public:
+    QTestTask(QLogger* logger) : QTask(logger) {}
     void task();
 };

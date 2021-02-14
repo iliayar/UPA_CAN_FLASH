@@ -11,6 +11,7 @@
 
 #include "communicator.h"
 #include "qtask.h"
+#include "qcommunicator.h"
 
 namespace Ui {
 class MainWindow;
@@ -40,6 +41,8 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     virtual ~MainWindow();
     void processReceivedFrames();
+signals:
+    void frame_received(std::shared_ptr<Can::Frame>);
 private:
 
     void create_layout(QWidget*);
@@ -50,13 +53,14 @@ private:
     void update_devices_list();
 
     QCanBusDevice* m_device;
-    Can::Communicator* m_communicator;
+    QCommunicator* m_communicator;
     std::mutex m_communicator_mutex;
-    CommunicatorThread* m_communicator_thread;
+    QThread m_communicator_thread;
     Can::Logger* m_logger;
     QLoggerWorker* m_logger_worker;
     std::string m_file;
     QSettings m_settings;
+
 
     // UI
     QComboBox* m_device_list;

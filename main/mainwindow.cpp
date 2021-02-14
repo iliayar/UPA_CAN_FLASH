@@ -31,6 +31,7 @@
 #include "qtask.h"
 #include "hex.h"
 #include "logger.h"
+#include "qcommunicator.h"
 
 #ifdef __MINGW32__
 #define CAN_PLUGINS { "systeccan", "ixxatcan" }
@@ -45,7 +46,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), m_device(), m_set
 
     m_device = nullptr;
     m_communicator = nullptr;
-    m_communicator_thread = nullptr;
+    m_communicator_thread.start();
 
     // std::cout << "Using device " << device_name.toStdString() << std::endl;
 
@@ -289,16 +290,19 @@ void MainWindow::connect_device() {
             connect(m_device, &QCanBusDevice::framesReceived, this,
                     &MainWindow::processReceivedFrames);
             // m_communicator = new Can::Communicator(new Can::FramesStdLogger());
-            m_communicator = new Can::Communicator(new QLogger(m_logger_worker));
+            m_communicator = new QCommunicator(new QLogger(m_logger_worker));
             // m_logger = new Can::FrameStdLogger();
             m_logger->info(device_name.toStdString() + " successfuly connected");
             DEBUG(info, "Device connected");
-            m_communicator_thread = new CommunicatorThread(
-                this, m_communicator, m_communicator_mutex);
-            connect(m_communicator_thread,
-                    &CommunicatorThread::check_frames_to_write, this,
-                    &MainWindow::check_frames_to_write);
-            m_communicator_thread->start();
+            // m_communicator_thread = new CommunicatorThread(
+            //     this, m_communicator, m_communicator_mutex);
+            // connect(m_communicator_thread,
+            //         &CommunicatorThread::check_frames_to_write, this,
+            //         &MainWindow::check_frames_to_write);
+            connect(m_communicator, &QCommunicator::fetch_frame, this, &MainWindow::check_frames_to_write);
+            connect(this, &MainWindow::frame_received, m_communicator, &QCommunicator::push_frame);
+            m_communicator->moveToThread(&m_communicator_thread);
+            // m_communicator_thread->start();
         } else {
             m_logger->error( "Cannot connect device" );
             delete m_device;
@@ -319,15 +323,16 @@ void MainWindow::start_task() {
         DEBUG(info, "Starting FLash task");
         m_logger->info("Starting task " + task_name.toStdString());
         // m_communicator->set_task(new FlashTask(m_file, new Can::FramesStdLogger()));
-        m_communicator->set_task(new FlashTask(m_file, new QLogger(m_logger_worker)));
+        // m_communicator->set_task(new FlashTask(m_file, new QLogger(m_logger_worker)));
     } else if(task_name == "Test") {
         m_logger->info("Starting task " + task_name.toStdString());
-        m_communicator->set_task(new Can::ReadWriteThreadedTask(new QLogger(m_logger_worker)));
+        m_communicator->set_task(new QTestTask(new QLogger(m_logger_worker)));
     }
 
 }
 
 void MainWindow::check_frames_to_write(std::shared_ptr<Can::Frame> frame) {
+    std::cout << "main window writing frame" << std::endl;
     std::vector<uint8_t> payload = frame->dump();
     QCanBusFrame qframe;
     qframe.setFrameId(m_tester_id);
@@ -340,15 +345,19 @@ void MainWindow::processReceivedFrames() {
     std::unique_lock<std::mutex> lock(m_communicator_mutex);
     while (m_device->framesAvailable()) {
         QCanBusFrame qframe = m_device->readFrame();
-	if(!qframe.isValid()) continue;
+        if (!qframe.isValid()) continue;
         if (qframe.frameId() == m_ecu_id) {
             QByteArray payload = qframe.payload();
+            if(payload.size() < 8) continue;
+            std::cout << payload.size() << std::endl;
             std::shared_ptr<Can::Frame> frame =
                 std::move(Can::FrameFactory(std::vector<uint8_t>(
                                                 payload.begin(), payload.end()))
                               .get());
             DEBUG(info, "pushing frame to cmmunicator");
-            m_communicator->push_frame(frame);
+            // m_communicator->push_frame(frame);
+            std::cout << "main window pushing frame" << std::endl;
+            emit frame_received(frame);
         }
     }
 }
@@ -356,7 +365,6 @@ void MainWindow::processReceivedFrames() {
 MainWindow::~MainWindow() {
     if(m_device != nullptr) delete m_device;
     if(m_communicator != nullptr) delete m_communicator;
-    if(m_communicator_thread != nullptr) delete m_communicator_thread;
 }
 
 void CommunicatorThread::run() {
