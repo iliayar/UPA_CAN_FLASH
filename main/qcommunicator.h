@@ -12,7 +12,7 @@
 #include <vector>
 #include <string>
 
-class QWorker : public QObject{
+class QWorker : public QObject {
     Q_OBJECT
 public:
     virtual Can::CommunicatorStatus get_type() = 0;
@@ -49,12 +49,12 @@ protected:
 class QReceiver : public QWorker {
     Q_OBJECT
 public:
-    QReceiver(std::shared_ptr<Can::Frame>);
 
     Can::CommunicatorStatus get_type() { return Can::CommunicatorStatus::Receive; }
     Can::ServiceResponse* get_response();
 
 public slots:
+    void init(std::shared_ptr<Can::Frame>);
     void push_frame(std::shared_ptr<Can::Frame>);
 
 signals:
@@ -72,11 +72,11 @@ private:
 class QTransmitter : public QWorker {
     Q_OBJECT
 public:
-    QTransmitter(Can::ServiceRequest*);
 
     Can::CommunicatorStatus get_type() { return Can::CommunicatorStatus::Transmit; }
 
 public slots:
+    void init(Can::ServiceRequest*);
     void push_frame(std::shared_ptr<Can::Frame>);
 
 signals:
@@ -101,7 +101,15 @@ public:
     QCommunicator() : QCommunicator(new Can::NoLogger()) {}
 
     QCommunicator(Can::Logger* logger)
-        : m_worker(nullptr), m_task(nullptr), m_logger(logger), m_worker_thread(), m_task_thread() {}
+        : m_worker(nullptr),
+          m_task(nullptr),
+          m_logger(logger),
+          m_worker_thread()
+          // m_task_thread()
+        {
+            std::cout << "QCommunicator created" << std::endl;
+            m_worker_thread.start();
+        }
 
     void set_task(QTask*);
 
@@ -117,6 +125,8 @@ signals:
     void fetch_frame(std::shared_ptr<Can::Frame>);
     void push_frame_worker(std::shared_ptr<Can::Frame>);
     void response(Can::ServiceResponse*);
+    void operate_transmitter(Can::ServiceRequest*);
+    void operate_receiver(std::shared_ptr<Can::Frame>);
 
 private:
     void update_task();
@@ -126,5 +136,5 @@ private:
     Can::Logger* m_logger;
 
     QThread m_worker_thread;
-    QThread m_task_thread;
+    // QThread m_task_thread;
 };

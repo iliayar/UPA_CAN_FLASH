@@ -83,6 +83,7 @@ void QTask::response(Can::ServiceResponse* r) {
 }
 
 Can::ServiceResponse* QTask::call(Can::ServiceRequest* req) {
+    std::cout << "QTask emit request" << std::endl;
     emit request(req);
     while(1) {
         QSignalSpy spy(this, &QTask::response_imp);
