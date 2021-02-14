@@ -28,7 +28,6 @@ void QCommunicator::push_frame(std::shared_ptr<Can::Frame> frame) {
     DEBUG(info, "QCommunicator push_frame");
     if (m_worker != nullptr) {
         emit push_frame_worker(frame);
-        // :TODO: Check if worker done
         return;
     }
     QReceiver* worker = new QReceiver;

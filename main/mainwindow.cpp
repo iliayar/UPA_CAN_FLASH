@@ -97,6 +97,9 @@ void MainWindow::create_layout(QWidget* root) {
     m_logger_worker = new QLoggerWorker(this, log_frames, log_messages);
     m_logger = new QLogger(m_logger_worker);
 
+    m_log_frames = log_frames;
+    m_log_messages = log_messages;
+
     // Options layout
     QVBoxLayout* options_layout = new QVBoxLayout(options_group);
     //   file options layout
@@ -300,24 +303,17 @@ void MainWindow::connect_device() {
         if (m_device->connectDevice()) {
             connect(m_device, &QCanBusDevice::framesReceived, this,
                     &MainWindow::processReceivedFrames);
-            // m_communicator = new Can::Communicator(new
-            // Can::FramesStdLogger());
             m_communicator = new QCommunicator(new QLogger(m_logger_worker));
-            // m_logger = new Can::FrameStdLogger();
             m_logger->info(device_name.toStdString() +
                            " successfuly connected");
             DEBUG(info, "Device connected");
-            // m_communicator_thread = new CommunicatorThread(
-            //     this, m_communicator, m_communicator_mutex);
-            // connect(m_communicator_thread,
-            //         &CommunicatorThread::check_frames_to_write, this,
-            //         &MainWindow::check_frames_to_write);
             connect(m_communicator, &QCommunicator::fetch_frame, this,
                     &MainWindow::check_frames_to_write);
             connect(this, &MainWindow::frame_received, m_communicator,
                     &QCommunicator::push_frame);
+	    connect(this, &MainWindow::set_task, m_communicator, 
+		    &QCommunicator::set_task);
             m_communicator->moveToThread(&m_communicator_thread);
-            // m_communicator_thread->start();
         } else {
             m_logger->error("Cannot connect device");
             delete m_device;
@@ -331,19 +327,18 @@ void MainWindow::start_task() {
         m_logger->warning("Choose device first");
         return;
     }
+    m_log_frames->clear();
+    m_log_messages->clear();
     m_tester_id = m_tester_id_box->value();
     m_ecu_id = m_ecu_id_box->value();
     QString task_name = m_task_list->currentText();
     if (task_name == "Flash") {
         DEBUG(info, "Starting FLash task");
         m_logger->info("Starting task " + task_name.toStdString());
-        // m_communicator->set_task(new FlashTask(m_file, new
-        // Can::FramesStdLogger()));
-        m_communicator->set_task(
-            new FlashTask(m_file, new QLogger(m_logger_worker)));
+        emit set_task(new FlashTask(m_file, new QLogger(m_logger_worker)));
     } else if (task_name == "Test") {
         m_logger->info("Starting task " + task_name.toStdString());
-        m_communicator->set_task(new QTestTask(new QLogger(m_logger_worker)));
+        emit set_task(new QTestTask(new QLogger(m_logger_worker)));
     }
 }
 
