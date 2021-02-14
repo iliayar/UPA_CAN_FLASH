@@ -106,7 +106,7 @@ private:
 
 
 class QTask : public QThread {
-Q_OBJECT
+    Q_OBJECT
 public:
     QTask(QLogger* logger) : m_logger(logger) {}
 
@@ -135,7 +135,7 @@ protected:
 
 
 class QTestTask : public QTask {
-Q_OBJECT
+    Q_OBJECT
 public:
     QTestTask(QLogger* logger) : QTask(logger) {}
     void task();

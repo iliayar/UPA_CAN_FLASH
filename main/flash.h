@@ -4,11 +4,12 @@
 
 #include "task.h"
 #include "logger.h"
+#include "qtask.h"
 
-class FlashTask : public Can::AsyncTask {
+class FlashTask : public QTask {
 public:
-    FlashTask(std::string file, Can::Logger* logger = new Can::NoLogger())
-        : AsyncTask(logger), m_file(file) {}
+    FlashTask(std::string file, QLogger* logger)
+        : QTask(logger), m_file(file) {}
     void task();
     void task_main();
 private:

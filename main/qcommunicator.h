@@ -30,19 +30,19 @@ signals:
 
 protected:
     std::chrono::time_point<std::chrono::high_resolution_clock> m_last_update =
-	std::chrono::high_resolution_clock::now();
+        std::chrono::high_resolution_clock::now();
 
     bool check_timeout_imp() {
-	if (std::chrono::duration_cast<std::chrono::milliseconds>(
-		std::chrono::high_resolution_clock::now() - m_last_update) >
-	    TIMEOUT) {
-	    return false;
-	}
-	return true;
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::high_resolution_clock::now() - m_last_update) >
+            TIMEOUT) {
+            return false;
+        }
+        return true;
     }
 
     void update_imp() {
-	m_last_update = std::chrono::high_resolution_clock::now();
+        m_last_update = std::chrono::high_resolution_clock::now();
     }
 };
 
@@ -89,7 +89,7 @@ private:
     int m_fc_block_size;
     std::chrono::milliseconds m_fc_min_time;
     std::chrono::time_point<std::chrono::high_resolution_clock>
-	m_last_frame_time;
+    m_last_frame_time;
     int m_i;
     bool m_wait_fc;
     int m_block_begin;

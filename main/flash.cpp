@@ -22,8 +22,8 @@ void FlashTask::task() {
     task_main();
     ServiceResponse* response =
         call(ServiceRequest_ECUReset::build()
-                 ->subfunction(ECUReset_SubfunctionType::hardReset)
-                 ->build());
+             ->subfunction(ECUReset_SubfunctionType::hardReset)
+             ->build());
     IF_NEGATIVE(response) {
         m_logger->error("Failed to hardReset device");
     }
@@ -32,7 +32,7 @@ void FlashTask::task_main() {
     ServiceResponse* response;
 
     response = call(new ServiceRequest_DiagnosticSessionControl(
-        DiagnosticSessionControl_SubfunctionType::extendDiagnosticSession));
+                        DiagnosticSessionControl_SubfunctionType::extendDiagnosticSession));
 
     IF_NEGATIVE(response) {
         LOG(error, "Failed ot enter extendDiagnosticSession");
@@ -40,7 +40,7 @@ void FlashTask::task_main() {
     }
 
     response = call(new ServiceRequest_ControlDTCSettings(
-        ControlDTCSettings_SubfunctionType::off));
+                        ControlDTCSettings_SubfunctionType::off));
 
     IF_NEGATIVE(response) {
         LOG(error, "Failed ControlDTCSettings");
@@ -49,14 +49,14 @@ void FlashTask::task_main() {
 
     response = call(
         ServiceRequest_CommunicationControl::build()
-            ->subfunction(CommunicationControl_SubfunctionType::disableRxAndTx)
-            ->communication_type(CommunicationType::build()
-                                     ->chanels(CommunicationTypeChanels::build()
-                                                   ->network_communication(1)
-                                                   ->normal_communication(1)
-                                                   ->build())
-                                     ->build())
-            ->build());
+        ->subfunction(CommunicationControl_SubfunctionType::disableRxAndTx)
+        ->communication_type(CommunicationType::build()
+                             ->chanels(CommunicationTypeChanels::build()
+                                       ->network_communication(1)
+                                       ->normal_communication(1)
+                                       ->build())
+                             ->build())
+        ->build());
 
     IF_NEGATIVE(response) {
         LOG(error, "Failed CommunicationControl");
@@ -65,9 +65,9 @@ void FlashTask::task_main() {
 
     response = call(
         ServiceRequest_DiagnosticSessionControl::build()
-            ->subfunction(
-                DiagnosticSessionControl_SubfunctionType::programmingSession)
-            ->build());
+        ->subfunction(
+            DiagnosticSessionControl_SubfunctionType::programmingSession)
+        ->build());
 
     IF_NEGATIVE(response) {
         LOG(error, "Failed ot enter programmingSession");
@@ -79,9 +79,9 @@ void FlashTask::task_main() {
     m_logger->info("Seed parameter " + int_to_hex(rnd));
     response =
         call(ServiceRequest_SecurityAccess::build()
-                 ->subfunction(SecurityAccess_SubfunctionType::requestSeed)
-                 ->seed_par(rnd)
-                 ->build());
+             ->subfunction(SecurityAccess_SubfunctionType::requestSeed)
+             ->seed_par(rnd)
+             ->build());
 
 
     IF_NEGATIVE(response) {
@@ -99,9 +99,9 @@ void FlashTask::task_main() {
     LOG(info, "Calculated key " + int_to_hex(key));
 
     response = call(ServiceRequest_SecurityAccess::build()
-                        ->subfunction(SecurityAccess_SubfunctionType::sendKey)
-                        ->key(key)
-                        ->build());
+                    ->subfunction(SecurityAccess_SubfunctionType::sendKey)
+                    ->key(key)
+                    ->build());
 
     IF_NEGATIVE(response) {
         LOG(error, "Security access failed key verification");
@@ -114,7 +114,7 @@ void FlashTask::task_main() {
     Hex::HexReader reader(new Hex::FileSource(fin));
     Hex::HexInfo hex_info = Hex::read_hex_info(reader);
     fin.close();
-        
+    
     uint32_t data_size = hex_info.size;
     uint32_t begin_address = hex_info.start_addr;
     uint16_t crc = hex_info.crc;
@@ -128,22 +128,22 @@ void FlashTask::task_main() {
 
     response =
         call(ServiceRequest_RequestDownload::build()
-                 ->data_format(DataFormatIdentifier::build()
-                                   ->compressionMethod(0)
-                                   ->encryptingMethod(0)
-                                   ->build())
-                 ->address_len_format(DataAndLengthFormatIdentifier::build()
-                                          ->memory_address(4)
-                                          ->memory_size(4)
-                                          ->build())
-                 ->memory_addr(BEGIN_ADDRESS)
-                 ->memory_size(DATA_SIZE)
-                 ->build());
+             ->data_format(DataFormatIdentifier::build()
+                           ->compressionMethod(0)
+                           ->encryptingMethod(0)
+                           ->build())
+             ->address_len_format(DataAndLengthFormatIdentifier::build()
+                                  ->memory_address(4)
+                                  ->memory_size(4)
+                                  ->build())
+             ->memory_addr(BEGIN_ADDRESS)
+             ->memory_size(DATA_SIZE)
+             ->build());
 
 
     IF_NEGATIVE(response) {
-       LOG(error, "Cannot request download");
-       return; 
+        LOG(error, "Cannot request download");
+        return; 
     }
 
     int block_length_fomat = static_cast<Can::ServiceResponse_RequestDownload*>(response)->get_length_format()->get_memory_size();
@@ -167,34 +167,34 @@ void FlashTask::task_main() {
     while(!reader.is_eof()) {
         Hex::HexLine *line = reader.read_line();
         if(line->get_type() == Hex::HexLineType::Data || line->get_type() == Hex::HexLineType::EndOfFile) {
-                std::vector<uint8_t> line_data;
-                if (line->get_type() == Hex::HexLineType::Data) {
-                    line_data = static_cast<Hex::DataLine *>(line)->get_data();
-                } else {
-                    line_data = {data[i-1]};
-                    data.resize(i);
-                    i--;
-                }
-                for(uint8_t d : line_data) {
-                    data[i++] = d;
-                    n_size++;
-                    if (i >= data.size()) {
-                        LOG(important, "Transfering block " + int_to_hex(block_counter));
-                        response =
-                            call(Can::ServiceRequest_TransferData::build()
-                                     ->block_counter(block_counter++)
-                                     ->data(data)
-                                     ->build());
-                        IF_NEGATIVE(response) {
-                            LOG(error, "Failed to transfer data");
-                            return; 
-                        }
-                        if(static_cast<Can::ServiceResponse_TransferData*>(response)->get_block_counter() != block_counter - 1) {
-                            LOG(warning, "Wrong block counter in response");
-                        }
-                        i = 0;
+            std::vector<uint8_t> line_data;
+            if (line->get_type() == Hex::HexLineType::Data) {
+                line_data = static_cast<Hex::DataLine *>(line)->get_data();
+            } else {
+                line_data = {data[i-1]};
+                data.resize(i);
+                i--;
+            }
+            for(uint8_t d : line_data) {
+                data[i++] = d;
+                n_size++;
+                if (i >= data.size()) {
+                    LOG(important, "Transfering block " + int_to_hex(block_counter));
+                    response =
+                        call(Can::ServiceRequest_TransferData::build()
+                             ->block_counter(block_counter++)
+                             ->data(data)
+                             ->build());
+                    IF_NEGATIVE(response) {
+                        LOG(error, "Failed to transfer data");
+                        return; 
                     }
+                    if(static_cast<Can::ServiceResponse_TransferData*>(response)->get_block_counter() != block_counter - 1) {
+                        LOG(warning, "Wrong block counter in response");
+                    }
+                    i = 0;
                 }
+            }
         }
         if(line->get_type() == Hex::HexLineType::EndOfFile) {
             if(!reader.is_eof()) {
