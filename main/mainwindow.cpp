@@ -289,6 +289,7 @@ void MainWindow::connect_device() {
     m_tester_id = m_tester_id_box->value();
     m_ecu_id = m_ecu_id_box->value();
     filter.frameId = m_ecu_id;
+    filter.frameIdMask = 0x000007ff;
     filter.format = QCanBusDevice::Filter::MatchBaseFormat;
     filter.type = QCanBusFrame::DataFrame;
     filters.append(filter);
