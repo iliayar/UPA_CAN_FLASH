@@ -53,8 +53,6 @@ MainWindow::MainWindow(QWidget* parent)
     m_communicator = nullptr;
     m_communicator_thread.start();
 
-    // std::cout << "Using device " << device_name.toStdString() << std::endl;
-
     setCentralWidget(window);
 }
 void MainWindow::create_layout(QWidget* root) {
@@ -286,6 +284,14 @@ void MainWindow::choose_file() {
 void MainWindow::connect_device() {
     DEBUG(info, "Connecting device");
     QString errorString;
+    QCanBusDevice::Filter filter;
+    QList<QCanBusDevice::Filter> filters;
+    m_tester_id = m_tester_id_box->value();
+    m_ecu_id = m_ecu_id_box->value();
+    filter.frameId = m_ecu_id;
+    filter.format = QCanBusDevice::Filter::MatchBaseFormat;
+    filter.type = QCanBusFrame::DataFrame;
+    filters.append(filter);
     QString device_name = m_device_list->currentText();
     m_device = QCanBus::instance()->createDevice(m_plugin_list->currentText(),
                                                  device_name, &errorString);
@@ -300,6 +306,7 @@ void MainWindow::connect_device() {
         m_device->setConfigurationParameter(
             QCanBusDevice::ConfigurationKey::BitRateKey,
             m_bitrate_list->currentText());
+        m_device->setConfigurationParameter(QCanBusDevice::RawFilterKey, QVariant::fromValue(filters));
         if (m_device->connectDevice()) {
             connect(m_device, &QCanBusDevice::framesReceived, this,
                     &MainWindow::processReceivedFrames);
@@ -329,8 +336,6 @@ void MainWindow::start_task() {
     }
     m_log_frames->clear();
     m_log_messages->clear();
-    m_tester_id = m_tester_id_box->value();
-    m_ecu_id = m_ecu_id_box->value();
     QString task_name = m_task_list->currentText();
     if (task_name == "Flash") {
         DEBUG(info, "Starting FLash task");
@@ -343,7 +348,6 @@ void MainWindow::start_task() {
 }
 
 void MainWindow::check_frames_to_write(std::shared_ptr<Can::Frame> frame) {
-    std::cout << "main window writing frame" << std::endl;
     std::vector<uint8_t> payload = frame->dump();
     QCanBusFrame qframe;
     qframe.setFrameId(m_tester_id);
@@ -360,14 +364,12 @@ void MainWindow::processReceivedFrames() {
         if (qframe.frameId() == m_ecu_id) {
             QByteArray payload = qframe.payload();
             if (payload.size() < 8) continue;
-            std::cout << payload.size() << std::endl;
             std::shared_ptr<Can::Frame> frame =
                 std::move(Can::FrameFactory(std::vector<uint8_t>(
                                                 payload.begin(), payload.end()))
                               .get());
             DEBUG(info, "pushing frame to cmmunicator");
             // m_communicator->push_frame(frame);
-            std::cout << "main window pushing frame" << std::endl;
             emit frame_received(frame);
         }
     }
