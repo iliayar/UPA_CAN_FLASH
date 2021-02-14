@@ -3,7 +3,7 @@
 #include "security.h"
 #include "hex.h"
 #include "crc.h"
-#include "can.h"
+#include "qtask.h"
 
 #include <sstream>
 
