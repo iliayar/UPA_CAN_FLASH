@@ -87,6 +87,19 @@ public:
         emit signal_important(s);
     }
 
+#define DISCONNECT(sig) connect(this, &QLogger::signal_##sig, m_worker, &QLoggerWorker::sig)
+    ~QLogger() {
+        DISCONNECT(info);
+        DISCONNECT(error);
+        DISCONNECT(warning);
+        DISCONNECT(important);
+        DISCONNECT(received_frame);
+        DISCONNECT(transmitted_frame);
+        DISCONNECT(received_service_response);
+        DISCONNECT(transmitted_service_request);
+    }
+#undef DISCONNECT
+
 signals:
     
     void signal_received_frame(std::shared_ptr<Can::Frame> frame);
@@ -116,6 +129,10 @@ public:
     }
 
     virtual void task() = 0;
+
+    ~QTask() {
+        delete m_logger;
+    }
 
 protected:
     std::shared_ptr<Can::ServiceResponse> call(std::shared_ptr<Can::ServiceRequest>);
