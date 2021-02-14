@@ -304,9 +304,10 @@ void MainWindow::connect_device() {
         return;
     } else {
         m_logger->info("Connecting " + device_name.toStdString());
+	int bitrate = m_bitrate_list->currentText().toInt();
         m_device->setConfigurationParameter(
             QCanBusDevice::ConfigurationKey::BitRateKey,
-            m_bitrate_list->currentText());
+            bitrate);
         m_device->setConfigurationParameter(QCanBusDevice::RawFilterKey, QVariant::fromValue(filters));
         if (m_device->connectDevice()) {
             connect(m_device, &QCanBusDevice::framesReceived, this,
