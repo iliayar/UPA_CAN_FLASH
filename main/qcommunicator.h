@@ -117,8 +117,6 @@ public:
             m_worker_thread.start();
         }
 
-    void set_task(QTask*);
-
 public slots:
     void push_frame(std::shared_ptr<Can::Frame>);
     void request(std::shared_ptr<Can::ServiceRequest>);
@@ -126,6 +124,8 @@ public slots:
 
     void worker_done();
     void worker_error(WorkerError);
+
+    void set_task(QTask*);
 
 signals:
     void fetch_frame(std::shared_ptr<Can::Frame>);

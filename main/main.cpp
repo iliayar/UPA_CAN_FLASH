@@ -7,6 +7,7 @@
 #include "mainwindow.h"
 #include "frame.h"
 #include "service.h"
+#include "qtask.h"
 
 #include <QTextCharFormat>
 #include <QTextCursor>
@@ -14,9 +15,12 @@ Q_DECLARE_METATYPE(QTextCharFormat)
 Q_DECLARE_METATYPE(QTextCursor)
 
 Q_DECLARE_METATYPE(std::shared_ptr<Can::Frame>)
+Q_DECLARE_METATYPE(std::shared_ptr<Can::ServiceRequest>)
+Q_DECLARE_METATYPE(std::shared_ptr<Can::ServiceResponse>)
 Q_DECLARE_METATYPE(std::vector<uint8_t>)
 Q_DECLARE_METATYPE(Can::ServiceRequest*)
 Q_DECLARE_METATYPE(Can::ServiceResponse*)
+Q_DECLARE_METATYPE(QTask*)
 Q_DECLARE_METATYPE(std::string)
 
 int main(int argc, char *argv[]) {
@@ -24,8 +28,11 @@ int main(int argc, char *argv[]) {
 
     qRegisterMetaType<std::vector<uint8_t>>();
     qRegisterMetaType<std::shared_ptr<Can::Frame>>();
+    qRegisterMetaType<std::shared_ptr<Can::ServiceRequest>>();
+    qRegisterMetaType<std::shared_ptr<Can::ServiceResponse>>();
     qRegisterMetaType<Can::ServiceRequest*>();
-    qRegisterMetaType<Can::ServiceResponse*>();
+    qRegisterMetaType<Can::ServiceRequest*>();
+    qRegisterMetaType<QTask*>();
     qRegisterMetaType<std::string>();
     qRegisterMetaType<QTextCharFormat>();
     qRegisterMetaType<QTextCursor>();

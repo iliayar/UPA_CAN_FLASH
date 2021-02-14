@@ -43,6 +43,7 @@ public:
     void processReceivedFrames();
 signals:
     void frame_received(std::shared_ptr<Can::Frame>);
+    void set_task(QTask*);
 private:
 
     void create_layout(QWidget*);
@@ -63,6 +64,9 @@ private:
 
 
     // UI
+    QTextEdit* m_log_frames;
+    QTextEdit* m_log_messages;
+
     QComboBox* m_device_list;
     QComboBox* m_bitrate_list;
     QComboBox* m_task_list;
