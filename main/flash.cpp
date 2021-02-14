@@ -20,7 +20,7 @@ std::string int_to_hex(int n) {
 
 void FlashTask::task() {
     task_main();
-    ServiceResponse* response =
+    std::shared_ptr<ServiceResponse> response =
         call(ServiceRequest_ECUReset::build()
              ->subfunction(ECUReset_SubfunctionType::hardReset)
              ->build());
@@ -29,18 +29,19 @@ void FlashTask::task() {
     }
 }
 void FlashTask::task_main() {
-    ServiceResponse* response;
+    std::shared_ptr<ServiceResponse> response;
 
-    response = call(new ServiceRequest_DiagnosticSessionControl(
-                        DiagnosticSessionControl_SubfunctionType::extendDiagnosticSession));
+    response = call(ServiceRequest_DiagnosticSessionControl::build()->subfunction(
+                        DiagnosticSessionControl_SubfunctionType::extendDiagnosticSession)->build());
 
     IF_NEGATIVE(response) {
         LOG(error, "Failed ot enter extendDiagnosticSession");
         return;
     }
 
-    response = call(new ServiceRequest_ControlDTCSettings(
-                        ControlDTCSettings_SubfunctionType::off));
+    response = call(ServiceRequest_ControlDTCSettings::build()
+                        ->subfunction(ControlDTCSettings_SubfunctionType::off)
+                        ->build());
 
     IF_NEGATIVE(response) {
         LOG(error, "Failed ControlDTCSettings");
@@ -90,7 +91,7 @@ void FlashTask::task_main() {
     }
 
     uint32_t seed =
-        static_cast<ServiceResponse_SecurityAccess*>(response)->get_seed();
+        static_cast<ServiceResponse_SecurityAccess*>(response.get())->get_seed();
 
     LOG(info, "Received seed " + int_to_hex(seed));
 
@@ -146,13 +147,13 @@ void FlashTask::task_main() {
         return; 
     }
 
-    int block_length_fomat = static_cast<Can::ServiceResponse_RequestDownload*>(response)->get_length_format()->get_memory_size();
+    int block_length_fomat = static_cast<Can::ServiceResponse_RequestDownload*>(response.get())->get_length_format()->get_memory_size();
     if(block_length_fomat > 8) {
         LOG(error, "Too long max block length");
         return;
     }
     LOG(info, "Requesting download response parsed");
-    std::vector<uint8_t> max_block_size_vec = static_cast<Can::ServiceResponse_RequestDownload*>(response)->get_max_blocks_number();
+    std::vector<uint8_t> max_block_size_vec = static_cast<Can::ServiceResponse_RequestDownload*>(response.get())->get_max_blocks_number();
     LOG(info, "max_block_size_vec " + int_to_hex(max_block_size_vec.size()));
     uint64_t max_block_size = Util::Reader(max_block_size_vec).read_64(0, max_block_size_vec.size()*8);
     LOG(info, "max_block_size " + int_to_hex(max_block_size));
@@ -165,11 +166,11 @@ void FlashTask::task_main() {
     int block_counter = 1;
     int n_size = 0;
     while(!reader.is_eof()) {
-        Hex::HexLine *line = reader.read_line();
+        std::unique_ptr<Hex::HexLine> line = reader.read_line();
         if(line->get_type() == Hex::HexLineType::Data || line->get_type() == Hex::HexLineType::EndOfFile) {
             std::vector<uint8_t> line_data;
             if (line->get_type() == Hex::HexLineType::Data) {
-                line_data = static_cast<Hex::DataLine *>(line)->get_data();
+                line_data = static_cast<Hex::DataLine*>(line.get())->get_data();
             } else {
                 line_data = {data[i-1]};
                 data.resize(i);
@@ -189,7 +190,7 @@ void FlashTask::task_main() {
                         LOG(error, "Failed to transfer data");
                         return; 
                     }
-                    if(static_cast<Can::ServiceResponse_TransferData*>(response)->get_block_counter() != block_counter - 1) {
+                    if(static_cast<Can::ServiceResponse_TransferData*>(response.get())->get_block_counter() != block_counter - 1) {
                         LOG(warning, "Wrong block counter in response");
                     }
                     i = 0;
@@ -209,7 +210,7 @@ void FlashTask::task_main() {
         LOG(error, "Failed to request transfer exit");
         return;
     }
-    uint16_t crc_recv = static_cast<Can::ServiceResponse_RequestTransferExit*>(response)->get_crc();
+    uint16_t crc_recv = static_cast<Can::ServiceResponse_RequestTransferExit*>(response.get())->get_crc();
     if(crc_recv != crc) {
         LOG(error, "CRC check failed");
         return;

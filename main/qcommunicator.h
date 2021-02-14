@@ -8,42 +8,48 @@
 #include "qtask.h"
 
 #include <QObject>
+#include <QTimer>
 #include <chrono>
 #include <vector>
 #include <string>
 
+
+#define FRAME_TIMEOUT 10000
+
+enum class WorkerError {
+    Timeout,
+    Other
+};
+
+
 class QWorker : public QObject {
     Q_OBJECT
 public:
+    QWorker() {
+        connect(&m_timer, &QTimer::timeout, this, &QWorker::timeout);
+        m_timer.start(FRAME_TIMEOUT);
+    }
     virtual Can::CommunicatorStatus get_type() = 0;
-
-    std::chrono::milliseconds TIMEOUT{600};
 
 public slots:
     virtual void push_frame(std::shared_ptr<Can::Frame>) = 0;
+    void timeout() {
+        emit worker_error(WorkerError::Timeout);
+    }
 
 signals:
     void fetch_frame(std::shared_ptr<Can::Frame>);
     void worker_done();
-    void worker_error();
+    void worker_error(WorkerError);
     
 
 protected:
-    std::chrono::time_point<std::chrono::high_resolution_clock> m_last_update =
-        std::chrono::high_resolution_clock::now();
-
-    bool check_timeout_imp() {
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::high_resolution_clock::now() - m_last_update) >
-            TIMEOUT) {
-            return false;
-        }
-        return true;
+    void update_timer() {
+        m_timer.start(FRAME_TIMEOUT);
     }
 
-    void update_imp() {
-        m_last_update = std::chrono::high_resolution_clock::now();
-    }
+private:
+    QTimer m_timer; 
 };
 
 class QReceiver : public QWorker {
@@ -51,7 +57,7 @@ class QReceiver : public QWorker {
 public:
 
     Can::CommunicatorStatus get_type() { return Can::CommunicatorStatus::Receive; }
-    Can::ServiceResponse* get_response();
+    std::shared_ptr<Can::ServiceResponse> get_response();
 
 public slots:
     void init(std::shared_ptr<Can::Frame>);
@@ -76,7 +82,7 @@ public:
     Can::CommunicatorStatus get_type() { return Can::CommunicatorStatus::Transmit; }
 
 public slots:
-    void init(Can::ServiceRequest*);
+    void init(std::shared_ptr<Can::ServiceRequest>);
     void push_frame(std::shared_ptr<Can::Frame>);
 
 signals:
@@ -115,17 +121,17 @@ public:
 
 public slots:
     void push_frame(std::shared_ptr<Can::Frame>);
-    void request(Can::ServiceRequest*);
+    void request(std::shared_ptr<Can::ServiceRequest>);
     void fetch_frame_worker(std::shared_ptr<Can::Frame>);
 
     void worker_done();
-    void worker_error();
+    void worker_error(WorkerError);
 
 signals:
     void fetch_frame(std::shared_ptr<Can::Frame>);
     void push_frame_worker(std::shared_ptr<Can::Frame>);
-    void response(Can::ServiceResponse*);
-    void operate_transmitter(Can::ServiceRequest*);
+    void response(std::shared_ptr<Can::ServiceResponse>);
+    void operate_transmitter(std::shared_ptr<Can::ServiceRequest>);
     void operate_receiver(std::shared_ptr<Can::Frame>);
 
 private:

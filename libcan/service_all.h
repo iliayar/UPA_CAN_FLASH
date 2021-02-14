@@ -150,16 +150,16 @@ enum class ServiceRequestType {
     }
 #define SERVICE_ARG_INIT(_, name, ...) m_##name
 #define SERVICE_FIELD(type, name, ...) FIELD_##type(__VA_ARGS__) m_##name;
-#define SERVICE_BEGIN                                              \
-    class CONCAT(CONCAT(ServiceRequest_, SERVICE), _Builder) {     \
-    public:                                                        \
-        CONCAT(ServiceRequest_, SERVICE) * build() {               \
-            return new CONCAT(ServiceRequest_, SERVICE)(           \
-                MAP_TUPLE_LIST(SERVICE_ARG_INIT, REQUEST_FIELDS)); \
-        }                                                          \
-        MAP_TUPLE(SERVICE_SETTER, REQUEST_FIELDS)                  \
-    private:                                                       \
-        MAP_TUPLE(SERVICE_FIELD, REQUEST_FIELDS)                   \
+#define SERVICE_BEGIN                                                   \
+    class CONCAT(CONCAT(ServiceRequest_, SERVICE), _Builder) {          \
+    public:                                                             \
+        std::shared_ptr<CONCAT(ServiceRequest_, SERVICE)> build() {     \
+            return std::make_shared<CONCAT(ServiceRequest_, SERVICE)>(  \
+                MAP_TUPLE_LIST(SERVICE_ARG_INIT, REQUEST_FIELDS));      \
+        }                                                               \
+        MAP_TUPLE(SERVICE_SETTER, REQUEST_FIELDS)                       \
+            private:                                                    \
+            MAP_TUPLE(SERVICE_FIELD, REQUEST_FIELDS)                    \
     };
 #include "services/services.h"
 #undef SERVICE_SETTER

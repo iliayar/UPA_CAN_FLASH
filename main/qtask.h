@@ -25,8 +25,8 @@ public slots:
 
     void received_frame(std::shared_ptr<Can::Frame>);
     void transmitted_frame(std::shared_ptr<Can::Frame>);
-    void received_service_response(Can::ServiceResponse*);
-    void transmitted_service_request(Can::ServiceRequest*);
+    void received_service_response(std::shared_ptr<Can::ServiceResponse>);
+    void transmitted_service_request(std::shared_ptr<Can::ServiceRequest>);
 
     void error(std::string);
     void info(std::string);
@@ -67,10 +67,10 @@ public:
     void transmitted_frame(std::shared_ptr<Can::Frame> frame) {
         emit signal_transmitted_frame(frame);
     }
-    void received_service_response(Can::ServiceResponse* response) {
+    void received_service_response(std::shared_ptr<Can::ServiceResponse> response) {
         emit signal_received_service_response(response);
     }
-    void transmitted_service_request(Can::ServiceRequest* request) {
+    void transmitted_service_request(std::shared_ptr<Can::ServiceRequest> request) {
         emit signal_transmitted_service_request(request);
     }
 
@@ -91,8 +91,8 @@ signals:
     
     void signal_received_frame(std::shared_ptr<Can::Frame> frame);
     void signal_transmitted_frame(std::shared_ptr<Can::Frame>);
-    void signal_received_service_response(Can::ServiceResponse*);
-    void signal_transmitted_service_request(Can::ServiceRequest*);
+    void signal_received_service_response(std::shared_ptr<Can::ServiceResponse>);
+    void signal_transmitted_service_request(std::shared_ptr<Can::ServiceRequest>);
 
     void signal_error(std::string);
     void signal_info(std::string);
@@ -118,17 +118,17 @@ public:
     virtual void task() = 0;
 
 protected:
-    Can::ServiceResponse* call(Can::ServiceRequest*);
+    std::shared_ptr<Can::ServiceResponse> call(std::shared_ptr<Can::ServiceRequest>);
 
 public slots:
-    void response(Can::ServiceResponse*);
+    void response(std::shared_ptr<Can::ServiceResponse>);
 
 signals:
-    void request(Can::ServiceRequest*);
-    void response_imp(Can::ServiceResponse*);
+    void request(std::shared_ptr<Can::ServiceRequest>);
+    void response_imp(std::shared_ptr<Can::ServiceResponse>);
 
 private:
-    Can::ServiceResponse* m_response;
+    std::shared_ptr<Can::ServiceResponse> m_response;
 protected:
     QLogger* m_logger;
 };

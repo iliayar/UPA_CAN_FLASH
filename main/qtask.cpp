@@ -43,9 +43,9 @@ void QLoggerWorker::transmitted_frame(std::shared_ptr<Can::Frame> frame)
     payload_str.append(vec_to_qstr(payload));
     m_frame_log->append(payload_str);
 }
-void QLoggerWorker::received_service_response(Can::ServiceResponse*)
+void QLoggerWorker::received_service_response(std::shared_ptr<Can::ServiceResponse>)
 {}
-void QLoggerWorker::transmitted_service_request(Can::ServiceRequest*)
+void QLoggerWorker::transmitted_service_request(std::shared_ptr<Can::ServiceRequest>)
 {}
 
 QString get_date_str() {
@@ -77,12 +77,12 @@ void QLoggerWorker::important(std::string message)
     m_message_log->setStyleSheet("font-weight: regular;");
 }
 
-void QTask::response(Can::ServiceResponse* r) {
+void QTask::response(std::shared_ptr<Can::ServiceResponse> r) {
     m_response = r;
     emit response_imp(r);
 }
 
-Can::ServiceResponse* QTask::call(Can::ServiceRequest* req) {
+std::shared_ptr<Can::ServiceResponse> QTask::call(std::shared_ptr<Can::ServiceRequest> req) {
     DEBUG(info, "QTask emit request");
     emit request(req);
     while(1) {
@@ -91,13 +91,13 @@ Can::ServiceResponse* QTask::call(Can::ServiceRequest* req) {
         if(res) {
             if (m_response->get_type() ==
                 Can::ServiceResponseType::Negative) {
-                if (static_cast<Can::ServiceResponse_Negative*>(m_response)
+                if (static_cast<Can::ServiceResponse_Negative*>(m_response.get())
                     ->get_service() != req->get_type()) {
                     DEBUG(info, "task response invalid error service code");
                     m_logger->warning("Invalid error service code");
                     continue;
                 }
-                if (static_cast<Can::ServiceResponse_Negative*>(m_response)
+                if (static_cast<Can::ServiceResponse_Negative*>(m_response.get())
                     ->get_code() == 0x78) {
                     DEBUG(info, "task response error service code = 0x78");
                     m_logger->warning("Waiting for positive resposnse");
@@ -117,11 +117,12 @@ Can::ServiceResponse* QTask::call(Can::ServiceRequest* req) {
 using namespace Can;
 
 void QTestTask::task() {
-    ServiceResponse* response;
+    std::shared_ptr<ServiceResponse> response;
     m_logger->info("Reading UPASystemType");
-    response = call(
-        new ServiceRequest_ReadDataByIdentifier(DataIdentifier::UPASystemType));
-    uint8_t type = static_cast<ServiceResponse_ReadDataByIdentifier*>(response)
+    response = call(ServiceRequest_ReadDataByIdentifier::build()
+                    ->id(DataIdentifier::UPASystemType)
+                    ->build());
+    uint8_t type = static_cast<ServiceResponse_ReadDataByIdentifier*>(response.get())
         ->get_data()
         ->get_value()[0];
     std::stringstream ss;
@@ -129,14 +130,17 @@ void QTestTask::task() {
     m_logger->info(ss.str());
 
     m_logger->info("Writing VIN");
-    call(new ServiceRequest_WriteDataByIdentifier(new Data(
-                                                      DataIdentifier::VIN, ::Util::str_to_vec("HELLO ANYBODY ..."))));
+    call(ServiceRequest_WriteDataByIdentifier::build()
+         ->data(new Data(DataIdentifier::VIN,
+                         ::Util::str_to_vec("HELLO ANYBODY ...")))
+         ->build());
 
     m_logger->info("Reading VIN");
-    response =
-        call(new ServiceRequest_ReadDataByIdentifier(DataIdentifier::VIN));
+    response = call(ServiceRequest_ReadDataByIdentifier::build()
+                    ->id(DataIdentifier::VIN)
+                    ->build());
     std::string VIN = ::Util::vec_to_str(
-        static_cast<ServiceResponse_ReadDataByIdentifier*>(response)
+        static_cast<ServiceResponse_ReadDataByIdentifier*>(response.get())
         ->get_data()
         ->get_value());
     m_logger->info("VIN = " + VIN);

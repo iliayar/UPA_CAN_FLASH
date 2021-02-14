@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "map.h"
 
@@ -93,7 +94,7 @@ private:
 class HexReader {
 public:
     HexReader(Source* source);
-    HexLine* read_line();
+    std::unique_ptr<HexLine> read_line();
     bool is_eof();
     uint32_t get_current_address() { return m_address; }
 

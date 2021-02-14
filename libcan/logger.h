@@ -28,8 +28,8 @@ class Logger {
 public:
     virtual void received_frame(std::shared_ptr<Frame>) = 0;
     virtual void transmitted_frame(std::shared_ptr<Frame>) = 0;
-    virtual void received_service_response(ServiceResponse*) = 0;
-    virtual void transmitted_service_request(ServiceRequest*) = 0;
+    virtual void received_service_response(std::shared_ptr<ServiceResponse>) = 0;
+    virtual void transmitted_service_request(std::shared_ptr<ServiceRequest>) = 0;
     virtual void error(std::string) = 0;
     virtual void info(std::string) = 0;
     virtual void warning(std::string) = 0;
@@ -67,8 +67,8 @@ class NoLogger : public Logger {
 public:
     void received_frame(std::shared_ptr<Frame> _) {}
     void transmitted_frame(std::shared_ptr<Frame> _) {}
-    void received_service_response(ServiceResponse* _) {}
-    void transmitted_service_request(ServiceRequest* _) {}
+    void received_service_response(std::shared_ptr<ServiceResponse> _) {}
+    void transmitted_service_request(std::shared_ptr<ServiceRequest> _) {}
     void error(std::string _) {}
     void info(std::string _) {}
     void warning(std::string _) {}
@@ -91,11 +91,11 @@ public:
         m_start = std::chrono::high_resolution_clock::now();
     }
 
-    void received_service_response(ServiceResponse* r) override {
+    void received_service_response(std::shared_ptr<ServiceResponse> r) override {
         // std::cout << "Received response " << (int)r->get_type() << std::endl;
     }
 
-    void transmitted_service_request(ServiceRequest* r) override {
+    void transmitted_service_request(std::shared_ptr<ServiceRequest> r) override {
         // std::cout << "Transmited request " << (int)r->get_type() <<
         // std::endl;
     }
@@ -153,11 +153,11 @@ public:
         m_start = std::chrono::high_resolution_clock::now();
     }
 
-    void received_service_response(ServiceResponse* r) override {
+    void received_service_response(std::shared_ptr<ServiceResponse> r) override {
         // m_fout << "Received response " << (int)r->get_type() << std::endl;
     }
 
-    void transmitted_service_request(ServiceRequest* r) override {
+    void transmitted_service_request(std::shared_ptr<ServiceRequest> r) override {
         // m_fout << "Transmited request " << (int)r->get_type() <<
         // std::endl;
     }

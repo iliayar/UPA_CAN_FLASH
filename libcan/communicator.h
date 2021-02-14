@@ -19,8 +19,10 @@ enum class CommunicatorStatus { Idle, Receive, Transmit };
 
 enum WorkerStatus { Done, Work, Error };
 
-std::vector<std::shared_ptr<Frame>> service_to_frames(ServiceRequest*);
-ServiceResponse* frames_to_service(std::vector<std::shared_ptr<Frame>>);
+std::vector<std::shared_ptr<Frame>> service_to_frames(
+    std::shared_ptr<ServiceRequest>);
+std::shared_ptr<ServiceResponse> frames_to_service(
+    std::vector<std::shared_ptr<Frame>>);
 
 class Worker {
 public:
@@ -57,7 +59,7 @@ public:
     WorkerStatus get_status();
     std::shared_ptr<Frame> fetch_frame();
     void push_frame(std::shared_ptr<Frame>);
-    ServiceResponse* get_response();
+    std::shared_ptr<ServiceResponse> get_response();
 
 private:
     std::vector<std::shared_ptr<Frame>> m_frames;
@@ -70,7 +72,7 @@ private:
 
 class Transmitter : public Worker {
 public:
-    Transmitter(ServiceRequest*);
+    Transmitter(std::shared_ptr<ServiceRequest>);
 
     CommunicatorStatus get_type() { return CommunicatorStatus::Transmit; }
     WorkerStatus get_status();

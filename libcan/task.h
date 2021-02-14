@@ -15,15 +15,15 @@ namespace Can {
 
 class Task {
 public:
-    virtual ServiceRequest* fetch_request() = 0;
-    virtual void push_response(ServiceResponse*) = 0;
+    virtual std::shared_ptr<ServiceRequest> fetch_request() = 0;
+    virtual void push_response(std::shared_ptr<ServiceResponse>) = 0;
     virtual bool is_completed() = 0;
 };
 
 class ReadWriteTask : public Task {
 public:
-    ServiceRequest* fetch_request();
-    void push_response(ServiceResponse* response);
+    std::shared_ptr<ServiceRequest> fetch_request();
+    void push_response(std::shared_ptr<ServiceResponse> response);
 
     bool is_completed();
 
@@ -40,7 +40,7 @@ public:
           m_thread(&AsyncTask::task_imp, this),
           m_response(nullptr) {}
 
-    ServiceRequest* fetch_request() {
+    std::shared_ptr<ServiceRequest> fetch_request() {
         std::this_thread::sleep_for(
             static_cast<std::chrono::milliseconds>(DELAY));
         DEBUG(info, "task");
@@ -48,7 +48,7 @@ public:
             {
                 std::unique_lock<std::mutex> lock(m_mutex);
                 if (m_request != nullptr) {
-                    ServiceRequest* request = m_request;
+                    std::shared_ptr<ServiceRequest> request = m_request;
                     DEBUG(info, "task fetched request");
                     m_request = nullptr;
                     return request;
@@ -59,7 +59,7 @@ public:
         }
     }
 
-    void push_response(ServiceResponse* response) {
+    void push_response(std::shared_ptr<ServiceResponse> response) {
         std::this_thread::sleep_for(
             static_cast<std::chrono::milliseconds>(DELAY));
         DEBUG(info, "task");
@@ -87,7 +87,7 @@ public:
     virtual void task() = 0;
 
 protected:
-    ServiceResponse* call(ServiceRequest* request) { return call_imp(request); }
+    std::shared_ptr<ServiceResponse> call(std::shared_ptr<ServiceRequest> request) { return call_imp(request); }
 
     Logger* m_logger;
 
@@ -99,10 +99,10 @@ private:
         m_completed = true;
     }
 
-    ServiceResponse* call_imp(ServiceRequest*);
+    std::shared_ptr<ServiceResponse> call_imp(std::shared_ptr<ServiceRequest>);
 
-    ServiceRequest* m_request;
-    ServiceResponse* m_response;
+    std::shared_ptr<ServiceRequest> m_request;
+    std::shared_ptr<ServiceResponse> m_response;
     bool m_completed;
     bool m_wait_response;
     std::thread m_thread;
