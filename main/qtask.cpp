@@ -83,12 +83,32 @@ void QTask::response(Can::ServiceResponse* r) {
 }
 
 Can::ServiceResponse* QTask::call(Can::ServiceRequest* req) {
-    std::cout << "QTask emit request" << std::endl;
+    DEBUG(info, "QTask emit request");
     emit request(req);
     while(1) {
         QSignalSpy spy(this, &QTask::response_imp);
         bool res = spy.wait(RESPONSE_TIMEOUT);
         if(res) {
+            if (m_response->get_type() ==
+                Can::ServiceResponseType::Negative) {
+                if (static_cast<Can::ServiceResponse_Negative*>(m_response)
+                    ->get_service() != req->get_type()) {
+                    DEBUG(info, "task response invalid error service code");
+                    m_logger->warning("Invalid error service code");
+                    continue;
+                }
+                if (static_cast<Can::ServiceResponse_Negative*>(m_response)
+                    ->get_code() == 0x78) {
+                    DEBUG(info, "task response error service code = 0x78");
+                    m_logger->warning("Waiting for positive resposnse");
+                    continue;
+                }
+            } else if (m_response->get_type() !=
+                       Can::request_to_response_type(req->get_type())) {
+                DEBUG(info, "task response code wrong");
+                m_logger->warning("Invalid response code");
+                continue;
+            }
             return m_response;
         }
     }
@@ -100,24 +120,24 @@ void QTestTask::task() {
     ServiceResponse* response;
     m_logger->info("Reading UPASystemType");
     response = call(
-	new ServiceRequest_ReadDataByIdentifier(DataIdentifier::UPASystemType));
+        new ServiceRequest_ReadDataByIdentifier(DataIdentifier::UPASystemType));
     uint8_t type = static_cast<ServiceResponse_ReadDataByIdentifier*>(response)
-		       ->get_data()
-		       ->get_value()[0];
+        ->get_data()
+        ->get_value()[0];
     std::stringstream ss;
     ss << "UPASystemType = " << std::hex << (int)type;
     m_logger->info(ss.str());
 
     m_logger->info("Writing VIN");
     call(new ServiceRequest_WriteDataByIdentifier(new Data(
-	DataIdentifier::VIN, ::Util::str_to_vec("HELLO ANYBODY ..."))));
+                                                      DataIdentifier::VIN, ::Util::str_to_vec("HELLO ANYBODY ..."))));
 
     m_logger->info("Reading VIN");
     response =
         call(new ServiceRequest_ReadDataByIdentifier(DataIdentifier::VIN));
     std::string VIN = ::Util::vec_to_str(
         static_cast<ServiceResponse_ReadDataByIdentifier*>(response)
-            ->get_data()
-            ->get_value());
+        ->get_data()
+        ->get_value());
     m_logger->info("VIN = " + VIN);
 }
