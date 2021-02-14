@@ -1,9 +1,10 @@
-#include "can.h"
+#include "qtask.h"
 #include "service_all.h"
 #include "frame_all.h"
 
 #include <memory>
 #include <QDateTime>
+#include <QSignalSpy>
 
 QLoggerWorker::QLoggerWorker(QObject* parent, QTextEdit* frame_log, QTextEdit* message_log)
     : QObject(parent), m_frame_log(frame_log), m_message_log(message_log), m_timer(), m_mutex() {
@@ -76,41 +77,46 @@ void QLoggerWorker::important(std::string message)
     m_message_log->setStyleSheet("font-weight: regular;");
 }
 
-Can::ServiceResponse* QAsyncTaskThread::call(Can::ServiceRequest* r) {
-    m_logger->transmitted_service_request(r);
-    emit request(r);
-    emit wait_response();
+void QTask::response(Can::ServiceResponse* r) {
+    m_response = r;
+    emit response_imp(r);
+}
 
-    while (m_response == nullptr) {
-        QSignalSpy spy(m_parent, &QAsyncTask::response);
-        spy.wait(RESPONSE_TIMEOUT);
-        if(m_response == nullptr) continue;
-
-        if (m_response->get_type() == Can::ServiceResponseType::Negative) {
-            if (static_cast<Can::ServiceResponse_Negative*>(m_response)
-                    ->get_service() != r->get_type()) {
-                m_response = nullptr;
-                m_logger->warning("Invalid error service code");
-                continue;
-            }
-            if (static_cast<Can::ServiceResponse_Negative*>(m_response)
-                    ->get_code() == 0x78) {
-                m_response = nullptr;
-                m_logger->warning("Waiting for positive resposnse");
-                continue;
-            }
-        } else if (m_response->get_type() !=
-                   Can::request_to_response_type(r->get_type())) {
-            m_response = nullptr;
-            m_logger->warning("Invalid m_response code");
-            continue;
+Can::ServiceResponse* QTask::call(Can::ServiceRequest* req) {
+    emit request(req);
+    while(1) {
+        QSignalSpy spy(this, &QTask::response_imp);
+        bool res = spy.wait(RESPONSE_TIMEOUT);
+        if(res) {
+            return m_response;
         }
     }
+}
 
-    emit unwait_response();
+using namespace Can;
 
-    Can::ServiceResponse* res = m_response;
-    m_response = nullptr;
-    m_logger->received_service_response(res);
-    return res;
+void QTestTask::task() {
+    ServiceResponse* response;
+    m_logger->info("Reading UPASystemType");
+    response = call(
+	new ServiceRequest_ReadDataByIdentifier(DataIdentifier::UPASystemType));
+    uint8_t type = static_cast<ServiceResponse_ReadDataByIdentifier*>(response)
+		       ->get_data()
+		       ->get_value()[0];
+    std::stringstream ss;
+    ss << "UPASystemType = " << std::hex << (int)type;
+    m_logger->info(ss.str());
+
+    m_logger->info("Writing VIN");
+    call(new ServiceRequest_WriteDataByIdentifier(new Data(
+	DataIdentifier::VIN, ::Util::str_to_vec("HELLO ANYBODY ..."))));
+
+    m_logger->info("Reading VIN");
+    response =
+        call(new ServiceRequest_ReadDataByIdentifier(DataIdentifier::VIN));
+    std::string VIN = ::Util::vec_to_str(
+        static_cast<ServiceResponse_ReadDataByIdentifier*>(response)
+            ->get_data()
+            ->get_value());
+    m_logger->info("VIN = " + VIN);
 }

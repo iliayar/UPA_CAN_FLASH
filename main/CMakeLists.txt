@@ -2,10 +2,12 @@ set(Main_SRCS
     main.cpp
     mainwindow.h
     mainwindow.cpp
-    can.h
-    can.cpp
+    qtask.h
+    qtask.cpp
     flash.h
     flash.cpp
+    qcommunicator.h
+    qcommunicator.cpp
 )
 
 

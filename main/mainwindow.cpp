@@ -28,7 +28,7 @@
 #include "frame.h"
 #include "task.h"
 #include "flash.h"
-#include "can.h"
+#include "qtask.h"
 #include "hex.h"
 #include "logger.h"
 

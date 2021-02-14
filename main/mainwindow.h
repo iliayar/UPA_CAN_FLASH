@@ -10,7 +10,7 @@
 #include <mutex>
 
 #include "communicator.h"
-#include "can.h"
+#include "qtask.h"
 
 namespace Ui {
 class MainWindow;
