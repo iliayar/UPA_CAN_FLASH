@@ -42,9 +42,7 @@ void QCommunicator::push_frame(std::shared_ptr<Can::Frame> frame) {
     connect(this, &QCommunicator::operate_receiver, worker, &QReceiver::init);
     m_worker = worker;
     m_worker->moveToThread(&m_worker_thread);
-    // m_worker_thread.start();
     emit operate_receiver(frame);
-    // m_worker_thread.start();
     DEBUG(info, "QReceiver created");
 }
 
@@ -54,7 +52,7 @@ void QCommunicator::fetch_frame_worker(std::shared_ptr<Can::Frame> frame) {
     emit fetch_frame(frame);
 }
 
-void QCommunicator::request(Can::ServiceRequest* r) {
+void QCommunicator::request(std::shared_ptr<Can::ServiceRequest> r) {
     if (m_worker != nullptr) {
         // :FIXME: throw error? worer busy
     }
@@ -73,21 +71,17 @@ void QCommunicator::request(Can::ServiceRequest* r) {
     m_worker = worker;
 
     m_worker->moveToThread(&m_worker_thread);
-    // m_worker_thread.start();
     emit operate_transmitter(r);
-    // worker->init(r);
     DEBUG(info, "QTransmitter created");
 }
 
-void QCommunicator::worker_error() { m_logger->error("Worker error"); }
+void QCommunicator::worker_error(WorkerError e) { m_logger->error("Worker error"); }
 void QCommunicator::worker_done() {
     DEBUG(info, "QCommunicator worker_done");
     switch (m_worker->get_type()) {
         case Can::CommunicatorStatus::Receive: {
             QReceiver* worker = static_cast<QReceiver*>(m_worker);
             emit response(worker->get_response());
-            // m_worker_thread.quit();
-            // m_worker_thread.wait();
             disconnect(worker, &QReceiver::fetch_frame, this,
                        &QCommunicator::fetch_frame_worker);
             disconnect(this, &QCommunicator::push_frame_worker, worker,
@@ -127,7 +121,7 @@ void QCommunicator::worker_done() {
     DEBUG(info, "QCommunicator worker_done quit");
 }
 
-void QTransmitter::init(Can::ServiceRequest* request) {
+void QTransmitter::init(std::shared_ptr<Can::ServiceRequest> request) {
     m_frames = Can::service_to_frames(request);
     if (m_frames.size() == 0) {
         throw std::runtime_error("Failed to disassemble request to frames");
@@ -135,6 +129,7 @@ void QTransmitter::init(Can::ServiceRequest* request) {
     switch (m_frames[0]->get_type()) {
         case Can::FrameType::SingleFrame: {
             DEBUG(info, "QTransmitter fetch single frame");
+            update_timer();
             emit fetch_frame(m_frames[0]);
             emit worker_done();
             break;
@@ -142,12 +137,13 @@ void QTransmitter::init(Can::ServiceRequest* request) {
         case Can::FrameType::FirstFrame: {
             DEBUG(info, "transmitter first frame");
             m_i = 1;
+            update_timer();
             emit fetch_frame(m_frames[0]);
             break;
         }
         default:
             DEBUG(info, "transmitter error frame");
-            emit worker_error();
+            emit worker_error(WorkerError::Other);
             break;
     }
 }
@@ -162,7 +158,7 @@ void QTransmitter::push_frame(std::shared_ptr<Can::Frame> frame) {
             Can::FlowStatus::WaitForAnotherFlowControlMessageBeforeContinuing) {
             return;
         } else if (status == Can::FlowStatus::OverflowAbortTransmission) {
-            emit worker_error();
+            emit worker_error(WorkerError::Other);
             return;
         }
         int fc_block_size =
@@ -173,6 +169,7 @@ void QTransmitter::push_frame(std::shared_ptr<Can::Frame> frame) {
         for (int i = 0; i < fc_block_size && m_i < m_frames.size();
              ++i, ++m_i) {
             QThread::msleep(fc_min_time);
+            update_timer();
             emit fetch_frame(m_frames[m_i]);
         }
         if (m_i >= m_frames.size()) emit worker_done();
@@ -193,20 +190,21 @@ void QReceiver::init(std::shared_ptr<Can::Frame> frame) {
             m_consecutive_len =
                 static_cast<Can::Frame_FirstFrame*>(frame.get())->get_len();
             m_consecutive_last = 0x0;
+            update_timer();
             emit fetch_frame(std::make_shared<Can::Frame_FlowControl>(
                 Can::FlowStatus::ContinueToSend, 0, 0));
             break;
         }
         default:
             DEBUG(info, "receiver error creating");
-            emit worker_error();
+            emit worker_error(WorkerError::Other);
             break;
     }
 }
 
-Can::ServiceResponse* QReceiver::get_response() {
+std::shared_ptr<Can::ServiceResponse> QReceiver::get_response() {
     DEBUG(info, "receiver");
-    Can::ServiceResponse* response = Can::frames_to_service(m_frames);
+    std::shared_ptr<Can::ServiceResponse> response = Can::frames_to_service(m_frames);
     return response;
 }
 
@@ -214,23 +212,23 @@ void QReceiver::push_frame(std::shared_ptr<Can::Frame> frame) {
     DEBUG(info, "QReceiver push_frame");
     switch (frame->get_type()) {
         case Can::FrameType::ConsecutiveFrame: {
+            update_timer();
             DEBUG(info, "pushing consecutive frame");
             m_consecutive_last = (m_consecutive_last + 1) & 0xf;
             m_frames.push_back(frame);
             if (m_consecutive_last !=
                 static_cast<Can::Frame_ConsecutiveFrame*>(frame.get())
                     ->get_seq_num()) {
-                emit worker_error();
+                emit worker_error(WorkerError::Other);
                 break;
             }
-            update_imp();
             if (6 + (m_frames.size() - 1) * 7 >= m_consecutive_len) {
                 emit worker_done();
             }
             break;
         }
         default:
-            emit worker_error();
+            emit worker_error(WorkerError::Other);
             break;
     }
 }

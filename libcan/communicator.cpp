@@ -59,7 +59,7 @@ void Can::Communicator::update_task() {
             DEBUG(info, "worker done");
             switch (m_worker->get_type()) {
                 case Can::CommunicatorStatus::Receive: {
-                    Can::ServiceResponse* response =
+                    std::shared_ptr<Can::ServiceResponse> response =
                         static_cast<Can::Receiver*>(m_worker)->get_response();
                     if (response == nullptr) {
                         delete static_cast<Can::Receiver*>(m_worker);
@@ -85,7 +85,7 @@ void Can::Communicator::update_task() {
                 return;
             }
             DEBUG(info, "fetching request");
-            Can::ServiceRequest* request = m_task->fetch_request();
+            std::shared_ptr<Can::ServiceRequest> request = m_task->fetch_request();
             DEBUG(info, "request fetched");
             if (request != nullptr) m_worker = new Transmitter(request);
             m_logger->transmitted_service_request(request);
@@ -97,7 +97,7 @@ void Can::Communicator::update_task() {
     }
 }
 
-Can::ServiceResponse* Can::frames_to_service(std::vector<std::shared_ptr<Can::Frame>> frames) {
+std::shared_ptr<Can::ServiceResponse> Can::frames_to_service(std::vector<std::shared_ptr<Can::Frame>> frames) {
     int len = -1;
     std::vector<uint8_t> payload;
 
@@ -128,7 +128,7 @@ Can::ServiceResponse* Can::frames_to_service(std::vector<std::shared_ptr<Can::Fr
     return Can::ServiceResponseFactory(payload).get();
 }
 
-std::vector<std::shared_ptr<Can::Frame>> Can::service_to_frames(Can::ServiceRequest* request) {
+std::vector<std::shared_ptr<Can::Frame>> Can::service_to_frames(std::shared_ptr<Can::ServiceRequest> request) {
     std::vector<std::shared_ptr<Can::Frame>> frames;
     std::vector<uint8_t> payload = request->dump();
 
@@ -160,7 +160,7 @@ std::vector<std::shared_ptr<Can::Frame>> Can::service_to_frames(Can::ServiceRequ
     return frames;
 }
 
-Can::Transmitter::Transmitter(Can::ServiceRequest* request) {
+Can::Transmitter::Transmitter(std::shared_ptr<Can::ServiceRequest> request) {
     if (request == nullptr) {
         m_status = Can::WorkerStatus::Done;
     }
@@ -288,10 +288,10 @@ Can::Receiver::Receiver(std::shared_ptr<Can::Frame> frame) {
     }
 }
 
-Can::ServiceResponse* Can::Receiver::get_response() {
+std::shared_ptr<Can::ServiceResponse> Can::Receiver::get_response() {
     // Taking that communicator only fetch response when status is Ready
     DEBUG(info, "receiver");
-    Can::ServiceResponse* response = Can::frames_to_service(m_frames);
+    std::shared_ptr<Can::ServiceResponse> response = Can::frames_to_service(m_frames);
     return response;
 }
 

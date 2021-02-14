@@ -155,7 +155,7 @@ Can::ServiceResponseFactory::ServiceResponseFactory(
 
 #define ALL m_size - m_offset
 #define RETURN(...) \
-    return new CONCAT(Can::ServiceResponse_, SERVICE)(__VA_ARGS__);
+    return std::make_shared<CONCAT(Can::ServiceResponse_, SERVICE)>(__VA_ARGS__);
 #define FIELD_VEC(name, len)                                  \
     std::vector<uint8_t> name = m_reader.read(m_offset, len); \
     m_offset += len;
@@ -181,13 +181,13 @@ Can::ServiceResponseFactory::ServiceResponseFactory(
 
 #define PARSE
 #define SERVICE_BEGIN \
-    Can::ServiceResponse* CONCAT(Can::ServiceResponseFactory::parse_, SERVICE)()
+    std::shared_ptr<Can::ServiceResponse> CONCAT(Can::ServiceResponseFactory::parse_, SERVICE)()
 #include "services/services.h"
 #undef SERVICE_BEGIN
 #undef PARSE
 
 #define SERVICE Negative
-Can::ServiceResponse* Can::ServiceResponseFactory::parse_Negative() {
+std::shared_ptr<Can::ServiceResponse> Can::ServiceResponseFactory::parse_Negative() {
     FIELD(ENUM, service, ServiceRequestType, 8);
     FIELD(INT, code, 8);
     RETURN(service, code);
@@ -204,7 +204,7 @@ Can::ServiceResponse* Can::ServiceResponseFactory::parse_Negative() {
 #undef CASE
 #undef RETURN
 
-Can::ServiceResponse* Can::ServiceResponseFactory::get() {
+std::shared_ptr<Can::ServiceResponse> Can::ServiceResponseFactory::get() {
     ServiceResponseType type =
         static_cast<ServiceResponseType>(m_reader.read_8(m_offset, 8));
     m_offset += 8;

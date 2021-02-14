@@ -4,6 +4,7 @@
 #include "map.h"
 
 #include <vector>
+#include <memory>
 
 namespace Can {
 
@@ -25,17 +26,17 @@ class ServiceResponseFactory {
 public:
     ServiceResponseFactory(std::vector<uint8_t>);
 
-    ServiceResponse* get();
+    std::shared_ptr<ServiceResponse> get();
 
 private:
 #define DATATYPE(...)
 #define SUBFUNCTIONS(...)
-#define SERVICE_BEGIN ServiceResponse* CONCAT(parse_, SERVICE)();
+#define SERVICE_BEGIN std::shared_ptr<ServiceResponse> CONCAT(parse_, SERVICE)();
 #include "services/services.h"
 #undef SERVICE_BEGIN
 #undef SUBFUNCTIONS
 #undef DATATYPE
-    ServiceResponse* parse_Negative();
+    std::shared_ptr<ServiceResponse> parse_Negative();
 
     int m_offset;
     int m_size;

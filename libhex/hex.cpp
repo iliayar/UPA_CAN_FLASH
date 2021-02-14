@@ -78,7 +78,7 @@ std::vector<uint8_t> sum_proxy(uint8_t* sum, std::vector<uint8_t> data) {
     Util::Reader(sum_proxy(&sum, str_to_bytes(read_chars(n / 4)))) \
 	.read_##n(0, n)
 
-Hex::HexLine* Hex::HexReader::read_line() {
+std::unique_ptr<Hex::HexLine> Hex::HexReader::read_line() {
     except(':');
 
     uint8_t sum = 0;
@@ -89,32 +89,32 @@ Hex::HexLine* Hex::HexReader::read_line() {
     uint16_t address = READ_INT(16);
     Hex::HexLineType type = static_cast<Hex::HexLineType>(READ_INT(8));
 
-    Hex::HexLine* line = nullptr;
+    std::unique_ptr<Hex::HexLine> line = nullptr;
 
     switch (type) {
 	case Hex::HexLineType::Data: {
 	    std::vector<uint8_t> data =
 		sum_proxy(&sum, str_to_bytes(read_chars(size * 2)));
-	    line = new Hex::DataLine(data, address);
+	    line = std::make_unique<Hex::DataLine>(data, address);
 	    break;
 	}
 	case Hex::HexLineType::EndOfFile: {
-	    line = new Hex::EndOfFileLine();
+	    line = std::make_unique<Hex::EndOfFileLine>();
 	    break;
 	}
 	case Hex::HexLineType::ExtendSegmentAddress: {
 	    uint16_t addr = READ_INT(16);
-	    line = new Hex::ExtendLinearAddressLine(addr);
+	    line = std::make_unique<Hex::ExtendLinearAddressLine>(addr);
 	    break;
 	}
 	case Hex::HexLineType::StartSegmentAddress: {
 	    uint32_t addr = READ_INT(32);
-	    line = new Hex::StartSegmentAddressLine(addr);
+	    line = std::make_unique<Hex::StartSegmentAddressLine>(addr);
 	    break;
 	}
 	case Hex::HexLineType::ExtendLinearAddress: {
 	    uint16_t addr = READ_INT(16);
-	    line = new Hex::ExtendLinearAddressLine(addr);
+	    line = std::make_unique<Hex::ExtendLinearAddressLine>(addr);
 		uint32_t addr_t = addr;
 		m_address &= (uint32_t)0x0000ffff;
 		m_address |= (addr_t << 16);
@@ -122,7 +122,7 @@ Hex::HexLine* Hex::HexReader::read_line() {
 	}
 	case Hex::HexLineType::StartLinearAddress: {
 	    uint32_t addr = READ_INT(32);
-	    line = new Hex::StartLinearAddressLine(addr);
+	    line = std::make_unique<Hex::StartLinearAddressLine>(addr);
 	    break;
 	}
 	default:
@@ -132,7 +132,7 @@ Hex::HexLine* Hex::HexReader::read_line() {
     if (sum != 0) throw std::runtime_error("Wrong HEX format: Invalid sum");
     test('\r');
     except('\n');
-    return line;
+    return std::move(line);
 }
 
 bool Hex::HexReader::is_eof() { 
@@ -175,14 +175,14 @@ Hex::HexInfo Hex::read_hex_info(Hex::HexReader& reader) {
 	bool low_addr = false;
 	uint32_t addr = 0;
     while (!reader.is_eof()) {
-        Hex::HexLine *line = reader.read_line();
+        std::unique_ptr<Hex::HexLine> line = reader.read_line();
         if (line->get_type() == Hex::HexLineType::Data) {
 			if(!low_addr) {
 				low_addr = true;
-				uint32_t l_addr = static_cast<Hex::DataLine*>(line)->get_address();
+				uint32_t l_addr = static_cast<Hex::DataLine*>(line.get())->get_address();
 				addr |= l_addr;
 			}
-            std::vector<uint8_t> line_data = static_cast<Hex::DataLine*>(line)->get_data();
+            std::vector<uint8_t> line_data = static_cast<Hex::DataLine*>(line.get())->get_data();
             for (uint8_t d : line_data) {
                 last_4[last_4_i++] = d;
                 size++;
@@ -194,7 +194,7 @@ Hex::HexInfo Hex::read_hex_info(Hex::HexReader& reader) {
         }
 		if(!high_addr && line->get_type() == Hex::HexLineType::ExtendLinearAddress) {	
 			high_addr = true;
-			uint32_t h_addr = static_cast<Hex::ExtendLinearAddressLine*>(line)->get_address();
+			uint32_t h_addr = static_cast<Hex::ExtendLinearAddressLine*>(line.get())->get_address();
 			addr |= (h_addr << 16);
 		}
         if (line->get_type() == Hex::HexLineType::EndOfFile) {
