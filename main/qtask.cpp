@@ -131,7 +131,7 @@ void QTestTask::task() {
                     ->id(DataIdentifier::UPASystemType)
                     ->build());
     IF_NEGATIVE(response) {
-        m_logger("Negative ReadDataByIdentifier response");
+        m_logger->error("Negative ReadDataByIdentifier response");
         return;
     }
     uint8_t type = static_cast<ServiceResponse_ReadDataByIdentifier*>(response.get())
@@ -152,7 +152,7 @@ void QTestTask::task() {
                     ->id(DataIdentifier::VIN)
                     ->build());
     IF_NEGATIVE(response) {
-        m_logger("Negative ReadDataByIdentifier response");
+        m_logger->error("Negative ReadDataByIdentifier response");
         return;
     }
     std::string VIN = ::Util::vec_to_str(
