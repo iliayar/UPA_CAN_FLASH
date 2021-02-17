@@ -67,6 +67,7 @@ void QCommunicator::push_frame(std::shared_ptr<Can::Frame> frame) {
 void QCommunicator::fetch_frame_worker(std::shared_ptr<Can::Frame> frame) {
     if(frame == nullptr) return;
     DEBUG(info, "QCommunicator fetch_frame_worker");
+    emit response(nullptr, true);
     m_logger->transmitted_frame(frame);
     emit fetch_frame(frame);
 }
