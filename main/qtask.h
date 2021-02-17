@@ -15,6 +15,7 @@
 #include "util.h"
 
 #define RESPONSE_TIMEOUT 1000
+#define IF_NEGATIVE(res) if(res->get_type() == Can::ServiceResponseType::Negative)
 
 class QLoggerWorker : public QObject {
     Q_OBJECT

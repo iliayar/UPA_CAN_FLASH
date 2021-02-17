@@ -9,8 +9,6 @@
 
 using namespace Can;
 
-#define IF_NEGATIVE(res) if(res->get_type() == Can::ServiceResponseType::Negative)
-
 std::string int_to_hex(int n) {
 
     std::stringstream s;
