@@ -86,6 +86,10 @@ public:
     void next_char();
     bool is_eof();
 
+    ~FileSource() {
+        if(m_char != nullptr) delete m_char;
+    }
+
 private:
     std::ifstream& m_fin;
     char* m_char;
@@ -93,8 +97,8 @@ private:
 
 class HexReader {
 public:
-    HexReader(Source* source);
-    std::unique_ptr<HexLine> read_line();
+    HexReader(std::shared_ptr<Source> source);
+    std::shared_ptr<HexLine> read_line();
     bool is_eof();
     uint32_t get_current_address() { return m_address; }
 
@@ -103,7 +107,7 @@ private:
     bool test(char);
     std::string read_chars(int);
 
-    Source* m_source;
+    std::shared_ptr<Source> m_source;
     uint32_t m_address = 0;
 
     int m_line_readed;

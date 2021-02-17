@@ -43,7 +43,7 @@ public:
     void processReceivedFrames();
 signals:
     void frame_received(std::shared_ptr<Can::Frame>);
-    void set_task(QTask*);
+    void set_task(std::shared_ptr<QTask>);
 private:
 
     void create_layout(QWidget*);

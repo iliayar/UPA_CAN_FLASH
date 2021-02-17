@@ -14,7 +14,7 @@
 #include "task.h"
 #include "util.h"
 
-#define RESPONSE_TIMEOUT 10000
+#define RESPONSE_TIMEOUT 1000
 
 class QLoggerWorker : public QObject {
     Q_OBJECT
@@ -121,7 +121,7 @@ private:
 class QTask : public QThread {
     Q_OBJECT
 public:
-    QTask(QLogger* logger) : m_logger(logger) {}
+    QTask(std::shared_ptr<QLogger> logger) : m_logger(logger) {}
 
     void run() override {
         std::cout << "QTask starting task" << std::endl;
@@ -129,10 +129,6 @@ public:
     }
 
     virtual void task() = 0;
-
-    ~QTask() {
-        delete m_logger;
-    }
 
 protected:
     std::shared_ptr<Can::ServiceResponse> call(std::shared_ptr<Can::ServiceRequest>);
@@ -147,13 +143,13 @@ signals:
 private:
     std::shared_ptr<Can::ServiceResponse> m_response;
 protected:
-    QLogger* m_logger;
+    std::shared_ptr<QLogger> m_logger;
 };
 
 
 class QTestTask : public QTask {
     Q_OBJECT
 public:
-    QTestTask(QLogger* logger) : QTask(logger) {}
+    QTestTask(std::shared_ptr<QLogger> logger) : QTask(logger) {}
     void task();
 };

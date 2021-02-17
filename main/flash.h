@@ -8,7 +8,7 @@
 
 class FlashTask : public QTask {
 public:
-    FlashTask(std::string file, QLogger* logger)
+    FlashTask(std::string file, std::shared_ptr<QLogger> logger)
         : QTask(logger), m_file(file) {}
     void task();
     void task_main();
