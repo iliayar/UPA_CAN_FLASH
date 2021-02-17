@@ -39,6 +39,9 @@ def work():
     msg2 = can.Message(arbitration_id=0x76e, is_extended_id=False, data=[0x06, 0x50, 0x02, 0x00, 0x32, 0x01, 0xF4, 0x00]);
     bus1.send(msg2)
 
+    time.sleep(2.5)
+
+    msg1 = bus1.recv();
     msg1 = bus1.recv();
     print(msg1)
 
