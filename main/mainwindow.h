@@ -44,14 +44,17 @@ public:
 signals:
     void frame_received(std::shared_ptr<Can::Frame>);
     void set_task(std::shared_ptr<QTask>);
-private:
 
-    void create_layout(QWidget*);
-    void check_frames_to_write(std::shared_ptr<Can::Frame>);
-    void connect_device();
-    void start_task();
+public slots:
     void choose_file();
+    void start_task();
     void update_devices_list();
+    void connect_device();
+    void check_frames_to_write(std::shared_ptr<Can::Frame>);
+    void disconnect_device();
+    
+private:
+    void create_layout(QWidget*);
 
     QCanBusDevice* m_device;
     QCommunicator* m_communicator;

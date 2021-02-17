@@ -163,6 +163,8 @@ void MainWindow::create_layout(QWidget* root) {
     m_device_list = devices_list;
     connect(device_connect_btn, &QPushButton::released, this,
             &MainWindow::connect_device);
+    connect(device_disconnect_btn, &QPushButton::released, this,
+            &MainWindow::disconnect_device);
     bitrate_list->addItem("125000");
     bitrate_list->addItem("250000");
     bitrate_list->addItem("500000");
@@ -287,6 +289,15 @@ void MainWindow::choose_file() {
         m_addr_label->setText(QString::fromStdString(ss.str()));
     }
     m_settings.setValue("general/file", QString::fromStdString(m_file));
+}
+
+
+void MainWindow::disconnect_device() {
+    if(m_device != nullptr) {
+        m_device->disconnectDevice();
+        delete m_device;
+        m_logger->info("Device disconnected");
+    }
 }
 
 void MainWindow::connect_device() {
