@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QMessageBox>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -26,8 +27,27 @@ Q_DECLARE_METATYPE(std::string)
 
 #define STR(a) #a
 
+class Application : public QApplication  {
+public:
+    Application(int& argc, char** argv) : QApplication(argc, argv) {}
+    bool notify(QObject *receiver, QEvent* e) override {
+        bool done = true;
+        try {
+            done = QApplication::notify(receiver, e);
+        } catch(std::runtime_error e) {
+            m_box.critical(nullptr, "Error", e.what());
+        }
+        return true;
+    }
+
+private:
+
+    QMessageBox m_box;
+};
+
+
 int main(int argc, char *argv[]) {
-    QApplication app(argc, argv);
+    Application app(argc, argv);
     app.setApplicationName("UPA_CAN_FLASH " APP_VERSION);
 
     qRegisterMetaType<std::vector<uint8_t>>();

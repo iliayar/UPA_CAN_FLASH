@@ -28,7 +28,9 @@ public:
     QWorker() { }
 
     ~QWorker() {
-        disconnect(m_timer.get(), &QTimer::timeout, this, &QWorker::timeout);
+        disconnect(&m_timer, &QTimer::timeout, this, &QWorker::timeout);
+        disconnect(this, &QWorker::start_timer, &m_timer, static_cast<void (QTimer::*)(int)>(&QTimer::start));
+        disconnect(this, &QWorker::stop_timer, &m_timer, &QTimer::stop);
     }
     
     virtual Can::CommunicatorStatus get_type() = 0;
@@ -37,25 +39,29 @@ public slots:
     virtual void push_frame(std::shared_ptr<Can::Frame>) = 0;
     void timeout() {
         emit worker_error(WorkerError::Timeout);
+        // emit worker_done();
     }
 
 signals:
     void fetch_frame(std::shared_ptr<Can::Frame>);
     void worker_done();
     void worker_error(WorkerError);
-    
+    void start_timer(int);
+    void stop_timer();
 
 protected:
     void update_timer() {
-        m_timer->start(FRAME_TIMEOUT);
+        emit start_timer(FRAME_TIMEOUT);
     }
     void init_timer() {
-        m_timer = std::make_shared<QTimer>();
-        connect(m_timer.get(), &QTimer::timeout, this, &QWorker::timeout);
+        connect(&m_timer, &QTimer::timeout, this, &QWorker::timeout);
+        connect(this, &QWorker::start_timer, &m_timer, static_cast<void (QTimer::*)(int)>(&QTimer::start));
+        connect(this, &QWorker::stop_timer, &m_timer, &QTimer::stop);
+        emit start_timer(FRAME_TIMEOUT);
     }
 
 private:
-    std::shared_ptr<QTimer> m_timer; 
+    QTimer m_timer; 
 };
 
 class QReceiver : public QWorker {
@@ -132,13 +138,15 @@ public slots:
     void worker_error(WorkerError);
 
     void set_task(std::shared_ptr<QTask>);
+    void task_done();
 
 signals:
     void fetch_frame(std::shared_ptr<Can::Frame>);
     void push_frame_worker(std::shared_ptr<Can::Frame>);
-    void response(std::shared_ptr<Can::ServiceResponse>);
+    void response(std::shared_ptr<Can::ServiceResponse>, bool wait = false);
     void operate_transmitter(std::shared_ptr<Can::ServiceRequest>);
     void operate_receiver(std::shared_ptr<Can::Frame>);
+    void task_exited();
 
 private:
     void update_task();

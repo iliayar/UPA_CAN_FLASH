@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QSettings>
 #include <QSpinBox>
+#include <QPushButton>
 #include <mutex>
 
 #include "communicator.h"
@@ -52,6 +53,7 @@ public slots:
     void connect_device();
     void check_frames_to_write(std::shared_ptr<Can::Frame>);
     void disconnect_device();
+    void task_done();
     
 private:
     void create_layout(QWidget*);
@@ -69,6 +71,10 @@ private:
     // UI
     QTextEdit* m_log_frames;
     QTextEdit* m_log_messages;
+
+    QPushButton* m_start_task_button;
+    QPushButton* m_connect_device_button;
+    QPushButton* m_disconnect_device_button;
 
     QComboBox* m_device_list;
     QComboBox* m_bitrate_list;

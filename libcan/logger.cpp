@@ -8,6 +8,6 @@ Can::Logger* Can::GlobalLogger::instance(){
 // Can::Logger* Can::GlobalLogger::m_logger = new Can::FileLogger(appdata + "\\canFlash\\canFlash.log");
 Can::Logger* Can::GlobalLogger::m_logger = new Can::NoLogger();
 #else
-// Can::Logger* Can::GlobalLogger::m_logger = new Can::FileLogger("/tmp/canFlash.log");
-Can::Logger* Can::GlobalLogger::m_logger = new Can::NoLogger();
+Can::Logger* Can::GlobalLogger::m_logger = new Can::FileLogger("/tmp/canFlash.log");
+// Can::Logger* Can::GlobalLogger::m_logger = new Can::NoLogger();
 #endif
