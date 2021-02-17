@@ -11,6 +11,13 @@ def work():
     msg1 = bus1.recv()
     print(msg1)
 
+    # ### Test
+    # msg2 = can.Message(arbitration_id=0x76e, is_extended_id=False, data=[0x03, 0x7F, 0x22, 0x31, 0x00, 0x00, 0x00, 0x00]);
+    # bus1.send(msg2)
+    # ### Test
+
+    # return
+    
     msg2 = can.Message(arbitration_id=0x76e, is_extended_id=False, data=[0x06, 0x50, 0x03, 0x00, 0x32, 0x01, 0xF4, 0x00]);
     bus1.send(msg2)
 
@@ -47,7 +54,7 @@ def work():
     msg1 = bus1.recv();
     print(msg1)
 
-    exit(0)
+    # return
 
     msg2 = can.Message(arbitration_id=0x76e, is_extended_id=False, data=[0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
     bus1.send(msg2)

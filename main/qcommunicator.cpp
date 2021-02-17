@@ -11,21 +11,38 @@
 
 void QCommunicator::set_task(std::shared_ptr<QTask> task) {
     DEBUG(info, "QCommunicator setting task");
+    worker_done();
     if (m_task != nullptr) {
-        m_task->terminate();
+        if(m_task->isRunning()) {
+            m_task->terminate();
+        }
         m_task->wait();
-        disconnect(this, &QCommunicator::response, task.get(), &QTask::response);
-        disconnect(task.get(), &QTask::request, this, &QCommunicator::request);
+        disconnect(this, &QCommunicator::response, m_task.get(), &QTask::response);
+        disconnect(m_task.get(), &QTask::request, this, &QCommunicator::request);
+        disconnect(m_task.get(), &QTask::finished, this, &QCommunicator::task_done);
+        worker_done();
     }
     m_task = task;
     if(task == nullptr) return;
     connect(this, &QCommunicator::response, task.get(), &QTask::response);
     connect(task.get(), &QTask::request, this, &QCommunicator::request);
+    connect(task.get(), &QTask::finished, this, &QCommunicator::task_done);
+    DEBUG(info, "starting task");
     m_task->start();
+}
+
+void QCommunicator::task_done() {
+    DEBUG(info, "task done");
+    m_task->wait();
+    DEBUG(info, "task exited");
+    m_logger->info("Task exited");
+    set_task(nullptr);
+    emit task_exited();
 }
 
 void QCommunicator::push_frame(std::shared_ptr<Can::Frame> frame) {
     if(frame == nullptr) return;
+    emit response(nullptr, true);
     m_logger->received_frame(frame);
     DEBUG(info, "QCommunicator push_frame");
     if (m_worker != nullptr) {
@@ -57,7 +74,8 @@ void QCommunicator::fetch_frame_worker(std::shared_ptr<Can::Frame> frame) {
 void QCommunicator::request(std::shared_ptr<Can::ServiceRequest> r) {
     if(r == nullptr) return;
     if (m_worker != nullptr) {
-        m_logger->error("Cannot push request. Worker busy");
+        m_logger->warning("Restarting worker");
+        worker_done();
     }
     DEBUG(info, "QCommunicator receive request");
     std::shared_ptr<QTransmitter> worker = std::make_shared<QTransmitter>();
@@ -85,16 +103,22 @@ void QCommunicator::worker_error(WorkerError e) {
         m_logger->warning("Frame worker timed out");
         break;
     case WorkerError::Other:
-        m_logger->error("Wroker error");
+        m_logger->error("Woker error");
         break;
     }
 }
 void QCommunicator::worker_done() {
     DEBUG(info, "QCommunicator worker_done");
+    if(m_worker == nullptr) return;
     switch (m_worker->get_type()) {
         case Can::CommunicatorStatus::Receive: {
             QReceiver* worker = static_cast<QReceiver*>(m_worker.get());
-            std::shared_ptr<Can::ServiceResponse> resp = worker->get_response();
+            std::shared_ptr<Can::ServiceResponse> resp = nullptr;
+            try {
+                resp = worker->get_response();
+            } catch(std::runtime_error e) {
+                m_logger->error("Logger can't parse response");
+            }
             disconnect(worker, &QReceiver::fetch_frame, this,
                        &QCommunicator::fetch_frame_worker);
             disconnect(this, &QCommunicator::push_frame_worker, worker,

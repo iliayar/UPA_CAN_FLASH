@@ -159,6 +159,10 @@ void MainWindow::create_layout(QWidget* root) {
     QPushButton* device_disconnect_btn = new QPushButton("Disconnect");
     devices_buttons_layout->addWidget(device_connect_btn);
     devices_buttons_layout->addWidget(device_disconnect_btn);
+    device_disconnect_btn->setDisabled(true);
+
+    m_disconnect_device_button = device_disconnect_btn;
+    m_connect_device_button = device_connect_btn;
 
     m_device_list = devices_list;
     connect(device_connect_btn, &QPushButton::released, this,
@@ -227,6 +231,9 @@ void MainWindow::create_layout(QWidget* root) {
     QPushButton* task_abort_btn = new QPushButton("Abort");
     tasks_buttons_layout->addWidget(task_start_btn);
     tasks_buttons_layout->addWidget(task_abort_btn);
+
+    m_start_task_button = task_start_btn;
+    task_abort_btn->setDisabled(true);
 
     tasks_list->addItem("Flash");
     tasks_list->addItem("Test");
@@ -297,6 +304,8 @@ void MainWindow::disconnect_device() {
         m_device->disconnectDevice();
         delete m_device;
         m_logger->info("Device disconnected");
+        m_disconnect_device_button->setDisabled(true);
+        m_connect_device_button->setEnabled(true);
     }
 }
 
@@ -335,10 +344,13 @@ void MainWindow::connect_device() {
             m_logger->info(device_name.toStdString() +
                            " successfuly connected");
             DEBUG(info, "Device connected");
+            m_disconnect_device_button->setEnabled(true);
+            m_connect_device_button->setDisabled(true);
             connect(m_communicator, &QCommunicator::fetch_frame, this,
                     &MainWindow::check_frames_to_write);
             connect(this, &MainWindow::frame_received, m_communicator,
                     &QCommunicator::push_frame);
+            connect(m_communicator, &QCommunicator::task_exited, this, &MainWindow::task_done);
 	    connect(this, &MainWindow::set_task, m_communicator, 
 		    &QCommunicator::set_task);
             m_communicator->moveToThread(&m_communicator_thread);
@@ -359,13 +371,19 @@ void MainWindow::start_task() {
     m_log_messages->clear();
     QString task_name = m_task_list->currentText();
     if (task_name == "Flash") {
-        DEBUG(info, "Starting FLash task");
+        m_start_task_button->setDisabled(true);
+        DEBUG(info, "Starting Flash task");
         m_logger->info("Starting task " + task_name.toStdString());
         emit set_task(std::make_shared<FlashTask>(m_file, std::make_shared<QLogger>(m_logger_worker)));
     } else if (task_name == "Test") {
+        m_start_task_button->setDisabled(true);
         m_logger->info("Starting task " + task_name.toStdString());
         emit set_task(std::make_shared<QTestTask>(std::make_shared<QLogger>(m_logger_worker)));
     }
+}
+
+void MainWindow::task_done() {
+    m_start_task_button->setEnabled(true);
 }
 
 void MainWindow::check_frames_to_write(std::shared_ptr<Can::Frame> frame) {
