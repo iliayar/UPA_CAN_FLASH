@@ -88,6 +88,14 @@ std::shared_ptr<Can::ServiceResponse> QTask::call(std::shared_ptr<Can::ServiceRe
     while(1) {
         QSignalSpy spy(this, &QTask::response_imp);
         bool res = spy.wait(RESPONSE_TIMEOUT);
+        if(!res) {
+            m_logger->warning("Service response timed out");
+            continue;
+        }
+        if(m_response == nullptr) {
+            m_logger->error("Invalid service response received");
+            continue;
+        }
         if(res) {
             if (m_response->get_type() ==
                 Can::ServiceResponseType::Negative) {

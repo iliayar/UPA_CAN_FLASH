@@ -14,7 +14,7 @@
 #include <string>
 
 
-#define FRAME_TIMEOUT 10000
+#define FRAME_TIMEOUT 1000
 
 enum class WorkerError {
     Timeout,
@@ -25,10 +25,12 @@ enum class WorkerError {
 class QWorker : public QObject {
     Q_OBJECT
 public:
-    QWorker() {
-        connect(&m_timer, &QTimer::timeout, this, &QWorker::timeout);
-        m_timer.start(FRAME_TIMEOUT);
+    QWorker() { }
+
+    ~QWorker() {
+        disconnect(m_timer.get(), &QTimer::timeout, this, &QWorker::timeout);
     }
+    
     virtual Can::CommunicatorStatus get_type() = 0;
 
 public slots:
@@ -45,11 +47,15 @@ signals:
 
 protected:
     void update_timer() {
-        m_timer.start(FRAME_TIMEOUT);
+        m_timer->start(FRAME_TIMEOUT);
+    }
+    void init_timer() {
+        m_timer = std::make_shared<QTimer>();
+        connect(m_timer.get(), &QTimer::timeout, this, &QWorker::timeout);
     }
 
 private:
-    QTimer m_timer; 
+    std::shared_ptr<QTimer> m_timer; 
 };
 
 class QReceiver : public QWorker {
@@ -104,9 +110,9 @@ private:
 class QCommunicator : public QObject {
     Q_OBJECT
 public:
-    QCommunicator() : QCommunicator(new Can::NoLogger()) {}
+    QCommunicator() : QCommunicator(std::make_shared<Can::NoLogger>()) {}
 
-    QCommunicator(Can::Logger* logger)
+    QCommunicator(std::shared_ptr<Can::Logger> logger)
         : m_worker(nullptr),
           m_task(nullptr),
           m_logger(logger),
@@ -125,7 +131,7 @@ public slots:
     void worker_done();
     void worker_error(WorkerError);
 
-    void set_task(QTask*);
+    void set_task(std::shared_ptr<QTask>);
 
 signals:
     void fetch_frame(std::shared_ptr<Can::Frame>);
@@ -137,9 +143,9 @@ signals:
 private:
     void update_task();
 
-    QWorker* m_worker;
-    QTask* m_task;
-    Can::Logger* m_logger;
+    std::shared_ptr<QWorker> m_worker;
+    std::shared_ptr<QTask> m_task;
+    std::shared_ptr<Can::Logger> m_logger;
 
     QThread m_worker_thread;
     // QThread m_task_thread;

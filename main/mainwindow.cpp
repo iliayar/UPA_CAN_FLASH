@@ -257,9 +257,14 @@ void MainWindow::choose_file() {
                  .toStdString();
     std::ifstream fin(m_file);
     if (!fin) return;
-    Hex::HexReader reader(new Hex::FileSource(fin));
-    DEBUG(info, "Reading file");
-    Hex::HexInfo info = Hex::read_hex_info(reader);
+    Hex::HexInfo info;
+    try {
+        Hex::HexReader reader(std::make_shared<Hex::FileSource>(fin));
+        DEBUG(info, "Reading file");
+        info = Hex::read_hex_info(reader);
+    } catch (std::runtime_error e) {
+        m_logger->error(e.what());
+    }
     fin.close();
     DEBUG(info, "File readed and closed");
     m_logger->info("Reading file " + m_file);
@@ -315,7 +320,7 @@ void MainWindow::connect_device() {
         if (m_device->connectDevice()) {
             connect(m_device, &QCanBusDevice::framesReceived, this,
                     &MainWindow::processReceivedFrames);
-            m_communicator = new QCommunicator(new QLogger(m_logger_worker));
+            m_communicator = new QCommunicator(std::make_shared<QLogger>(m_logger_worker));
             m_logger->info(device_name.toStdString() +
                            " successfuly connected");
             DEBUG(info, "Device connected");
@@ -345,10 +350,10 @@ void MainWindow::start_task() {
     if (task_name == "Flash") {
         DEBUG(info, "Starting FLash task");
         m_logger->info("Starting task " + task_name.toStdString());
-        emit set_task(new FlashTask(m_file, new QLogger(m_logger_worker)));
+        emit set_task(std::make_shared<FlashTask>(m_file, std::make_shared<QLogger>(m_logger_worker)));
     } else if (task_name == "Test") {
         m_logger->info("Starting task " + task_name.toStdString());
-        emit set_task(new QTestTask(new QLogger(m_logger_worker)));
+        emit set_task(std::make_shared<QTestTask>(std::make_shared<QLogger>(m_logger_worker)));
     }
 }
 

@@ -112,7 +112,7 @@ void FlashTask::task_main() {
     LOG(info, "Successfully pased security access");
 
     std::ifstream fin(m_file);
-    Hex::HexReader reader(new Hex::FileSource(fin));
+    Hex::HexReader reader(std::make_unique<Hex::FileSource>(fin));
     Hex::HexInfo hex_info = Hex::read_hex_info(reader);
     fin.close();
     
@@ -159,14 +159,14 @@ void FlashTask::task_main() {
     LOG(info, "max_block_size " + int_to_hex(max_block_size));
     max_block_size -= 2;
     fin.open(m_file);
-    reader = Hex::HexReader(new Hex::FileSource(fin));
+    reader = Hex::HexReader(std::make_shared<Hex::FileSource>(fin));
     LOG(info, "File " + m_file + " opened");
     std::vector<uint8_t> data(max_block_size, 0);
     int i = 0;
     int block_counter = 1;
     int n_size = 0;
     while(!reader.is_eof()) {
-        std::unique_ptr<Hex::HexLine> line = reader.read_line();
+        std::shared_ptr<Hex::HexLine> line = reader.read_line();
         if(line->get_type() == Hex::HexLineType::Data || line->get_type() == Hex::HexLineType::EndOfFile) {
             std::vector<uint8_t> line_data;
             if (line->get_type() == Hex::HexLineType::Data) {
