@@ -35,7 +35,7 @@
 
 #ifdef __MINGW32__
 #define CAN_PLUGINS \
-    { "systeccan", "ixxatcan" }
+    { "systeccan", "ixxatcan", "vectorcan" }
 #elif __linux__
 #define CAN_PLUGINS \
     { "socketcan" }
@@ -205,6 +205,9 @@ void MainWindow::create_layout(QWidget* root) {
     int tester_id =
         tester_id_str.right(tester_id_str.size() - 2).toLong(nullptr, 16);
     int ecu_id = ecu_id_str.right(ecu_id_str.size() - 2).toLong(nullptr, 16);
+
+    if(ecu_id == 0) ecu_id = 0x76e;
+    if(tester_id == 0) tester_id = 0x74e;
 
     tester_id_box->setRange(0x000, 0xfff);
     ecu_id_box->setRange(0x000, 0xfff);

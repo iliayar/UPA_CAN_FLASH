@@ -23,8 +23,11 @@ Q_DECLARE_METATYPE(Can::ServiceResponse*)
 Q_DECLARE_METATYPE(QTask*)
 Q_DECLARE_METATYPE(std::string)
 
+#define STR(a) #a
+
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
+    app.setApplicationName("UPA_CAN_FLASH " APP_VERSION);
 
     qRegisterMetaType<std::vector<uint8_t>>();
     qRegisterMetaType<std::shared_ptr<Can::Frame>>();

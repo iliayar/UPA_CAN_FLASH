@@ -4,6 +4,8 @@ project(can-util C CXX)
 
 # enable_testing()
 
+set(APP_VERSION "0.6.6.3")
+
 add_subdirectory(main)
 add_subdirectory(libhex)
 add_subdirectory(libcan)

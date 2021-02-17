@@ -10,6 +10,7 @@ set(Main_SRCS
     qcommunicator.cpp
 )
 
+add_compile_definitions(APP_VERSION="${APP_VERSION}")
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -18,11 +19,11 @@ set(CMAKE_AUTOUIC ON)
 find_package(Qt5 COMPONENTS Widgets Core SerialBus Network SerialPort Test REQUIRED)
 
 if(WIN32)
-add_executable(canFlash WIN32
+add_executable(UPA_CAN_FLASH WIN32
     ${Main_SRCS}
 )
 else()
-add_executable(canFlash
+add_executable(UPA_CAN_FLASH
     ${Main_SRCS}
 )
 endif()
@@ -32,15 +33,15 @@ if(WIN32)
 #    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive")
 #    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic")
 #    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
-#    target_link_libraries(canFlash -static gcc stdc++ winpthread -dynamic)
-#    set_target_properties(canFlash PROPERTIES COMPILE_DEFINITIONS BUILDER_STATIC_DEFINE)
+#    target_link_libraries(UPA_CAN_FLASH -static gcc stdc++ winpthread -dynamic)
+#    set_target_properties(UPA_CAN_FLASH PROPERTIES COMPILE_DEFINITIONS BUILDER_STATIC_DEFINE)
 
     get_filename_component(MINGW_DLL_DIR ${CMAKE_CXX_COMPILER} PATH)
 #    get_target_property(QtCore_LOCATION Qt5::Core LOCATION)
 #    get_filename_component(QT_DLL_DIR ${QtCore_LOCATION} PATH)
-#	qt_import_plugins(canFlash INCLUDE Qt5::IXXAT)
+#	qt_import_plugins(UPA_CAN_FLASH INCLUDE Qt5::IXXAT)
     add_custom_command(
-        TARGET canFlash POST_BUILD
+        TARGET UPA_CAN_FLASH POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             ${MINGW_DLL_DIR}/libstdc++-6.dll
             ${MINGW_DLL_DIR}/libwinpthread-1.dll
@@ -71,13 +72,13 @@ if(WIN32)
 #            ${QT_DLL_DIR}/Qt5SerialPort.dll
 #            ${QT_DLL_DIR}/Qt5SerialBus.dll
 #            ${QT_DLL_DIR}/Qt5Core.dll
-            $<TARGET_FILE_DIR:canFlash>
+            $<TARGET_FILE_DIR:UPA_CAN_FLASH>
     )
 
- target_link_libraries(canFlash -static -static-libstdc++ -static-libgcc)
+ target_link_libraries(UPA_CAN_FLASH -static -static-libstdc++ -static-libgcc)
 # set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
-# target_compile_options(canFlash PRIVATE /MT)
-# target_link_options(canFlash PRIVATE /INCREMENTAL:NO /NODEFAULTLIB:MSVCRT)
+# target_compile_options(UPA_CAN_FLASH PRIVATE /MT)
+# target_link_options(UPA_CAN_FLASH PRIVATE /INCREMENTAL:NO /NODEFAULTLIB:MSVCRT)
 
 
 
@@ -85,10 +86,10 @@ get_target_property(_qmake_executable Qt5::qmake IMPORTED_LOCATION)
 get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
 find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
 
-add_custom_command(TARGET canFlash POST_BUILD
+add_custom_command(TARGET UPA_CAN_FLASH POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E
         env PATH="${_qt_bin_dir}" "${WINDEPLOYQT_EXECUTABLE}"
-            "$<TARGET_FILE:canFlash>"
+            "$<TARGET_FILE:UPA_CAN_FLASH>"
     COMMENT "Running windeployqt..."
 )
 endif()
@@ -100,7 +101,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(COMPILE_OPTS -Wall -Wextra -pedantic -pedantic-errors)
 
 # Specify here the libraries this program depends on
-target_link_libraries(canFlash
+target_link_libraries(UPA_CAN_FLASH
     libhex
     libutil
     libcan
@@ -110,7 +111,7 @@ target_link_libraries(canFlash
 )
 
 
-# install(TARGETS canFlash DESTINATION bin)
+# install(TARGETS UPA_CAN_FLASH DESTINATION bin)
 IF(WIN32)
 include(InstallRequiredSystemLibraries)
 # install(
@@ -125,7 +126,7 @@ install(
     COMPONENT applications
 )
 # install(
-#   TARGETS canFlash
+#   TARGETS UPA_CAN_FLASH
 #   RUNTIME
 #   DESTINATION bin
 #   COMPONENT applications
@@ -133,14 +134,14 @@ install(
 #
 # CPACK macros below here
 #
-set (CPACK_PACKAGE_NAME "CanFlash")
+set (CPACK_PACKAGE_NAME "UPA_CAN_FLASH")
 set (CPACK_PACKAGE_VENDOR "Some cool vendor")
-set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "CanFlash - flash something")
-set (CPACK_PACKAGE_VERSION "0.6.6")
+set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "UPA_CAN_FLASH - flash something")
+set (CPACK_PACKAGE_VERSION ${APP_VERSION})
 set (CPACK_PACKAGE_VERSION_MAJOR "0")
 set (CPACK_PACKAGE_VERSION_MINOR "6")
 set (CPACK_PACKAGE_VERSION_PATCH "6")
-set (CPACK_PACKAGE_INSTALL_DIRECTORY "CanFlash")
+set (CPACK_PACKAGE_INSTALL_DIRECTORY "UPA_CAN_FLASH")
 
 # Define components and their display names
 set (CPACK_COMPONENTS_ALL applications libraries headers)
@@ -174,11 +175,11 @@ set(CPACK_COMPONENT_HEADERS_INSTALL_TYPES Developer Full)
 set(CPACK_COMPONENT_APPLICATIONS_INSTALL_TYPES Full)
 
 set(CPACK_NSIS_CREATE_ICONS_EXTRA
-    "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\CanFlash.lnk' '$INSTDIR\\\\bin\\\\canFlash.exe'"
+	"CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\UPA_CAN_FLASH.lnk' '$INSTDIR\\\\bin\\\\UPA_CAN_FLASH.exe'"
 )
 
 SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS 
-  "CreateDirectory \\\"\$ENV{APPDATA}\\\\canFlash\\\"")
+	"CreateDirectory \\\"\$ENV{APPDATA}\\\\UPA_CAN_FLASH\\\"")
  
 # Must be after the last CPACK macros
 include(CPack)
