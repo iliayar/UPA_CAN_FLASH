@@ -77,10 +77,12 @@ void QLoggerWorker::important(std::string message)
     m_message_log->setStyleSheet("font-weight: regular;");
 }
 
-void QTask::response(std::shared_ptr<Can::ServiceResponse> r, bool wait) {
-    if(wait) {
-        m_wait = true;
+void QTask::response(std::shared_ptr<Can::ServiceResponse> r, int wait) {
+    if(wait == 1) {
+        m_wait = std::max(wait, 1);
         return;
+    } else if(wait > 1) {
+        m_wait += wait;
     }
     m_response = r;
     emit response_imp(r);
@@ -95,7 +97,7 @@ std::shared_ptr<Can::ServiceResponse> QTask::call(std::shared_ptr<Can::ServiceRe
         bool res = spy.wait(RESPONSE_TIMEOUT);
         if(!res) {
             if(m_wait) {
-                m_wait = false;
+                m_wait--;
                 continue;
             }
             retries++;
@@ -124,7 +126,7 @@ std::shared_ptr<Can::ServiceResponse> QTask::call(std::shared_ptr<Can::ServiceRe
                     ->get_code() == 0x78) {
                     DEBUG(info, "task response error service code = 0x78");
                     m_logger->warning("Waiting for positive resposnse");
-                    m_wait = true;
+                    m_wait += 4;
                     continue;
                 }
             } else if (m_response->get_type() !=

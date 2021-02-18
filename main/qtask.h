@@ -122,7 +122,7 @@ private:
 class QTask : public QThread {
     Q_OBJECT
 public:
-    QTask(std::shared_ptr<QLogger> logger) : m_logger(logger), m_wait(false) {}
+    QTask(std::shared_ptr<QLogger> logger) : m_logger(logger), m_wait(0) {}
 
     void run() override {
         task();
@@ -135,7 +135,7 @@ protected:
     std::shared_ptr<Can::ServiceResponse> call(std::shared_ptr<Can::ServiceRequest>);
 
 public slots:
-    void response(std::shared_ptr<Can::ServiceResponse>, bool wait = false);
+    void response(std::shared_ptr<Can::ServiceResponse>, int wait = 0);
 
 signals:
     void request(std::shared_ptr<Can::ServiceRequest>);
@@ -143,7 +143,7 @@ signals:
 
 private:
     std::shared_ptr<Can::ServiceResponse> m_response;
-    bool m_wait;
+    int m_wait;
 protected:
     std::shared_ptr<QLogger> m_logger;
 };

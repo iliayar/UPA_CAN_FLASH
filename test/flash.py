@@ -81,6 +81,8 @@ def work():
         
     print("Block received")
 
+    msg2 = can.Message(arbitration_id=0x76e, is_extended_id=False, data=[0x03, 0x7F, 0x36, 0x78, 0x00, 0x00, 0x00, 0x00]);
+    bus1.send(msg2)
 
 if __name__ == '__main__':
     while(True):
