@@ -125,7 +125,11 @@ public:
     QTask(std::shared_ptr<QLogger> logger) : m_logger(logger), m_wait(0) {}
 
     void run() override {
-        task();
+        try {
+            task();
+        } catch(std::runtime_error e) {
+            m_logger->error(std::string("Task failed: ") + e.what());
+        }
         DEBUG(info, "Exiting task");
     }
 
