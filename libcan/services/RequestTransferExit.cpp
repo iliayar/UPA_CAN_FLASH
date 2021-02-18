@@ -10,7 +10,7 @@
 // - VEC() - array
 // - DATA(<declared DATATYPE>)
 // - RAW(<raw C++ type>)
-#define REQUEST_FIELDS (INT, dummy, 8)
+#define REQUEST_FIELDS (INT, crc, 16)
 #define RESPONSE_FIELDS (INT, crc, 16)
 // --- FIELD ---
 // (<Type>, <Alias>)
@@ -67,6 +67,7 @@ SERVICE_BEGIN
 #ifdef DUMP // Dump Service Request to std::vector<uint8_t>
 {
     INIT;
+    FIELD(INT, m_crc, 16);
     RETURN;
 }
 #endif
