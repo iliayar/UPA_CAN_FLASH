@@ -212,14 +212,9 @@ void FlashTask::task_main() {
         }
     }
     fin.close();
-    response = call(Can::ServiceRequest_RequestTransferExit::build()->build());
+    response = call(Can::ServiceRequest_RequestTransferExit::build()->crc(crc)->build());
     IF_NEGATIVE(response) {
-        LOG(error, "Failed to request transfer exit");
-        return;
-    }
-    uint16_t crc_recv = static_cast<Can::ServiceResponse_RequestTransferExit*>(response.get())->get_crc();
-    if(crc_recv != crc) {
-        LOG(error, "CRC check failed");
+        LOG(error, "Failed to request transfer exit. Maybe crc check failed");
         return;
     }
     LOG(info, "Flash done successfuly");
