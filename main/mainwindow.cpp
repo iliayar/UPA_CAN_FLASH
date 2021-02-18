@@ -51,6 +51,18 @@ MainWindow::MainWindow(QWidget* parent)
 
     m_device = nullptr;
     m_communicator = nullptr;
+
+    m_communicator =
+        new QCommunicator(std::make_shared<QLogger>(m_logger_worker));
+    connect(m_communicator, &QCommunicator::fetch_frame, this,
+            &MainWindow::check_frames_to_write);
+    connect(this, &MainWindow::frame_received, m_communicator,
+            &QCommunicator::push_frame);
+    connect(m_communicator, &QCommunicator::task_exited, this,
+            &MainWindow::task_done);
+    connect(this, &MainWindow::set_task, m_communicator,
+            &QCommunicator::set_task);
+    m_communicator->moveToThread(&m_communicator_thread);
     m_communicator_thread.start();
 
     setCentralWidget(window);
@@ -300,7 +312,9 @@ void MainWindow::choose_file() {
 
 
 void MainWindow::disconnect_device() {
-    if(m_device != nullptr) {
+    if (m_device != nullptr) {
+        disconnect(m_device, &QCanBusDevice::framesReceived, this,
+                   &MainWindow::processReceivedFrames);
         m_device->disconnectDevice();
         delete m_device;
         m_logger->info("Device disconnected");
@@ -340,20 +354,11 @@ void MainWindow::connect_device() {
         if (m_device->connectDevice()) {
             connect(m_device, &QCanBusDevice::framesReceived, this,
                     &MainWindow::processReceivedFrames);
-            m_communicator = new QCommunicator(std::make_shared<QLogger>(m_logger_worker));
             m_logger->info(device_name.toStdString() +
                            " successfuly connected");
             DEBUG(info, "Device connected");
             m_disconnect_device_button->setEnabled(true);
             m_connect_device_button->setDisabled(true);
-            connect(m_communicator, &QCommunicator::fetch_frame, this,
-                    &MainWindow::check_frames_to_write);
-            connect(this, &MainWindow::frame_received, m_communicator,
-                    &QCommunicator::push_frame);
-            connect(m_communicator, &QCommunicator::task_exited, this, &MainWindow::task_done);
-	    connect(this, &MainWindow::set_task, m_communicator, 
-		    &QCommunicator::set_task);
-            m_communicator->moveToThread(&m_communicator_thread);
         } else {
             m_logger->error("Cannot connect device");
             delete m_device;
