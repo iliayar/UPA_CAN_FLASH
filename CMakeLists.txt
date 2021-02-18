@@ -4,7 +4,7 @@ project(can-util C CXX)
 
 # enable_testing()
 
-set(APP_VERSION "0.6.6.6")
+set(APP_VERSION "0.6.6.6_log")
 
 add_subdirectory(main)
 add_subdirectory(libhex)
