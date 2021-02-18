@@ -42,7 +42,7 @@ void QCommunicator::task_done() {
 
 void QCommunicator::push_frame(std::shared_ptr<Can::Frame> frame) {
     if(frame == nullptr) return;
-    emit response(nullptr, true);
+    emit response(nullptr, 1);
     m_logger->received_frame(frame);
     DEBUG(info, "QCommunicator push_frame");
     if (m_worker != nullptr) {
@@ -67,7 +67,7 @@ void QCommunicator::push_frame(std::shared_ptr<Can::Frame> frame) {
 void QCommunicator::fetch_frame_worker(std::shared_ptr<Can::Frame> frame) {
     if(frame == nullptr) return;
     DEBUG(info, "QCommunicator fetch_frame_worker");
-    emit response(nullptr, true);
+    emit response(nullptr, 1);
     m_logger->transmitted_frame(frame);
     emit fetch_frame(frame);
 }
@@ -104,9 +104,10 @@ void QCommunicator::worker_error(WorkerError e) {
         m_logger->warning("Frame worker timed out");
         break;
     case WorkerError::Other:
-        m_logger->error("Woker error");
+        m_logger->error("Frame worker error");
         break;
     }
+    worker_done();
 }
 void QCommunicator::worker_done() {
     DEBUG(info, "QCommunicator worker_done");
@@ -118,7 +119,7 @@ void QCommunicator::worker_done() {
             try {
                 resp = worker->get_response();
             } catch(std::runtime_error e) {
-                m_logger->error("Logger can't parse response");
+                m_logger->error("Frame worker can't parse response");
             }
             disconnect(worker, &QReceiver::fetch_frame, this,
                        &QCommunicator::fetch_frame_worker);

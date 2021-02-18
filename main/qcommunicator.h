@@ -143,7 +143,7 @@ public slots:
 signals:
     void fetch_frame(std::shared_ptr<Can::Frame>);
     void push_frame_worker(std::shared_ptr<Can::Frame>);
-    void response(std::shared_ptr<Can::ServiceResponse>, bool wait = false);
+    void response(std::shared_ptr<Can::ServiceResponse>, int wait = 0);
     void operate_transmitter(std::shared_ptr<Can::ServiceRequest>);
     void operate_receiver(std::shared_ptr<Can::Frame>);
     void task_exited();
