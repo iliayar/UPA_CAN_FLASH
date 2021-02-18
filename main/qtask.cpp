@@ -57,24 +57,28 @@ void QLoggerWorker::info(std::string message)
     m_message_log->setTextColor(QColor("gray"));
     m_message_log->append(get_date_str() + "    INFO: " + QString::fromStdString(message));
     m_message_log->setTextColor(QColor("black"));
+    DEBUG(info, message);
 }
 void QLoggerWorker::error(std::string message)
 {
     m_message_log->setTextColor(QColor("red"));
     m_message_log->append(get_date_str() + "   ERROR: " + QString::fromStdString(message));
     m_message_log->setTextColor(QColor("black"));
+    DEBUG(error, message);
 }
 void QLoggerWorker::warning(std::string message)
 {
     m_message_log->setTextColor(QColor("orange"));
     m_message_log->append(get_date_str() + " WARNING: " + QString::fromStdString(message));
     m_message_log->setTextColor(QColor("black"));
+    DEBUG(warning, message);
 }
 void QLoggerWorker::important(std::string message)
 {
     m_message_log->setStyleSheet("font-weight: bold;");
     m_message_log->append(get_date_str() + "    INFO: " + QString::fromStdString(message));
     m_message_log->setStyleSheet("font-weight: regular;");
+    DEBUG(info, message);
 }
 
 void QTask::response(std::shared_ptr<Can::ServiceResponse> r, int wait) {
