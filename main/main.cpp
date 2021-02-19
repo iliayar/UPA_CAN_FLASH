@@ -31,13 +31,14 @@ class Application : public QApplication  {
 public:
     Application(int& argc, char** argv) : QApplication(argc, argv) {}
     bool notify(QObject *receiver, QEvent* e) override {
-        bool done = true;
         try {
-            done = QApplication::notify(receiver, e);
+            QApplication::notify(receiver, e);
+            return true;
         } catch(std::runtime_error e) {
             m_box.critical(nullptr, "Error", e.what());
+            std::cout << e.what() << std::endl;
+            return false;
         }
-        return true;
     }
 
 private:

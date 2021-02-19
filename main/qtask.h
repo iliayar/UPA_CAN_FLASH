@@ -5,6 +5,7 @@
 #include <QElapsedTimer>
 #include <QThread>
 #include <QSignalSpy>
+#include <QProgressBar>
 #include <memory>
 
 #include "communicator.h"
@@ -20,7 +21,7 @@
 class QLoggerWorker : public QObject {
     Q_OBJECT
 public:
-    QLoggerWorker(QObject*, QTextEdit*, QTextEdit*);
+    QLoggerWorker(QObject*, QTextEdit*, QTextEdit*, QProgressBar* bar = nullptr);
 
 public slots:
 
@@ -33,6 +34,7 @@ public slots:
     void info(std::string);
     void warning(std::string);
     void important(std::string);
+    void progress(int);
     
 private:
     QString vec_to_qstr(std::vector<uint8_t>);
@@ -41,6 +43,8 @@ private:
     
     QTextEdit* m_frame_log;
     QTextEdit* m_message_log;
+
+    QProgressBar* m_progress;
 
     std::mutex m_mutex;
 };
@@ -58,6 +62,7 @@ public:
         CONNECT(transmitted_frame);
         CONNECT(received_service_response);
         CONNECT(transmitted_service_request);
+        CONNECT(progress);
     }
 #undef CONNECT
 
@@ -87,6 +92,9 @@ public:
     void important(std::string s) {
         emit signal_important(s);
     }
+    void progress(int a) {
+        emit signal_progress(a);
+    }
 
 #define DISCONNECT(sig) connect(this, &QLogger::signal_##sig, m_worker, &QLoggerWorker::sig)
     ~QLogger() {
@@ -98,6 +106,7 @@ public:
         DISCONNECT(transmitted_frame);
         DISCONNECT(received_service_response);
         DISCONNECT(transmitted_service_request);
+        DISCONNECT(progress);
     }
 #undef DISCONNECT
 
@@ -112,7 +121,8 @@ signals:
     void signal_info(std::string);
     void signal_warning(std::string);
     void signal_important(std::string);
-
+    void signal_progress(int);
+    
 private:
     QLoggerWorker* m_worker;
 

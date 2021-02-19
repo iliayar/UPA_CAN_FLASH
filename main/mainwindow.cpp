@@ -13,8 +13,10 @@
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
+#include <QProgressBar>
 #include <QPushButton>
 #include <QSettings>
+#include <QSizePolicy>
 #include <QSpinBox>
 #include <QTextEdit>
 #include <QThread>
@@ -86,25 +88,44 @@ void MainWindow::create_layout(QWidget* root) {
     QGroupBox* log_group = new QGroupBox(tr("Logs"));
     QGroupBox* options_group = new QGroupBox(tr("Options"));
 
-    main_layout->addWidget(log_group, 70);
-    main_layout->addWidget(options_group, 30);
+    QSizePolicy log_policy = log_group->sizePolicy();
+    log_policy.setHorizontalStretch(6);
+    log_group->setSizePolicy(log_policy);
+
+    QSizePolicy options_policy = options_group->sizePolicy();
+    options_policy.setHorizontalStretch(1);
+    options_group->setSizePolicy(options_policy);
+
+    main_layout->addWidget(log_group);
+    main_layout->addWidget(options_group);
 
     // Log layout
 
     const QFont fixedFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
 
     QHBoxLayout* log_layout = new QHBoxLayout(log_group);
+    QGroupBox* message_log_progress_group = new QGroupBox();
+    QVBoxLayout* message_log_progress_layout =
+        new QVBoxLayout(message_log_progress_group);
     QTextEdit* log_frames = new QTextEdit();
     log_frames->setReadOnly(true);
     log_frames->setFont(fixedFont);
     QTextEdit* log_messages = new QTextEdit();
     log_messages->setReadOnly(true);
     log_messages->setFont(fixedFont);
+    QProgressBar* progress_bar = new QProgressBar();
+    progress_bar->setMaximum(100);
+    progress_bar->setMinimum(0);
 
-    log_layout->addWidget(log_messages);
+    log_layout->addWidget(message_log_progress_group);
     log_layout->addWidget(log_frames);
+    message_log_progress_layout->addWidget(log_messages);
+    message_log_progress_layout->addWidget(progress_bar);
 
-    m_logger_worker = new QLoggerWorker(this, log_frames, log_messages);
+    m_progress_bar = progress_bar;
+
+    m_logger_worker =
+        new QLoggerWorker(this, log_frames, log_messages, m_progress_bar);
     m_logger = new QLogger(m_logger_worker);
 
     m_log_frames = log_frames;
@@ -128,7 +149,7 @@ void MainWindow::create_layout(QWidget* root) {
     m_size_label = new QLabel("Size: ???");
     m_addr_label = new QLabel("Begin address: ???");
 
-    // file_layout->addWidget(m_filename_label);
+    file_layout->addWidget(m_filename_label);
     file_layout->addWidget(m_crc_label);
     file_layout->addWidget(m_size_label);
     file_layout->addWidget(m_addr_label);
@@ -224,8 +245,8 @@ void MainWindow::create_layout(QWidget* root) {
         tester_id_str.right(tester_id_str.size() - 2).toLong(nullptr, 16);
     int ecu_id = ecu_id_str.right(ecu_id_str.size() - 2).toLong(nullptr, 16);
 
-    if(ecu_id == 0) ecu_id = 0x76e;
-    if(tester_id == 0) tester_id = 0x74e;
+    if (ecu_id == 0) ecu_id = 0x76e;
+    if (tester_id == 0) tester_id = 0x74e;
 
     tester_id_box->setRange(0x000, 0xfff);
     ecu_id_box->setRange(0x000, 0xfff);
@@ -240,12 +261,13 @@ void MainWindow::create_layout(QWidget* root) {
     tasks_group_layout->addWidget(tasks_buttons_group);
 
     QPushButton* task_start_btn = new QPushButton("Start");
-    QPushButton* task_abort_btn = new QPushButton("Abort");
+    // QPushButton* task_abort_btn = new QPushButton("Abort");
     tasks_buttons_layout->addWidget(task_start_btn);
-    tasks_buttons_layout->addWidget(task_abort_btn);
+    // tasks_buttons_layout->addWidget(task_abort_btn);
 
     m_start_task_button = task_start_btn;
-    task_abort_btn->setDisabled(true);
+    // m_abort_task_button = task_abort_btn;
+    // task_abort_btn->setDisabled(true);
 
     tasks_list->addItem("Flash");
     tasks_list->addItem("Test");
@@ -263,6 +285,8 @@ void MainWindow::create_layout(QWidget* root) {
 
     connect(task_start_btn, &QPushButton::released, this,
             &MainWindow::start_task);
+    // connect(task_abort_btn, &QPushButton::released, this,
+    //         &MainWindow::abort_task);
     DEBUG(info, "Layout created");
 
     update_device_list(std::vector<QString>(CAN_PLUGINS)[0]);
@@ -275,6 +299,7 @@ void MainWindow::choose_file() {
     QString path = m_settings.value("general/file").toString();
     m_file = QFileDialog::getOpenFileName(this, tr("Open HEX"), path,
                                           tr("Intel HEX file (*.hex)"))
+                 .toUtf8()
                  .toStdString();
     std::ifstream fin(m_file);
     if (!fin) return;
@@ -291,6 +316,10 @@ void MainWindow::choose_file() {
     m_logger->info("Reading file " + m_file);
     m_filename_label->setText(QString::fromStdString("File: " + m_file));
     {
+        QString filename = QFileInfo(QString::fromStdString(m_file)).fileName();
+        m_filename_label->setText("File: " + filename);
+    }
+    {
         std::stringstream ss;
         ss << "CRC: 0x" << std::setfill('0') << std::setw(4) << std::hex
            << info.crc;
@@ -299,6 +328,7 @@ void MainWindow::choose_file() {
     {
         std::stringstream ss;
         ss << "Size: " << info.size;
+        ss << " (" << std::hex << "0x" << info.size << ")";
         m_size_label->setText(QString::fromStdString(ss.str()));
     }
     {
@@ -309,7 +339,6 @@ void MainWindow::choose_file() {
     }
     m_settings.setValue("general/file", QString::fromStdString(m_file));
 }
-
 
 void MainWindow::disconnect_device() {
     if (m_device != nullptr) {
@@ -346,11 +375,11 @@ void MainWindow::connect_device() {
         return;
     } else {
         m_logger->info("Connecting " + device_name.toStdString());
-	int bitrate = m_bitrate_list->currentText().toInt();
+        int bitrate = m_bitrate_list->currentText().toInt();
         m_device->setConfigurationParameter(
-            QCanBusDevice::ConfigurationKey::BitRateKey,
-            bitrate);
-        m_device->setConfigurationParameter(QCanBusDevice::RawFilterKey, QVariant::fromValue(filters));
+            QCanBusDevice::ConfigurationKey::BitRateKey, bitrate);
+        m_device->setConfigurationParameter(QCanBusDevice::RawFilterKey,
+                                            QVariant::fromValue(filters));
         if (m_device->connectDevice()) {
             connect(m_device, &QCanBusDevice::framesReceived, this,
                     &MainWindow::processReceivedFrames);
@@ -367,6 +396,8 @@ void MainWindow::connect_device() {
     }
 }
 
+void MainWindow::abort_task() { emit set_task(nullptr); }
+
 void MainWindow::start_task() {
     if (m_device == nullptr) {
         m_logger->warning("Choose device first");
@@ -375,20 +406,26 @@ void MainWindow::start_task() {
     m_log_frames->clear();
     m_log_messages->clear();
     QString task_name = m_task_list->currentText();
+    m_start_task_button->setDisabled(true);
+    m_disconnect_device_button->setDisabled(true);
+    m_logger->progress(0);
+    // m_abort_task_button->setEnabled(true);
     if (task_name == "Flash") {
-        m_start_task_button->setDisabled(true);
         DEBUG(info, "Starting Flash task");
         m_logger->info("Starting task " + task_name.toStdString());
-        emit set_task(std::make_shared<FlashTask>(m_file, std::make_shared<QLogger>(m_logger_worker)));
+        emit set_task(std::make_shared<FlashTask>(
+            m_file, std::make_shared<QLogger>(m_logger_worker)));
     } else if (task_name == "Test") {
-        m_start_task_button->setDisabled(true);
         m_logger->info("Starting task " + task_name.toStdString());
-        emit set_task(std::make_shared<QTestTask>(std::make_shared<QLogger>(m_logger_worker)));
+        emit set_task(std::make_shared<QTestTask>(
+            std::make_shared<QLogger>(m_logger_worker)));
     }
 }
 
 void MainWindow::task_done() {
     m_start_task_button->setEnabled(true);
+    m_disconnect_device_button->setEnabled(true);
+    // m_abort_task_button->setDisabled(true);
 }
 
 void MainWindow::check_frames_to_write(std::shared_ptr<Can::Frame> frame) {
