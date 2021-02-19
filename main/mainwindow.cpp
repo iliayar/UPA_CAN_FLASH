@@ -37,10 +37,10 @@
 
 #ifdef __MINGW32__
 #define CAN_PLUGINS \
-    { "systeccan", "ixxatcan", "vectorcan" }
+    { {"sysWORXX", "systeccan"}, {"IXXAT", "ixxatcan"}, {"VECTOR", "vectorcan"} }
 #elif __linux__
 #define CAN_PLUGINS \
-    { "socketcan" }
+    { {"SocketCAN", "socketcan"} }
 #endif
 
 MainWindow::MainWindow(QWidget* parent)
@@ -135,8 +135,8 @@ void MainWindow::create_layout(QWidget* root) {
     QVBoxLayout* options_layout = new QVBoxLayout(options_group);
     //   file options layout
     QComboBox* plugins_list = new QComboBox();
-    for (std::string plugin : std::vector<std::string>(CAN_PLUGINS)) {
-        plugins_list->addItem(QString::fromStdString(plugin));
+    for (std::pair<std::string, std::string> plugin : std::vector<std::pair<std::string, std::string>>(CAN_PLUGINS)) {
+        plugins_list->addItem(QString::fromStdString(plugin.first), QString::fromStdString(plugin.second));
     }
     QGroupBox* file_group = new QGroupBox(tr("File"));
 
@@ -158,8 +158,8 @@ void MainWindow::create_layout(QWidget* root) {
         m_device_list->clear();
         QString errorString;
         QList<QCanBusDeviceInfo> devices =
-            QCanBus::instance()->availableDevices(m_plugin_list->currentText(),
-                                                  &errorString);
+            QCanBus::instance()->availableDevices(
+                m_plugin_list->currentData().toString(), &errorString);
         if (!errorString.isEmpty()) {
             m_logger->error(errorString.toStdString());
         } else {
@@ -289,10 +289,19 @@ void MainWindow::create_layout(QWidget* root) {
     //         &MainWindow::abort_task);
     DEBUG(info, "Layout created");
 
-    update_device_list(std::vector<QString>(CAN_PLUGINS)[0]);
+    for (std::pair<std::string, std::string> plugin :
+         std::vector<std::pair<std::string, std::string>>(CAN_PLUGINS)) {
+        QString errorString;
+        QList<QCanBusDeviceInfo> devices =
+            QCanBus::instance()->availableDevices(
+                QString::fromStdString(plugin.second), &errorString);
+        if (errorString.isEmpty()) {
+            m_device_list->setCurrentText(QString::fromStdString(plugin.first));
+            update_device_list(QString::fromStdString(plugin.first));
+            break;
+        }
+    }
 }
-
-void MainWindow::update_devices_list() {}
 
 void MainWindow::choose_file() {
     DEBUG(info, "Choosing file");
@@ -365,8 +374,8 @@ void MainWindow::connect_device() {
     filter.type = QCanBusFrame::DataFrame;
     filters.append(filter);
     QString device_name = m_device_list->currentText();
-    m_device = QCanBus::instance()->createDevice(m_plugin_list->currentText(),
-                                                 device_name, &errorString);
+    m_device = QCanBus::instance()->createDevice(
+        m_plugin_list->currentData().toString(), device_name, &errorString);
     if (!m_device) {
         m_logger->error(errorString.toStdString());
         delete m_device;

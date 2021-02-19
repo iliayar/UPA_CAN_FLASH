@@ -51,7 +51,6 @@ public slots:
     void choose_file();
     void start_task();
     void abort_task();
-    void update_devices_list();
     void connect_device();
     void check_frames_to_write(std::shared_ptr<Can::Frame>);
     void disconnect_device();
