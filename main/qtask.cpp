@@ -5,6 +5,7 @@
 #include <memory>
 #include <QDateTime>
 #include <QSignalSpy>
+#include <QScrollBar>
 
 QLoggerWorker::QLoggerWorker(QObject* parent, QTextEdit* frame_log, QTextEdit* message_log, QProgressBar* bar)
     : QObject(parent), m_frame_log(frame_log), m_message_log(message_log), m_timer(), m_mutex(), m_progress(bar) {
@@ -57,6 +58,7 @@ void QLoggerWorker::info(std::string message)
     m_message_log->setTextColor(QColor("gray"));
     m_message_log->append(get_date_str() + "    INFO: " + QString::fromStdString(message));
     m_message_log->setTextColor(QColor("black"));
+    m_message_log->verticalScrollBar()->setValue(m_message_log->verticalScrollBar()->maximum());
     DEBUG(info, message);
 }
 void QLoggerWorker::error(std::string message)
@@ -64,6 +66,7 @@ void QLoggerWorker::error(std::string message)
     m_message_log->setTextColor(QColor("red"));
     m_message_log->append(get_date_str() + "   ERROR: " + QString::fromStdString(message));
     m_message_log->setTextColor(QColor("black"));
+    m_message_log->verticalScrollBar()->setValue(m_message_log->verticalScrollBar()->maximum());
     DEBUG(error, message);
 }
 void QLoggerWorker::warning(std::string message)
@@ -71,6 +74,7 @@ void QLoggerWorker::warning(std::string message)
     m_message_log->setTextColor(QColor("orange"));
     m_message_log->append(get_date_str() + " WARNING: " + QString::fromStdString(message));
     m_message_log->setTextColor(QColor("black"));
+    m_message_log->verticalScrollBar()->setValue(m_message_log->verticalScrollBar()->maximum());
     DEBUG(warning, message);
 }
 void QLoggerWorker::important(std::string message)
@@ -78,11 +82,21 @@ void QLoggerWorker::important(std::string message)
     m_message_log->setStyleSheet("font-weight: bold;");
     m_message_log->append(get_date_str() + "    INFO: " + QString::fromStdString(message));
     m_message_log->setStyleSheet("font-weight: regular;");
+    m_message_log->verticalScrollBar()->setValue(m_message_log->verticalScrollBar()->maximum());
     DEBUG(info, message);
 }
 
-void QLoggerWorker::progress(int a) {
-    if(m_progress == nullptr) return;
+void QLoggerWorker::progress(int a, bool err) {
+    if(err) {
+        QPalette p = m_progress->palette();
+        p.setColor(QPalette::Highlight, Qt::red);
+        m_progress->setPalette(p);
+        return;
+    }
+    QPalette p = m_progress->palette();
+    p.setColor(QPalette::Highlight, Qt::green);
+    m_progress->setPalette(p);
+    if (m_progress == nullptr) return;
     m_progress->setValue(a);
 }
 

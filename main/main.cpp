@@ -1,5 +1,6 @@
 #include <QApplication>
 #include <QMessageBox>
+#include <QDesktopWidget>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -63,7 +64,11 @@ int main(int argc, char *argv[]) {
     qRegisterMetaType<QTextCharFormat>();
     qRegisterMetaType<QTextCursor>();
     
+    QDesktopWidget dw;
     MainWindow main_window{};
+
+    main_window.setFixedSize(dw.availableGeometry(&main_window).size()*0.7);
+    
     main_window.show();
 
     return app.exec();

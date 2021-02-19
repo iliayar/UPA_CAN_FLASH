@@ -35,9 +35,10 @@ void FlashTask::task_main() {
 
     IF_NEGATIVE(response) {
         LOG(error, "Failed ot enter extendDiagnosticSession");
+        m_logger->progress(0, true);
         return;
     }
-    progress += 4;
+    progress += 1;
     m_logger->progress(progress);
 
     response = call(ServiceRequest_ControlDTCSettings::build()
@@ -46,9 +47,10 @@ void FlashTask::task_main() {
 
     IF_NEGATIVE(response) {
         LOG(error, "Failed ControlDTCSettings");
+        m_logger->progress(0, true);
         return;
     }
-    progress += 4;
+    progress += 1;
     m_logger->progress(progress);
 
     response = call(
@@ -64,9 +66,10 @@ void FlashTask::task_main() {
 
     IF_NEGATIVE(response) {
         LOG(error, "Failed CommunicationControl");
+        m_logger->progress(0, true);
         return;
     }
-    progress += 4;
+    progress += 1;
     m_logger->progress(progress);
 
     response = call(
@@ -77,9 +80,10 @@ void FlashTask::task_main() {
 
     IF_NEGATIVE(response) {
         LOG(error, "Failed ot enter programmingSession");
+        m_logger->progress(0, true);
         return;
     }
-    progress += 4;
+    progress += 1;
     m_logger->progress(progress);
 
     uint8_t rnd = Crypto::get_RND();
@@ -94,9 +98,10 @@ void FlashTask::task_main() {
 
     IF_NEGATIVE(response) {
         LOG(error, "Failed ot request seed");
+        m_logger->progress(0, true);
         return;
     }
-    progress += 4;
+    progress += 1;
     m_logger->progress(progress);
 
     uint32_t seed =
@@ -115,9 +120,10 @@ void FlashTask::task_main() {
 
     IF_NEGATIVE(response) {
         LOG(error, "Security access failed key verification");
+        m_logger->progress(0, true);
         return;
     }
-    progress += 4;
+    progress += 1;
     m_logger->progress(progress);
 
     LOG(info, "Successfully pased security access");
@@ -125,6 +131,7 @@ void FlashTask::task_main() {
     std::ifstream fin(m_file);
     if(!fin) {
         m_logger->error("Cannot open file");
+        m_logger->progress(0, true);
         return;
     }
     Hex::HexReader reader(std::make_unique<Hex::FileSource>(fin));
@@ -159,14 +166,16 @@ void FlashTask::task_main() {
 
     IF_NEGATIVE(response) {
         LOG(error, "Cannot request download");
+        m_logger->progress(0, true);
         return; 
     }
-    progress += 4;
+    progress += 1;
     m_logger->progress(progress);
 
     int block_length_fomat = static_cast<Can::ServiceResponse_RequestDownload*>(response.get())->get_length_format()->get_memory_size();
     if(block_length_fomat > 8) {
         LOG(error, "Too long max block length");
+        m_logger->progress(0, true);
         return;
     }
     LOG(info, "Requesting download response parsed");
@@ -178,10 +187,11 @@ void FlashTask::task_main() {
     fin.open(m_file);
     if(!fin) {
         m_logger->error("Cannot open file");
+        m_logger->progress(0, true);
         return;
     }
 
-    double progress_step = (100 - 28 - 4) / (hex_info.size / max_block_size);
+    double progress_step = (100 - 7 - 1) / (hex_info.size / max_block_size);
     double transfer_progress = 0;
     reader = Hex::HexReader(std::make_shared<Hex::FileSource>(fin));
     LOG(info, "File " + m_file + " opened");
@@ -212,6 +222,7 @@ void FlashTask::task_main() {
                              ->build());
                     IF_NEGATIVE(response) {
                         LOG(error, "Failed to transfer data");
+                        m_logger->progress(0, true);
                         return; 
                     }
                     transfer_progress += progress_step;
@@ -234,6 +245,7 @@ void FlashTask::task_main() {
     response = call(Can::ServiceRequest_RequestTransferExit::build()->crc(crc)->build());
     IF_NEGATIVE(response) {
         LOG(error, "Failed to request transfer exit. Maybe crc check failed");
+        m_logger->progress(0, true);
         return;
     }
     m_logger->progress(100);

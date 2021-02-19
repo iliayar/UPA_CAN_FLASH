@@ -34,7 +34,7 @@ public slots:
     void info(std::string);
     void warning(std::string);
     void important(std::string);
-    void progress(int);
+    void progress(int, bool err);
     
 private:
     QString vec_to_qstr(std::vector<uint8_t>);
@@ -92,8 +92,8 @@ public:
     void important(std::string s) {
         emit signal_important(s);
     }
-    void progress(int a) {
-        emit signal_progress(a);
+    void progress(int a, bool err = false) {
+        emit signal_progress(a, err);
     }
 
 #define DISCONNECT(sig) connect(this, &QLogger::signal_##sig, m_worker, &QLoggerWorker::sig)
@@ -121,7 +121,7 @@ signals:
     void signal_info(std::string);
     void signal_warning(std::string);
     void signal_important(std::string);
-    void signal_progress(int);
+    void signal_progress(int, bool);
     
 private:
     QLoggerWorker* m_worker;
