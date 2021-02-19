@@ -8,6 +8,7 @@
 #include <QSettings>
 #include <QSpinBox>
 #include <QPushButton>
+#include <QProgressBar>
 #include <mutex>
 
 #include "communicator.h"
@@ -49,6 +50,7 @@ signals:
 public slots:
     void choose_file();
     void start_task();
+    void abort_task();
     void update_devices_list();
     void connect_device();
     void check_frames_to_write(std::shared_ptr<Can::Frame>);
@@ -62,7 +64,7 @@ private:
     QCommunicator* m_communicator;
     std::mutex m_communicator_mutex;
     QThread m_communicator_thread;
-    Can::Logger* m_logger;
+    QLogger* m_logger;
     QLoggerWorker* m_logger_worker;
     std::string m_file;
     QSettings m_settings;
@@ -80,6 +82,8 @@ private:
     QComboBox* m_bitrate_list;
     QComboBox* m_task_list;
     QComboBox* m_plugin_list;
+
+    QProgressBar* m_progress_bar;
 
     QSpinBox* m_tester_id_box;
     QSpinBox* m_ecu_id_box;

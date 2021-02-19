@@ -21,6 +21,7 @@ void QCommunicator::set_task(std::shared_ptr<QTask> task) {
         disconnect(m_task.get(), &QTask::request, this, &QCommunicator::request);
         disconnect(m_task.get(), &QTask::finished, this, &QCommunicator::task_done);
         worker_done();
+        emit task_exited();
     }
     m_task = task;
     if(task == nullptr) return;
@@ -37,7 +38,6 @@ void QCommunicator::task_done() {
     DEBUG(info, "task exited");
     m_logger->info("Task exited");
     set_task(nullptr);
-    emit task_exited();
 }
 
 void QCommunicator::push_frame(std::shared_ptr<Can::Frame> frame) {

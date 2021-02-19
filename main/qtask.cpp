@@ -6,8 +6,8 @@
 #include <QDateTime>
 #include <QSignalSpy>
 
-QLoggerWorker::QLoggerWorker(QObject* parent, QTextEdit* frame_log, QTextEdit* message_log)
-    : QObject(parent), m_frame_log(frame_log), m_message_log(message_log), m_timer(), m_mutex() {
+QLoggerWorker::QLoggerWorker(QObject* parent, QTextEdit* frame_log, QTextEdit* message_log, QProgressBar* bar)
+    : QObject(parent), m_frame_log(frame_log), m_message_log(message_log), m_timer(), m_mutex(), m_progress(bar) {
 
     m_timer.start();
 }
@@ -29,7 +29,7 @@ QString QLoggerWorker::vec_to_qstr(std::vector<uint8_t> vec) {
         str.append(" ");
     }
     str.append("   ");
-    str.append(QString("%1").arg(m_timer.elapsed(), 3, 10, QLatin1Char('0')));
+    str.append(QString("%1").arg(m_timer.elapsed(), 4, 10, QLatin1Char('0')));
     m_timer.restart();
     str = str.toUpper();
     str.append(" ms");
@@ -79,6 +79,11 @@ void QLoggerWorker::important(std::string message)
     m_message_log->append(get_date_str() + "    INFO: " + QString::fromStdString(message));
     m_message_log->setStyleSheet("font-weight: regular;");
     DEBUG(info, message);
+}
+
+void QLoggerWorker::progress(int a) {
+    if(m_progress == nullptr) return;
+    m_progress->setValue(a);
 }
 
 void QTask::response(std::shared_ptr<Can::ServiceResponse> r, int wait) {
