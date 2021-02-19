@@ -289,14 +289,18 @@ void MainWindow::create_layout(QWidget* root) {
     //         &MainWindow::abort_task);
     DEBUG(info, "Layout created");
 
+    int i = 0;
     for (std::pair<std::string, std::string> plugin :
          std::vector<std::pair<std::string, std::string>>(CAN_PLUGINS)) {
+	i++;
         QString errorString;
         QList<QCanBusDeviceInfo> devices =
             QCanBus::instance()->availableDevices(
                 QString::fromStdString(plugin.second), &errorString);
-        if (errorString.isEmpty()) {
-            m_device_list->setCurrentText(QString::fromStdString(plugin.first));
+        if (!errorString.isEmpty()) {
+	} else {
+            m_plugin_list->setCurrentText(QString::fromStdString(plugin.first));
+	    if(devices.size() == 0) continue;
             update_device_list(QString::fromStdString(plugin.first));
             break;
         }
