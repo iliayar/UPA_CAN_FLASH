@@ -317,7 +317,7 @@ void MainWindow::choose_file() {
     m_filename_label->setText(QString::fromStdString("File: " + m_file));
     {
         QString filename = QFileInfo(QString::fromStdString(m_file)).fileName();
-        m_filename_label->setText("File: " + filename);
+        m_filename_label->setText("File: " + filename.toUpper());
     }
     {
         std::stringstream ss;
