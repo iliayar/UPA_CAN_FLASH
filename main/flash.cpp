@@ -181,7 +181,8 @@ void FlashTask::task_main() {
         return;
     }
 
-    int progress_step = (100 - 28 - 4) / (hex_info.size / max_block_size);
+    double progress_step = (100 - 28 - 4) / (hex_info.size / max_block_size);
+    double transfer_progress = 0;
     reader = Hex::HexReader(std::make_shared<Hex::FileSource>(fin));
     LOG(info, "File " + m_file + " opened");
     std::vector<uint8_t> data(max_block_size, 0);
@@ -213,8 +214,8 @@ void FlashTask::task_main() {
                         LOG(error, "Failed to transfer data");
                         return; 
                     }
-                    progress += progress_step;
-                    m_logger->progress(progress);
+                    transfer_progress += progress_step;
+                    m_logger->progress(progress + transfer_progress);
                     if(static_cast<Can::ServiceResponse_TransferData*>(response.get())->get_block_counter() != block_counter - 1) {
                         LOG(warning, "Wrong block counter in response");
                     }
