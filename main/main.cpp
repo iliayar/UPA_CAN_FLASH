@@ -1,6 +1,9 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QDesktopWidget>
+#include <QTextCharFormat>
+#include <QTextCursor>
+#include <QStyleFactory>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -11,8 +14,6 @@
 #include "service.h"
 #include "qtask.h"
 
-#include <QTextCharFormat>
-#include <QTextCursor>
 Q_DECLARE_METATYPE(QTextCharFormat)
 Q_DECLARE_METATYPE(QTextCursor)
 
@@ -51,6 +52,7 @@ private:
 int main(int argc, char *argv[]) {
     Application app(argc, argv);
     app.setApplicationName("UPA_CAN_FLASH " APP_VERSION);
+    app.setStyle(QStyleFactory::create("Fusion"));
 
     qRegisterMetaType<std::vector<uint8_t>>();
     qRegisterMetaType<std::shared_ptr<Can::Frame>>();
@@ -67,7 +69,7 @@ int main(int argc, char *argv[]) {
     QDesktopWidget dw;
     MainWindow main_window{};
 
-    main_window.setFixedSize(dw.availableGeometry(&main_window).size()*0.7);
+    main_window.resize(dw.availableGeometry(&main_window).size()*0.8);
     
     main_window.show();
 
