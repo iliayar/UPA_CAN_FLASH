@@ -1,7 +1,6 @@
 #include "crc.h"
 
 uint16_t Util::crc16_block(std::vector<uint8_t> block, uint16_t val) {
-
     uint16_t len = block.size();
     uint8_t *pcBlock = block.data();
 
