@@ -1,3 +1,8 @@
+/**
+ * @file hex.h
+ * Defines class for parsing Intel HEX
+ * format files
+ */ 
 #pragma once
 
 #include <fstream>
@@ -18,11 +23,21 @@ enum class HexLineType {
     StartLinearAddress = 0x05
 };
 
+/**
+ * Class represent single line in HEX file
+ */
 class HexLine {
 public:
+
+    /**
+     * @return type of single HEX file line
+     */
     virtual HexLineType get_type() = 0;
 };
 
+/**
+ * Generates HEX line classes
+ */
 #define HEXLINE_FIELD_GETTER(type, name) \
     type get_##name() { return m_##name; }
 #define HEXLINE_FIELD(type, name) type m_##name;
@@ -58,13 +73,36 @@ HEXLINE_CLASS(StartLinearAddress, (uint32_t, address));
 #undef HEXLINE_CLASS
 #undef HEXLINE_CLASS_EMPTY
 
+/**
+ * @interface
+ * Provide methods to access any source
+ * of HEX file data
+ */
 class Source {
 public:
+
+    /**
+     * @return single char at current position
+     */
     virtual char get_char() = 0;
+
+    /**
+     * Makes a single step to the next byte of HEX file data
+     */
     virtual void next_char() = 0;
+
+
+    /**
+     * @return true is there is an EOF reached
+     */
     virtual bool is_eof() = 0;
 };
 
+
+/**
+ * Implementation pf Source interface
+ * On standart C++ string
+ */
 class StringSource : public Source {
 public:
     StringSource(std::string);
@@ -77,6 +115,10 @@ private:
     int m_pos;
 };
 
+/**
+ * Implementation pf Source interface
+ * On standart C++ file stream
+ */
 class FileSource : public Source {
 public:
     using filepath = std::string;
@@ -95,11 +137,31 @@ private:
     char* m_char;
 };
 
+/**
+ * Class to read HEX file
+ */
 class HexReader {
 public:
+
+    /**
+     * @param Source interface class to get bytes from
+     */
     HexReader(std::shared_ptr<Source> source);
+
+    /**
+     * @return next line of HEX file
+     */
     std::shared_ptr<HexLine> read_line();
+
+    /**
+     * @return true if there is and EOF of provided Source
+     */
     bool is_eof();
+
+    /**
+     * @return 4 bytes address calculated from
+     * previous lines addresses
+     */
     uint32_t get_current_address() { return m_address; }
 
 private:
@@ -113,12 +175,20 @@ private:
     int m_line_readed;
 };
 
+/**
+ * HEX file info
+ * Starting address, size, and CRC sum of file
+ */
 struct HexInfo {
     uint64_t start_addr;
     int size;
     uint16_t crc;
 };
 
+/**
+ * @param HEX file reader
+ * @return HEX file info
+ */
 HexInfo read_hex_info(HexReader& reader);
 
 std::vector<uint8_t> str_to_bytes(std::string str);

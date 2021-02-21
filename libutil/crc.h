@@ -1,3 +1,7 @@
+/**
+ * @file crc.h
+ * implemets CRC sum function
+ */
 #pragma once
 
 #include <cstdint>
@@ -5,16 +9,11 @@
 
 namespace Util {
 
-// uint16_t crc16_block(std::vector<uint8_t> block, uint16_t val) {
-//     uint16_t fwCRC = val;
-//     for(uint8_t b : block) {
-//         fwCRC ^= b << 8;
-//         for(int i = 0; i < 8; ++i) {
-//             fwCRC = fwCRC & 0x8000 ? (fwCRC << 1) ^ 0x1021 : fwCRC << 1;
-//         }
-//     }
-//     return fwCRC;
-// }
+/**
+ * Calculated crc of 4 bytes block
+ * @param 4 byte block
+ * @param previous calculated CRC. A new one is depends on it
+ */
 uint16_t crc16_block(std::vector<uint8_t> block, uint16_t val);
 
 }  // namespace Util
