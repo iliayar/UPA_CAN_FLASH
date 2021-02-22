@@ -4,12 +4,11 @@
 #define REQUEST_FIELDS (RAW, id, DataIdentifier)
 #define RESPONSE_FIELDS (RAW, data, Data*)
 SERVICE_BEGIN
+#ifdef EXTRA  // {{{
 
-#ifdef EXTRA // {{{
+#endif  // }}}
 
-#endif // }}}
-
-#ifdef PARSE // {{{
+#ifdef PARSE  // {{{
 {
     m_reader.add_offset(m_offset);
 
@@ -17,16 +16,15 @@ SERVICE_BEGIN
 
     RETURN(data);
 }
-#endif // }}}
+#endif  // }}}
 
-
-#ifdef DUMP // {{{
+#ifdef DUMP  // {{{
 {
     INIT;
     FIELD(INT, m_id, 16);
     RETURN;
 }
-#endif // }}}
+#endif  // }}}
 
 #undef SERVICE
 #undef REQUEST_ID

@@ -1,3 +1,9 @@
+/**
+ * @file task.h
+ * Defines Task interface to pass in communicator class
+ * It's not in use too. Use qtask.h from main.
+ * It's full of race conditions and thread unsafe operations
+ */
 #pragma once
 
 #include <future>
@@ -13,13 +19,34 @@
 
 namespace Can {
 
+/**
+ * @interface
+ * Task actually works only with request
+ * It's convient to write algorithm to e.g. flash ECU
+ * do not event thinking of lower level, as frames and etc.
+ */
 class Task {
 public:
+    /**
+     * @return service request to send to ECU
+     */
     virtual std::shared_ptr<ServiceRequest> fetch_request() = 0;
+
+    /**
+     * @param service response from ECU to process in task
+     */
     virtual void push_response(std::shared_ptr<ServiceResponse>) = 0;
+
+    /**
+     * @return true if task ended
+     */
     virtual bool is_completed() = 0;
 };
 
+/**
+ * Example of implemting task interface with switched
+ * by steps
+ */
 class ReadWriteTask : public Task {
 public:
     std::shared_ptr<ServiceRequest> fetch_request();
@@ -31,6 +58,12 @@ private:
     int m_step = 0;
 };
 
+/**
+ * Abstract implemention of Task interface
+ * Provide protected call method to call in overriden
+ * task methos for convenient send request and receiving
+ * response in one line
+ */
 class AsyncTask : public Task {
 public:
     AsyncTask(Logger* logger = new NoLogger())
@@ -87,7 +120,10 @@ public:
     virtual void task() = 0;
 
 protected:
-    std::shared_ptr<ServiceResponse> call(std::shared_ptr<ServiceRequest> request) { return call_imp(request); }
+    std::shared_ptr<ServiceResponse> call(
+        std::shared_ptr<ServiceRequest> request) {
+        return call_imp(request);
+    }
 
     Logger* m_logger;
 
@@ -111,6 +147,9 @@ private:
         static_cast<std::chrono::milliseconds>(2);
 };
 
+/**
+ * Example implementation of abstract AsyncTask
+ */
 class ReadWriteThreadedTask : public AsyncTask {
 public:
     ReadWriteThreadedTask(Logger* logger = new NoLogger())

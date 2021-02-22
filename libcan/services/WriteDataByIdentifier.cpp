@@ -4,7 +4,6 @@
 #define REQUEST_FIELDS (RAW, data, Data*)
 #define RESPONSE_FIELDS (RAW, id, DataIdentifier)
 SERVICE_BEGIN
-
 #ifdef EXTRA
 
 #endif
@@ -16,13 +15,12 @@ SERVICE_BEGIN
 }
 #endif
 
-
 #ifdef DUMP
 {
-	INIT;
-	FIELD(INT, m_data->get_type(), 16);
-	FIELD(VEC, m_data->get_value(), m_data->get_value().size()*8);
-	RETURN;
+    INIT;
+    FIELD(INT, m_data->get_type(), 16);
+    FIELD(VEC, m_data->get_value(), m_data->get_value().size() * 8);
+    RETURN;
 }
 #endif
 

@@ -3,8 +3,12 @@
 #define RESPONSE_ID 0x74
 
 // If Service has subfunction, there is must be SUBFUNCTION field
-#define REQUEST_FIELDS (DATA, data_format, DataFormatIdentifier), (DATA, address_len_format, DataAndLengthFormatIdentifier), (VEC, memory_addr), (VEC, memory_size)
-#define RESPONSE_FIELDS (DATA, length_format, LengthFormatIdentifier), (VEC, max_blocks_number)
+#define REQUEST_FIELDS                                             \
+    (DATA, data_format, DataFormatIdentifier),                     \
+        (DATA, address_len_format, DataAndLengthFormatIdentifier), \
+        (VEC, memory_addr), (VEC, memory_size)
+#define RESPONSE_FIELDS \
+    (DATA, length_format, LengthFormatIdentifier), (VEC, max_blocks_number)
 // --- FIELD ---
 // (<Type>, <Alias>)
 
@@ -12,19 +16,14 @@ SERVICE_BEGIN
 
 // SUBFUNCTIONS( [(<subfunction name>, <8-bit value>)]... )
 
-DATATYPE(DataFormatIdentifier, 
-(INT, compressionMethod, 4),
-(INT, encryptingMethod, 4))
+DATATYPE(DataFormatIdentifier, (INT, compressionMethod, 4),
+         (INT, encryptingMethod, 4))
 
-DATATYPE(DataAndLengthFormatIdentifier,
-(INT, memory_size, 4),
-(INT, memory_address, 4))
+DATATYPE(DataAndLengthFormatIdentifier, (INT, memory_size, 4),
+         (INT, memory_address, 4))
 
-DATATYPE(LengthFormatIdentifier,
-(INT, memory_size, 4),
-(INT, reserved, 4))
-
-#ifdef EXTRA // Extra classes
+DATATYPE(LengthFormatIdentifier, (INT, memory_size, 4), (INT, reserved, 4))
+#ifdef EXTRA  // Extra classes
 
 #endif
 
@@ -39,10 +38,10 @@ DATATYPE(LengthFormatIdentifier,
 //        }]...
 //     }
 // - RETURN([Varible]...) - returns new response object
-#ifdef PARSE // Parse Service Response
+#ifdef PARSE  // Parse Service Response
 {
     FIELD(DATA, length_format, LengthFormatIdentifier);
-    FIELD(VEC, max_blocks_number, length_format->get_memory_size()*8);
+    FIELD(VEC, max_blocks_number, length_format->get_memory_size() * 8);
     RETURN(length_format, max_blocks_number);
 }
 #endif
@@ -63,13 +62,13 @@ DATATYPE(LengthFormatIdentifier,
 //        }]...
 //     }
 // - RETURN - "return payload"
-#ifdef DUMP // Dump Service Request to std::vector<uint8_t>
+#ifdef DUMP  // Dump Service Request to std::vector<uint8_t>
 {
     INIT;
     FIELD(DATA, m_data_format);
     FIELD(DATA, m_address_len_format);
-    FIELD(VEC, m_memory_addr, m_address_len_format->get_memory_address()*8);
-    FIELD(VEC, m_memory_size, m_address_len_format->get_memory_size()*8);
+    FIELD(VEC, m_memory_addr, m_address_len_format->get_memory_address() * 8);
+    FIELD(VEC, m_memory_size, m_address_len_format->get_memory_size() * 8);
     RETURN;
 }
 #endif

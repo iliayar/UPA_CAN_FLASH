@@ -52,7 +52,6 @@ MainWindow::MainWindow(QWidget* parent)
     create_layout(window);
 
     m_device = nullptr;
-    m_communicator = nullptr;
 
     m_communicator =
         new QCommunicator(std::make_shared<QLogger>(m_logger_worker));

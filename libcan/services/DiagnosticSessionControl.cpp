@@ -11,12 +11,8 @@
 SERVICE_BEGIN
 
 // SUBFUNCTIONS( [(<subfunction name>, <8-bit value>)]... )
-SUBFUNCTIONS(
-    (extendDiagnosticSession, 0x03),
-    (programmingSession, 0x02)
-    )
-
-#ifdef EXTRA // Extra classes
+SUBFUNCTIONS((extendDiagnosticSession, 0x03), (programmingSession, 0x02))
+#ifdef EXTRA  // Extra classes
 
 #endif
 
@@ -31,9 +27,9 @@ SUBFUNCTIONS(
 //        }]...
 //     }
 // - RETURN([Varible]...) - returns new response object
-#ifdef PARSE // Parse Service Response
+#ifdef PARSE  // Parse Service Response
 {
-    FIELD(SUBFUNCTION) { }
+    FIELD(SUBFUNCTION) {}
     RETURN(subfunction);
 }
 #endif
@@ -54,10 +50,10 @@ SUBFUNCTIONS(
 //        }]...
 //     }
 // - RETURN - "return payload"
-#ifdef DUMP // Dump Service Request to std::vector<uint8_t>
+#ifdef DUMP  // Dump Service Request to std::vector<uint8_t>
 {
     INIT;
-    FIELD(SUBFUNCTION) { }
+    FIELD(SUBFUNCTION) {}
     RETURN;
 }
 #endif
