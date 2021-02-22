@@ -146,8 +146,8 @@ set(CPACK_NSIS_CREATE_ICONS_EXTRA
   "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\UPA_CAN_FLASH.lnk' '$INSTDIR\\\\bin\\\\UPA_CAN_FLASH.exe'"
   )
 
-SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS 
-  "CreateDirectory \\\"\$ENV{APPDATA}\\\\UPA_CAN_FLASH\\\"")
+# SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS 
+#   "CreateDirectory \\\"\$ENV{APPDATA}\\\\UPA_CAN_FLASH\\\"")
 
 # Must be after the last CPACK macros
 include(CPack)
