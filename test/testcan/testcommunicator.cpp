@@ -10,15 +10,16 @@
 #include <thread>
 #include <string>
 #include <stdexcept>
+#include <memory>
 
 TEST(testCommunicator, testFramesToService)
 {
     {
         std::vector<std::shared_ptr<Can::Frame>> frames;
         frames.push_back(std::make_shared<Can::Frame_SingleFrame>(3, std::vector<uint8_t>({0x6e, 0xf1, 0x90, 0x00, 0x00, 0x00, 0x00})));
-        Can::ServiceResponse* response = Can::frames_to_service(frames);
+        std::shared_ptr<Can::ServiceResponse> response = Can::frames_to_service(frames);
         EXPECT_EQ(response->get_type(), Can::ServiceResponseType::WriteDataByIdentifier);
-        Can::DataIdentifier id = static_cast<Can::ServiceResponse_WriteDataByIdentifier*>(response)->get_id();
+        Can::DataIdentifier id = static_cast<Can::ServiceResponse_WriteDataByIdentifier*>(response.get())->get_id();
         EXPECT_EQ(id, Can::DataIdentifier::VIN);
     }
 
@@ -27,9 +28,9 @@ TEST(testCommunicator, testFramesToService)
         frames.push_back(std::make_shared<Can::Frame_FirstFrame>(20, std::vector<uint8_t>({0x62, 0xf1, 0x90, 0x41, 0x20, 0x41})));
         frames.push_back(std::make_shared<Can::Frame_ConsecutiveFrame>(1, std::vector<uint8_t>({0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20})));
         frames.push_back(std::make_shared<Can::Frame_ConsecutiveFrame>(2, std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})));
-        Can::ServiceResponse* response = Can::frames_to_service(frames);
+        std::shared_ptr<Can::ServiceResponse> response = Can::frames_to_service(frames);
         EXPECT_EQ(response->get_type(), Can::ServiceResponseType::ReadDataByIdentifier);
-        Can::Data* data = static_cast<Can::ServiceResponse_ReadDataByIdentifier*>(response)->get_data();
+        Can::Data* data = static_cast<Can::ServiceResponse_ReadDataByIdentifier*>(response.get())->get_data();
         EXPECT_EQ(data->get_type(), Can::DataIdentifier::VIN);
         EXPECT_EQ(data->get_value(), std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41}));
     }
@@ -38,7 +39,7 @@ TEST(testCommunicator, testFramesToService)
 TEST(testCommunicator, testServiceToFrames)
 {
     {
-        Can::ServiceRequest* request = new Can::ServiceRequest_WriteDataByIdentifier(new Can::Data(Can::DataIdentifier::VIN, std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})));
+        std::shared_ptr<Can::ServiceRequest> request = std::make_shared<Can::ServiceRequest_WriteDataByIdentifier>(new Can::Data(Can::DataIdentifier::VIN, std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})));
         std::vector<std::shared_ptr<Can::Frame>> frames = Can::service_to_frames(request);
         EXPECT_EQ(frames.size(), 3);
         EXPECT_EQ(frames[0]->get_type(), Can::FrameType::FirstFrame);
@@ -52,7 +53,7 @@ TEST(testCommunicator, testServiceToFrames)
     }
 
     {
-        Can::ServiceRequest* request = new Can::ServiceRequest_ReadDataByIdentifier(Can::DataIdentifier::VIN);
+        std::shared_ptr<Can::ServiceRequest> request = std::make_shared<Can::ServiceRequest_ReadDataByIdentifier>(Can::DataIdentifier::VIN);
         std::vector<std::shared_ptr<Can::Frame>> frames = Can::service_to_frames(request);
         EXPECT_EQ(frames.size(), 1);
         EXPECT_EQ(frames[0]->get_type(), Can::FrameType::SingleFrame);
@@ -68,9 +69,9 @@ TEST(testCommunicator, testReceiver)
         frames.push_back(std::make_shared<Can::Frame_SingleFrame>(3, std::vector<uint8_t>({0x6e, 0xf1, 0x90, 0x00, 0x00, 0x00, 0x00})));
         Can::Receiver receiver(frames[0]);
         EXPECT_EQ(receiver.get_status(), Can::WorkerStatus::Done);
-        Can::ServiceResponse* response = receiver.get_response();
+        std::shared_ptr<Can::ServiceResponse> response = receiver.get_response();
         EXPECT_EQ(response->get_type(), Can::ServiceResponseType::WriteDataByIdentifier);
-        Can::DataIdentifier id = static_cast<Can::ServiceResponse_WriteDataByIdentifier*>(response)->get_id();
+        Can::DataIdentifier id = static_cast<Can::ServiceResponse_WriteDataByIdentifier*>(response.get())->get_id();
         EXPECT_EQ(id, Can::DataIdentifier::VIN);
     }
 
@@ -87,9 +88,9 @@ TEST(testCommunicator, testReceiver)
         EXPECT_EQ(receiver.get_status(), Can::WorkerStatus::Work);
         receiver.push_frame(frames[2]);
         EXPECT_EQ(receiver.get_status(), Can::WorkerStatus::Done);
-        Can::ServiceResponse* response = receiver.get_response();
+        std::shared_ptr<Can::ServiceResponse> response = receiver.get_response();
         EXPECT_EQ(response->get_type(), Can::ServiceResponseType::ReadDataByIdentifier);
-        Can::Data* data = static_cast<Can::ServiceResponse_ReadDataByIdentifier*>(response)->get_data();
+        Can::Data* data = static_cast<Can::ServiceResponse_ReadDataByIdentifier*>(response.get())->get_data();
         EXPECT_EQ(data->get_type(), Can::DataIdentifier::VIN);
         EXPECT_EQ(data->get_value(), std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41}));
     }
@@ -113,7 +114,7 @@ TEST(testCommunicator, testReceiver)
 TEST(testCommunicator, testTransmitter)
 {
     {
-        Can::ServiceRequest* request = new Can::ServiceRequest_ReadDataByIdentifier(Can::DataIdentifier::VIN);
+        std::shared_ptr<Can::ServiceRequest> request = std::make_shared<Can::ServiceRequest_ReadDataByIdentifier>(Can::DataIdentifier::VIN);
         Can::Transmitter transmitter(request);
         EXPECT_EQ(transmitter.get_status(), Can::WorkerStatus::Work);
         std::shared_ptr<Can::Frame> frame = transmitter.fetch_frame();
@@ -125,7 +126,7 @@ TEST(testCommunicator, testTransmitter)
     }
 
     {
-        Can::ServiceRequest* request = new Can::ServiceRequest_WriteDataByIdentifier(new Can::Data(Can::DataIdentifier::VIN, std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})));
+        std::shared_ptr<Can::ServiceRequest> request = std::make_shared<Can::ServiceRequest_WriteDataByIdentifier>(new Can::Data(Can::DataIdentifier::VIN, std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})));
         Can::Transmitter transmitter(request);
         EXPECT_EQ(transmitter.get_status(), Can::WorkerStatus::Work);
         std::shared_ptr<Can::Frame> frame = transmitter.fetch_frame();
@@ -148,7 +149,7 @@ TEST(testCommunicator, testTransmitter)
     }
 
     { // Test BlockSize = 1
-        Can::ServiceRequest* request = new Can::ServiceRequest_WriteDataByIdentifier(new Can::Data(Can::DataIdentifier::VIN, std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})));
+        std::shared_ptr<Can::ServiceRequest> request = std::make_shared<Can::ServiceRequest_WriteDataByIdentifier>(new Can::Data(Can::DataIdentifier::VIN, std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})));
         Can::Transmitter transmitter(request);
         transmitter.TIMEOUT = std::chrono::milliseconds(50);
         EXPECT_EQ(transmitter.get_status(), Can::WorkerStatus::Work);
@@ -178,7 +179,7 @@ TEST(testCommunicator, testTransmitter)
     }
 
     { // Test Timeout
-        Can::ServiceRequest* request = new Can::ServiceRequest_WriteDataByIdentifier(new Can::Data(Can::DataIdentifier::VIN, std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})));
+        std::shared_ptr<Can::ServiceRequest> request = std::make_shared<Can::ServiceRequest_WriteDataByIdentifier>(new Can::Data(Can::DataIdentifier::VIN, std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})));
         Can::Transmitter transmitter(request);
         transmitter.TIMEOUT = std::chrono::milliseconds(50);
         EXPECT_EQ(transmitter.get_status(), Can::WorkerStatus::Work);
@@ -202,7 +203,7 @@ TEST(testCommunicator, testTransmitter)
     }
 
     { // Test FlowControl Repeat type
-        Can::ServiceRequest* request = new Can::ServiceRequest_WriteDataByIdentifier(new Can::Data(Can::DataIdentifier::VIN, std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})));
+        std::shared_ptr<Can::ServiceRequest> request = std::make_shared<Can::ServiceRequest_WriteDataByIdentifier>(new Can::Data(Can::DataIdentifier::VIN, std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})));
         Can::Transmitter transmitter(request);
         EXPECT_EQ(transmitter.get_status(), Can::WorkerStatus::Work);
         std::shared_ptr<Can::Frame> frame = transmitter.fetch_frame();
@@ -229,7 +230,7 @@ TEST(testCommunicator, testTransmitter)
     }
 
     { // Test Minimum separation time
-        Can::ServiceRequest* request = new Can::ServiceRequest_WriteDataByIdentifier(new Can::Data(Can::DataIdentifier::VIN, std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})));
+        std::shared_ptr<Can::ServiceRequest> request = std::make_shared<Can::ServiceRequest_WriteDataByIdentifier>(new Can::Data(Can::DataIdentifier::VIN, std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})));
         Can::Transmitter transmitter(request);
         EXPECT_EQ(transmitter.get_status(), Can::WorkerStatus::Work);
         std::shared_ptr<Can::Frame> frame = transmitter.fetch_frame();
@@ -258,7 +259,7 @@ TEST(testCommunicator, testTransmitter)
     }
 
     {
-        Can::ServiceRequest* request = new Can::ServiceRequest_WriteDataByIdentifier(new Can::Data(Can::DataIdentifier::VIN, std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})));
+        std::shared_ptr<Can::ServiceRequest> request = std::make_shared<Can::ServiceRequest_WriteDataByIdentifier>(new Can::Data(Can::DataIdentifier::VIN, std::vector<uint8_t>({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})));
         Can::Transmitter transmitter(request);
         EXPECT_EQ(transmitter.get_status(), Can::WorkerStatus::Work);
         std::shared_ptr<Can::Frame> frame = transmitter.fetch_frame();
@@ -295,22 +296,22 @@ namespace Can {
 
     class TestTask_Read : public Task {
     public:
-        ServiceRequest* fetch_request() {
+        std::shared_ptr<ServiceRequest> fetch_request() {
             m_step++;
             switch(m_step - 1) {
             case 0:
-                return new ServiceRequest_ReadDataByIdentifier(DataIdentifier::VIN);
+                return std::make_shared<ServiceRequest_ReadDataByIdentifier>(DataIdentifier::VIN);
             default:
                 m_step--;
                 return nullptr;
             }
         }
 
-        void push_response(ServiceResponse* response) {
+        void push_response(std::shared_ptr<ServiceResponse> response) {
             m_step++;
             switch(m_step - 1) {
             case 1:
-                m_result = Util::vec_to_str(static_cast<ServiceResponse_ReadDataByIdentifier*>(response)->get_data()->get_value());
+                m_result = Util::vec_to_str(static_cast<ServiceResponse_ReadDataByIdentifier*>(response.get())->get_data()->get_value());
                 break;
             default:
                 m_step--;
@@ -333,27 +334,27 @@ namespace Can {
 
     class TestTask_DoubleRead : public Task {
     public:
-        ServiceRequest* fetch_request() {
+        std::shared_ptr<ServiceRequest> fetch_request() {
             m_step++;
             switch(m_step - 1) {
             case 0:
-                return new ServiceRequest_ReadDataByIdentifier(DataIdentifier::VIN);
+                return std::make_shared<ServiceRequest_ReadDataByIdentifier>(DataIdentifier::VIN);
             case 2:
-                return new ServiceRequest_ReadDataByIdentifier(DataIdentifier::UPASystemType);
+                return std::make_shared<ServiceRequest_ReadDataByIdentifier>(DataIdentifier::UPASystemType);
             default:
                 m_step--;
                 return nullptr;
             }
         }
 
-        void push_response(ServiceResponse* response) {
+        void push_response(std::shared_ptr<ServiceResponse> response) {
             m_step++;
             switch(m_step - 1) {
             case 1:
-                m_result_VIN = Util::vec_to_str(static_cast<ServiceResponse_ReadDataByIdentifier*>(response)->get_data()->get_value());
+                m_result_VIN = Util::vec_to_str(static_cast<ServiceResponse_ReadDataByIdentifier*>(response.get())->get_data()->get_value());
                 break;
             case 3:
-                m_result_UPASystemType = static_cast<ServiceResponse_ReadDataByIdentifier*>(response)->get_data()->get_value()[0];
+                m_result_UPASystemType = static_cast<ServiceResponse_ReadDataByIdentifier*>(response.get())->get_data()->get_value()[0];
                 break;
             default:
                 m_step--;
@@ -446,11 +447,11 @@ namespace Can {
         TestAsyncTask(Logger* logger = new NoLogger()) :
         AsyncTask(logger) {}
         void task() {
-            ServiceResponse* response;
+            std::shared_ptr<ServiceResponse> response;
 
-            response = call(new ServiceRequest_ReadDataByIdentifier(DataIdentifier::VIN));
+            response = call(std::make_shared<ServiceRequest_ReadDataByIdentifier>(DataIdentifier::VIN));
 
-            m_result = Util::vec_to_str(static_cast<ServiceResponse_ReadDataByIdentifier*>(response)->get_data()->get_value());
+            m_result = Util::vec_to_str(static_cast<ServiceResponse_ReadDataByIdentifier*>(response.get())->get_data()->get_value());
         }
 
         std::string get_result() {

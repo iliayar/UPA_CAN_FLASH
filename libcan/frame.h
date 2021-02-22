@@ -1,9 +1,9 @@
-/************************************
+/*
  * @file frame.h
  * Only abstract frame class defined
  * here. All frame types defined in
  * {{ frame_all.h }}.
- ***********************************/
+ */
 #pragma once
 
 #include <vector>

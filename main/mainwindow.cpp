@@ -472,20 +472,3 @@ MainWindow::~MainWindow() {
     if (m_device != nullptr) delete m_device;
     if (m_communicator != nullptr) delete m_communicator;
 }
-
-void CommunicatorThread::run() {
-    while (true) {
-        {
-            std::unique_lock<std::mutex> lock(m_communicator_mutex);
-            try {
-                m_communicator->get_status();
-                std::shared_ptr<Can::Frame> frame =
-                    m_communicator->fetch_frame();
-                DEBUG(info, "fetched frame from communicator");
-                emit check_frames_to_write(frame);
-            } catch (Can::NothingToFetch e) {
-            }
-        }
-        usleep(50);
-    }
-}
