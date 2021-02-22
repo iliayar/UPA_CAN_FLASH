@@ -6,6 +6,7 @@ set(libutil_SRCS
     crc.cpp
     bytes.h
     bytes.cpp
+    config.h
 )
 
 # Declare the library

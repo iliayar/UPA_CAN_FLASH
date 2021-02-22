@@ -4,3 +4,7 @@ Release
 **/#*#
 *.7z
 Installer
+/libutil/config.h
+/release/
+/check.cppcheck
+/build_usan/

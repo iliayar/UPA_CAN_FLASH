@@ -6,8 +6,8 @@
  */
 #pragma once
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include "bytes.h"
 #include "map.h"
@@ -18,7 +18,6 @@ enum class FrameType;
 
 class Frame {
 public:
-
     /**
      * @return enum type of frame
      */
@@ -35,7 +34,7 @@ class FrameFactory {
 public:
     /**
      * Takes an 8 bytes vector to produce frame from
-     * The one can be fetched using 
+     * The one can be fetched using
      */
     FrameFactory(std::vector<uint8_t>);
 

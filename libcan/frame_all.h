@@ -42,14 +42,14 @@ enum class FrameType {
 #define FRAME(name, _, ...)                                        \
     class Frame_##name : public Frame {                            \
     public:                                                        \
-	Frame_##name(MAP_TUPLE_LIST(FRAME_CTR_FIELD, __VA_ARGS__)) \
-	    : MAP_TUPLE_LIST(FRAME_CTR_FIELD_INIT, __VA_ARGS__) {} \
-	FrameType get_type() { return FrameType::name; }           \
-	MAP_TUPLE(FRAME_FIELD_GETTER, __VA_ARGS__)                 \
-	std::vector<uint8_t> dump();                               \
-								   \
+        Frame_##name(MAP_TUPLE_LIST(FRAME_CTR_FIELD, __VA_ARGS__)) \
+            : MAP_TUPLE_LIST(FRAME_CTR_FIELD_INIT, __VA_ARGS__) {} \
+        FrameType get_type() { return FrameType::name; }           \
+        MAP_TUPLE(FRAME_FIELD_GETTER, __VA_ARGS__)                 \
+        std::vector<uint8_t> dump();                               \
+                                                                   \
     private:                                                       \
-	MAP_TUPLE(FRAME_FIELD, __VA_ARGS__)                        \
+        MAP_TUPLE(FRAME_FIELD, __VA_ARGS__)                        \
     };
 #include "frame.inl"
 #undef FRAME_FIELD_GETTER

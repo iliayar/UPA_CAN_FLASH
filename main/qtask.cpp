@@ -1,3 +1,5 @@
+#include "qtask.h"
+
 #include <QDateTime>
 #include <QProgressBar>
 #include <QScrollBar>
@@ -6,7 +8,6 @@
 
 #include "frame_all.h"
 #include "service_all.h"
-#include "qtask.h"
 
 void QTask::response(std::shared_ptr<Can::ServiceResponse> r, int wait) {
     if (wait == 1) {

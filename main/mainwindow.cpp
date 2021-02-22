@@ -36,11 +36,17 @@
 #include "task.h"
 
 #ifdef __MINGW32__
-#define CAN_PLUGINS \
-    { {"sysWORXX", "systeccan"}, {"IXXAT", "ixxatcan"}, {"VECTOR", "vectorcan"} }
+#define CAN_PLUGINS                                         \
+    {                                                       \
+        {"sysWORXX", "systeccan"}, {"IXXAT", "ixxatcan"}, { \
+            "VECTOR", "vectorcan"                           \
+        }                                                   \
+    }
 #elif __linux__
-#define CAN_PLUGINS \
-    { {"SocketCAN", "socketcan"} }
+#define CAN_PLUGINS                  \
+    {                                \
+        { "SocketCAN", "socketcan" } \
+    }
 #endif
 
 MainWindow::MainWindow(QWidget* parent)
@@ -134,8 +140,10 @@ void MainWindow::create_layout(QWidget* root) {
     QVBoxLayout* options_layout = new QVBoxLayout(options_group);
     //   file options layout
     QComboBox* plugins_list = new QComboBox();
-    for (std::pair<std::string, std::string> plugin : std::vector<std::pair<std::string, std::string>>(CAN_PLUGINS)) {
-        plugins_list->addItem(QString::fromStdString(plugin.first), QString::fromStdString(plugin.second));
+    for (std::pair<std::string, std::string> plugin :
+         std::vector<std::pair<std::string, std::string>>(CAN_PLUGINS)) {
+        plugins_list->addItem(QString::fromStdString(plugin.first),
+                              QString::fromStdString(plugin.second));
     }
     QGroupBox* file_group = new QGroupBox(tr("File"));
 
@@ -291,15 +299,15 @@ void MainWindow::create_layout(QWidget* root) {
     int i = 0;
     for (std::pair<std::string, std::string> plugin :
          std::vector<std::pair<std::string, std::string>>(CAN_PLUGINS)) {
-	i++;
+        i++;
         QString errorString;
         QList<QCanBusDeviceInfo> devices =
             QCanBus::instance()->availableDevices(
                 QString::fromStdString(plugin.second), &errorString);
         if (!errorString.isEmpty()) {
-	} else {
+        } else {
             m_plugin_list->setCurrentText(QString::fromStdString(plugin.first));
-	    if(devices.size() == 0) continue;
+            if (devices.size() == 0) continue;
             update_device_list(QString::fromStdString(plugin.first));
             break;
         }

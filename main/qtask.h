@@ -4,25 +4,29 @@
  */
 #pragma once
 
-#include <QObject>
 #include <QElapsedTimer>
-#include <QThread>
+#include <QObject>
 #include <QSignalSpy>
+#include <QThread>
 #include <memory>
 
 #include "communicator.h"
+#include "config.h"
 #include "frame.h"
+#include "qlogger.h"
 #include "service.h"
 #include "service_all.h"
 #include "task.h"
 #include "util.h"
-#include "qlogger.h"
 
 /**
  * Timeout of receiving complete response
  */
+#ifndef RESPONSE_TIMEOUT
 #define RESPONSE_TIMEOUT 1000
-#define IF_NEGATIVE(res) if(res->get_type() == Can::ServiceResponseType::Negative)
+#endif
+#define IF_NEGATIVE(res) \
+    if (res->get_type() == Can::ServiceResponseType::Negative)
 
 /**
  * Interface of task passed into {@link QCommunicator}
@@ -35,7 +39,7 @@ public:
     void run() override {
         try {
             task();
-        } catch(std::runtime_error e) {
+        } catch (std::runtime_error e) {
             m_logger->error(std::string("Task failed: ") + e.what());
         }
         DEBUG(info, "Exiting task");
@@ -44,11 +48,11 @@ public:
     virtual void task() = 0;
 
 protected:
-
     /**
      * Method to call in task(). Provides convenient way to communicate with ECU
      */
-    std::shared_ptr<Can::ServiceResponse> call(std::shared_ptr<Can::ServiceRequest>);
+    std::shared_ptr<Can::ServiceResponse> call(
+        std::shared_ptr<Can::ServiceRequest>);
 
 public slots:
     /**
@@ -70,10 +74,10 @@ signals:
 private:
     std::shared_ptr<Can::ServiceResponse> m_response;
     int m_wait;
+
 protected:
     std::shared_ptr<QLogger> m_logger;
 };
-
 
 class QTestTask : public QTask {
     Q_OBJECT

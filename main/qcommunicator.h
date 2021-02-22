@@ -11,6 +11,7 @@
 #include "logger.h"
 #include "communicator.h"
 #include "qtask.h"
+#include "config.h"
 
 #include <QObject>
 #include <QTimer>
@@ -18,11 +19,12 @@
 #include <vector>
 #include <string>
 
-
 /**
  * @constant timeout in ms to wait next frame for
  */
+#ifndef FRAME_TIMEOUT
 #define FRAME_TIMEOUT 1000
+#endif
 
 enum class WorkerError {
     Timeout,

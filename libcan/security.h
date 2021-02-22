@@ -9,12 +9,19 @@
 #include <cstdlib>
 #include <ctime>
 
+#include "config.h"
+
 /**
  * Confidencial masks to pass security check
  * to flash ECU
  */
+#ifndef MASK03
 #define MASK03 0x00000000
+#endif
+
+#ifndef MASK02
 #define MASK02 0x00000000
+#endif
 
 namespace Crypto {
 
