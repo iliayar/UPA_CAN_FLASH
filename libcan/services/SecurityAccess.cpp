@@ -2,19 +2,15 @@
 #define REQUEST_ID 0x27
 #define RESPONSE_ID 0x67
 
-// 
+//
 #define REQUEST_FIELDS SUBFUNCTION, (INT, seed_par, 8), (INT, key, 32)
 #define RESPONSE_FIELDS SUBFUNCTION, (INT, seed, 32)
 // --- FIELD ---
 // (<Type>, <Alias>)
 
 SERVICE_BEGIN
-SUBFUNCTIONS(
-	(requestSeed, 0x03),
-	(sendKey, 0x04),
-	)
-
-#ifdef EXTRA // Extra classes
+SUBFUNCTIONS((requestSeed, 0x03), (sendKey, 0x04))
+#ifdef EXTRA  // Extra classes
 
 #endif
 
@@ -29,18 +25,16 @@ SUBFUNCTIONS(
 //        }]...
 //     }
 // - RETURN([Varible]...) - returns new response object
-#ifdef PARSE // Parse Service Response
+#ifdef PARSE  // Parse Service Response
 {
-	FIELD(SUBFUNCTION) {
-		CASE(requestSeed) {
-			FIELD(INT, seed, 32);
-			RETURN(subfunction, seed);
-		}
-		CASE(sendKey) {
-			RETURN(subfunction, 0);
-		}
-	}
-	RETURN(subfunction, 0);
+    FIELD(SUBFUNCTION) {
+        CASE(requestSeed) {
+            FIELD(INT, seed, 32);
+            RETURN(subfunction, seed);
+        }
+        CASE(sendKey) { RETURN(subfunction, 0); }
+    }
+    RETURN(subfunction, 0);
 }
 #endif
 
@@ -60,20 +54,20 @@ SUBFUNCTIONS(
 //        }]...
 //     }
 // - RETURN - "return payload"
-#ifdef DUMP // Dump Service Request to std::vector<uint8_t>
+#ifdef DUMP  // Dump Service Request to std::vector<uint8_t>
 {
-	INIT;
-	FIELD(SUBFUNCTION) {
-		CASE(requestSeed) {
-			FIELD(INT, m_seed_par, 8);
-			break;
-		}
-		CASE(sendKey) {
-			FIELD(INT, m_key, 32);
-			break;
-		}
-	}
-	RETURN;
+    INIT;
+    FIELD(SUBFUNCTION) {
+        CASE(requestSeed) {
+            FIELD(INT, m_seed_par, 8);
+            break;
+        }
+        CASE(sendKey) {
+            FIELD(INT, m_key, 32);
+            break;
+        }
+    }
+    RETURN;
 }
 #endif
 

@@ -19,15 +19,10 @@ SERVICE_BEGIN
 
 // [SUBFUNCTIONS( [(<subfunction name>, <8-bit value>)]... )]
 // [DATATYPE( [(<field type>, <field name>)]... )]...
-SUBFUNCTIONS(
-    (hardReset, 0x01),
-    (keyOffOnReset, 0x02),
-    (softReset, 0x03),
-    (enableRapidPowerShutDown, 0x04),
-    (disableRapidPowerShutDown, 0x05)
-    )
-
-#ifdef EXTRA // Extra classes
+SUBFUNCTIONS((hardReset, 0x01), (keyOffOnReset, 0x02), (softReset, 0x03),
+             (enableRapidPowerShutDown, 0x04),
+             (disableRapidPowerShutDown, 0x05))
+#ifdef EXTRA  // Extra classes
 
 #endif
 
@@ -44,7 +39,7 @@ SUBFUNCTIONS(
 //        }]...
 //     }
 // - RETURN([Varible]...) - returns new response object
-#ifdef PARSE // Parse Service Response
+#ifdef PARSE  // Parse Service Response
 {
     FIELD(SUBFUNCTION) {
         CASE(enableRapidPowerShutDown) {
@@ -73,7 +68,7 @@ SUBFUNCTIONS(
 //        }]...
 //     }
 // - RETURN - "return payload"
-#ifdef DUMP // Dump Service Request to std::vector<uint8_t>
+#ifdef DUMP  // Dump Service Request to std::vector<uint8_t>
 {
     INIT;
     FIELD(SUBFUNCTION) {}

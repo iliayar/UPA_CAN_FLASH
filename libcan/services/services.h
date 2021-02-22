@@ -1,3 +1,8 @@
+/**
+ * @file service.h
+ * Include all services descriptions
+ * This file actually used in services header files
+ */
 #include "ReadDataByIdentifier.cpp"
 #include "WriteDataByIdentifier.cpp"
 #include "SecurityAccess.cpp"

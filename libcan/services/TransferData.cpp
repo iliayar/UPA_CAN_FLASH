@@ -9,11 +9,10 @@
 // (<Type>, <Alias>)
 
 SERVICE_BEGIN
-
 // [SUBFUNCTIONS( [(<subfunction name>, <8-bit value>)]... )]
 // [DATATYPE( [(<field type>, <field name>)]... )]...
 
-#ifdef EXTRA // Extra classes
+#ifdef EXTRA  // Extra classes
 
 #endif
 
@@ -30,7 +29,7 @@ SERVICE_BEGIN
 //        }]...
 //     }
 // - RETURN([Varible]...) - returns new response object
-#ifdef PARSE // Parse Service Response
+#ifdef PARSE  // Parse Service Response
 {
     FIELD(INT, block_counter, 8);
     FIELD(VEC, data, ALL);
@@ -55,11 +54,11 @@ SERVICE_BEGIN
 //        }]...
 //     }
 // - RETURN - "return payload"
-#ifdef DUMP // Dump Service Request to std::vector<uint8_t>
+#ifdef DUMP  // Dump Service Request to std::vector<uint8_t>
 {
     INIT;
     FIELD(INT, m_block_counter, 8);
-    FIELD(VEC, m_data, m_data.size()*8);
+    FIELD(VEC, m_data, m_data.size() * 8);
     RETURN;
 }
 #endif

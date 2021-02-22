@@ -1,3 +1,8 @@
+/**
+ * @file frame_all.h
+ * Here defined classes of frame types
+ * contains in {{ frame.inl }}
+ */
 #pragma once
 
 #include <cstdint>

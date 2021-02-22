@@ -1,3 +1,13 @@
+/**
+ * @file service_all.h
+ * This file is another macros hell, even worse
+ * Generates:
+ *   - Service request classes with dump methods
+ *     Builder classes for requests
+ *   - Service response classes with parse methods
+ *     in ServiceResponseFactory class.
+ * All services defined in {{ services }} folder
+ */
 #pragma once
 
 #include <vector>
@@ -5,9 +15,6 @@
 #include "bytes.h"
 #include "map.h"
 #include "service.h"
-
-
-// Macros magick
 
 namespace Can {
 
@@ -25,10 +32,10 @@ namespace Can {
 #define DATATYPE_FIELD_GETTER(type, name, ...) \
     TYPE_##type(__VA_ARGS__) get_##name() { return m_##name; }
 #define DATATYPE_FIELD(type, name, ...) TYPE_##type(__VA_ARGS__) m_##name;
-#define DATATYPE_FIELD_SETTER(type, name, ...)            \
+#define DATATYPE_FIELD_SETTER(type, name, ...)  \
     auto name(TYPE_##type(__VA_ARGS__) value) { \
-        m_##name = value;                                 \
-        return this;                                      \
+        m_##name = value;                       \
+        return this;                            \
     }
 #define DATATYPE_CTR_FIELD(type, name, ...) TYPE_##type(__VA_ARGS__) name
 #define DATATYPE_CTR_FIELD_INIT(_, name, ...) m_##name(name)
@@ -41,7 +48,7 @@ namespace Can {
         name(MAP_TUPLE_LIST(DATATYPE_CTR_FIELD, __VA_ARGS__))         \
             : MAP_TUPLE_LIST(DATATYPE_CTR_FIELD_INIT, __VA_ARGS__) {} \
         MAP_TUPLE(DATATYPE_FIELD_GETTER, __VA_ARGS__)                 \
-        std::vector<uint8_t> dump(int*);                    \
+        std::vector<uint8_t> dump(int*);                              \
         static std::unique_ptr<name##_Builder> build() {              \
             return std::make_unique<name##_Builder>();                \
         }                                                             \
@@ -150,16 +157,16 @@ enum class ServiceRequestType {
     }
 #define SERVICE_ARG_INIT(_, name, ...) m_##name
 #define SERVICE_FIELD(type, name, ...) FIELD_##type(__VA_ARGS__) m_##name;
-#define SERVICE_BEGIN                                                   \
-    class CONCAT(CONCAT(ServiceRequest_, SERVICE), _Builder) {          \
-    public:                                                             \
-        std::shared_ptr<CONCAT(ServiceRequest_, SERVICE)> build() {     \
-            return std::make_shared<CONCAT(ServiceRequest_, SERVICE)>(  \
-                MAP_TUPLE_LIST(SERVICE_ARG_INIT, REQUEST_FIELDS));      \
-        }                                                               \
-        MAP_TUPLE(SERVICE_SETTER, REQUEST_FIELDS)                       \
-            private:                                                    \
-            MAP_TUPLE(SERVICE_FIELD, REQUEST_FIELDS)                    \
+#define SERVICE_BEGIN                                                  \
+    class CONCAT(CONCAT(ServiceRequest_, SERVICE), _Builder) {         \
+    public:                                                            \
+        std::shared_ptr<CONCAT(ServiceRequest_, SERVICE)> build() {    \
+            return std::make_shared<CONCAT(ServiceRequest_, SERVICE)>( \
+                MAP_TUPLE_LIST(SERVICE_ARG_INIT, REQUEST_FIELDS));     \
+        }                                                              \
+        MAP_TUPLE(SERVICE_SETTER, REQUEST_FIELDS)                      \
+    private:                                                           \
+        MAP_TUPLE(SERVICE_FIELD, REQUEST_FIELDS)                       \
     };
 #include "services/services.h"
 #undef SERVICE_SETTER

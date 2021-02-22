@@ -1,16 +1,17 @@
 #include "task.h"
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <sstream>
 
 #include "service_all.h"
 #include "util.h"
 
 using namespace Can;
 
-std::shared_ptr<Can::ServiceResponse> Can::AsyncTask::call_imp(std::shared_ptr<Can::ServiceRequest> request) {
+std::shared_ptr<Can::ServiceResponse> Can::AsyncTask::call_imp(
+    std::shared_ptr<Can::ServiceRequest> request) {
     DEBUG(info, "task");
     while (true) {
         {
@@ -32,14 +33,16 @@ std::shared_ptr<Can::ServiceResponse> Can::AsyncTask::call_imp(std::shared_ptr<C
                 std::shared_ptr<Can::ServiceResponse> response = m_response;
                 if (response->get_type() ==
                     Can::ServiceResponseType::Negative) {
-                    if (static_cast<Can::ServiceResponse_Negative*>(response.get())
+                    if (static_cast<Can::ServiceResponse_Negative*>(
+                            response.get())
                             ->get_service() != request->get_type()) {
                         m_response = nullptr;
                         DEBUG(info, "task response invalid error service code");
                         m_logger->warning("Invalid error service code");
                         continue;
                     }
-                    if (static_cast<Can::ServiceResponse_Negative*>(response.get())
+                    if (static_cast<Can::ServiceResponse_Negative*>(
+                            response.get())
                             ->get_code() == 0x78) {
                         m_response = nullptr;
                         DEBUG(info, "task response error service code = 0x78");
@@ -75,7 +78,9 @@ std::shared_ptr<ServiceRequest> ReadWriteTask::fetch_request() {
                                 ::Util::str_to_vec("HELLO ANYBODY ...")))
                 ->build();
         case 4:
-            return ServiceRequest_ReadDataByIdentifier::build()->id(DataIdentifier::VIN)->build();
+            return ServiceRequest_ReadDataByIdentifier::build()
+                ->id(DataIdentifier::VIN)
+                ->build();
         default:
             m_step--;
             return nullptr;
@@ -85,17 +90,17 @@ std::shared_ptr<ServiceRequest> ReadWriteTask::fetch_request() {
 void ReadWriteTask::push_response(std::shared_ptr<ServiceResponse> response) {
     m_step++;
     switch (m_step - 1) {
-	case 1: {
-	    uint8_t type =
-            static_cast<ServiceResponse_ReadDataByIdentifier*>(response.get())
-		    ->get_data()
-		    ->get_value()[0];
-	    std::cout << "UPASystemType = " << (int)type << std::endl;
-	    break;
-	}
-	case 3: {
-	    break;
-	}
+        case 1: {
+            uint8_t type = static_cast<ServiceResponse_ReadDataByIdentifier*>(
+                               response.get())
+                               ->get_data()
+                               ->get_value()[0];
+            std::cout << "UPASystemType = " << (int)type << std::endl;
+            break;
+        }
+        case 3: {
+            break;
+        }
         case 5: {
             std::string VIN = ::Util::vec_to_str(
                 static_cast<ServiceResponse_ReadDataByIdentifier*>(
@@ -106,8 +111,8 @@ void ReadWriteTask::push_response(std::shared_ptr<ServiceResponse> response) {
             break;
         }
         default:
-	    m_step--;
-	    return;
+            m_step--;
+            return;
     }
 }
 
@@ -117,9 +122,10 @@ void ReadWriteThreadedTask::task() {
     response = call(ServiceRequest_ReadDataByIdentifier::build()
                         ->id(DataIdentifier::UPASystemType)
                         ->build());
-    uint8_t type = static_cast<ServiceResponse_ReadDataByIdentifier*>(response.get())
-                       ->get_data()
-                       ->get_value()[0];
+    uint8_t type =
+        static_cast<ServiceResponse_ReadDataByIdentifier*>(response.get())
+            ->get_data()
+            ->get_value()[0];
     std::stringstream ss;
     ss << "UPASystemType = " << std::hex << (int)type;
     m_logger->info(ss.str());

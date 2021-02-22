@@ -1,6 +1,6 @@
-#define SERVICE // <Service Name>
-#define REQUEST_ID // <Service Request 8 bit identifier>
-#define RESPONSE_ID // <Service Response 8 bit indentifier>
+#define SERVICE      // <Service Name>
+#define REQUEST_ID   // <Service Request 8 bit identifier>
+#define RESPONSE_ID  // <Service Response 8 bit indentifier>
 
 // If Service has subfunction, there is must be SUBFUNCTION field
 // --- FIELDS ---
@@ -10,17 +10,16 @@
 // - VEC() - array
 // - DATA(<declared DATATYPE>)
 // - RAW(<raw C++ type>)
-#define REQUEST_FIELDS // [FIELD]...
-#define RESPONSE_FIELDS // [FIELD]...
+#define REQUEST_FIELDS   // [FIELD]...
+#define RESPONSE_FIELDS  // [FIELD]...
 // --- FIELD ---
 // (<Type>, <Alias>)
 
 SERVICE_BEGIN
-
 // [SUBFUNCTIONS( [(<subfunction name>, <8-bit value>)]... )]
 // [DATATYPE( [(<field type>, <field name>)]... )]...
 
-#ifdef EXTRA // Extra classes
+#ifdef EXTRA  // Extra classes
 
 #endif
 
@@ -37,9 +36,9 @@ SERVICE_BEGIN
 //      }]...
 //   }
 // - RETURN([Varible]...) - returns new response object
-#ifdef PARSE // Parse Service Response
+#ifdef PARSE  // Parse Service Response
 {
-	// ...
+    // ...
 }
 #endif
 
@@ -60,9 +59,9 @@ SERVICE_BEGIN
 //      }]...
 //   }
 // - RETURN - "return payload"
-#ifdef DUMP // Dump Service Request to std::vector<uint8_t>
+#ifdef DUMP  // Dump Service Request to std::vector<uint8_t>
 {
-	// ...
+    // ...
 }
 #endif
 

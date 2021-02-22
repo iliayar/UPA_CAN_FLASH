@@ -1,12 +1,10 @@
 #include "service.h"
 
-#include <stdexcept>
 #include <memory>
+#include <stdexcept>
 
 #include "bytes.h"
 #include "service_all.h"
-
-// Macros magick
 
 // ---------- Service Request --------------
 #define SUBFUNCTIONS(...)
@@ -14,17 +12,17 @@
 
 #define ALL 64 - offset
 
-#define PARSE_ENUM(name, type, len)                                     \
-	type m_##name = static_cast<type>(reader.read_64(offset, len)); \
-	offset += len;
-#define PARSE_INT(name, len)                             \
-	uint64_t m_##name = reader.read_64(offset, len);	\
-	offset += len;
-#define PARSE_VEC(name, len)                                    \
+#define PARSE_ENUM(name, type, len)                                 \
+    type m_##name = static_cast<type>(reader.read_64(offset, len)); \
+    offset += len;
+#define PARSE_INT(name, len)                         \
+    uint64_t m_##name = reader.read_64(offset, len); \
+    offset += len;
+#define PARSE_VEC(name, len)                                  \
     std::vector<uint8_t> m_##name = reader.read(offset, len); \
     offset += len;
-#define PARSE_DATA(name, type)                   \
-    reader.add_offset(offset);               \
+#define PARSE_DATA(name, type)                                      \
+    reader.add_offset(offset);                                      \
     std::shared_ptr<Can::type> m_##name = Can::type::parse(reader); \
     offset = 0;
 #define PARSE_BEGIN(type)                                               \
@@ -36,10 +34,10 @@
     }
 #define PARSE_ARG(func, ...) PARSE_##func(__VA_ARGS__)
 #define PARSE_FETCH_NAME(_, name, ...) m_##name
-#define DATATYPE(type, ...)		    \
-	PARSE_BEGIN(type)		    \
-	EVAL(MAP_TUPLE(PARSE_ARG, __VA_ARGS__))				\
-	PARSE_RETURN(type, MAP_TUPLE_LIST(PARSE_FETCH_NAME, __VA_ARGS__))
+#define DATATYPE(type, ...)                 \
+    PARSE_BEGIN(type)                       \
+    EVAL(MAP_TUPLE(PARSE_ARG, __VA_ARGS__)) \
+    PARSE_RETURN(type, MAP_TUPLE_LIST(PARSE_FETCH_NAME, __VA_ARGS__))
 #include "services/services.h"
 #undef PARSE_INT
 #undef PARSE_VEC
@@ -48,35 +46,35 @@
 #undef PARSE_RETURN
 #undef DATATYPE
 
-#define DUMP_INT(name, len)                                         \
-    writer.write_64(static_cast<uint64_t>(m_##name), offset, len);  \
-    offset += len;                                                  \
-    if(res_len != nullptr) *res_len += len;
+#define DUMP_INT(name, len)                                        \
+    writer.write_64(static_cast<uint64_t>(m_##name), offset, len); \
+    offset += len;                                                 \
+    if (res_len != nullptr) *res_len += len;
 #define DUMP_ENUM(name, _, len) DUMP_INT(name, len)
 #define DUMP_VEC(name, len)                                             \
     while (m_##name.size() < ((len) + 7) / 8) m_##name.push_back(0x00); \
     writer.write(m_##name, offset, len);                                \
     offset += len;                                                      \
-    if(res_len != nullptr) *res_len += len;
-#define DUMP_DATA(name, _)                                          \
-    {                                                               \
-        int len_t = 0;                                              \
-        std::vector<uint8_t> m_payload = m_##name->dump(&len_t);    \
-        DUMP_VEC(payload, len_t);                                   \
+    if (res_len != nullptr) *res_len += len;
+#define DUMP_DATA(name, _)                                       \
+    {                                                            \
+        int len_t = 0;                                           \
+        std::vector<uint8_t> m_payload = m_##name->dump(&len_t); \
+        DUMP_VEC(payload, len_t);                                \
     }
-#define DUMP_BEGIN(type)                                                \
-    std::vector<uint8_t> Can::type::dump(int *res_len = nullptr) {   \
-    std::vector<uint8_t> payload(8, 0);                                 \
-    Util::Writer writer(payload);                                       \
+#define DUMP_BEGIN(type)                                           \
+    std::vector<uint8_t> Can::type::dump(int* res_len = nullptr) { \
+        std::vector<uint8_t> payload(8, 0);                        \
+        Util::Writer writer(payload);                              \
         int offset = 0;
 #define DUMP_END()  \
     return payload; \
     }
 #define DUMP_ARG(func, ...) DUMP_##func(__VA_ARGS__)
-#define DATATYPE(type, ...)		   \
-	DUMP_BEGIN(type)		   \
-	EVAL(MAP_TUPLE(DUMP_ARG, __VA_ARGS__))	\
-	DUMP_END()
+#define DATATYPE(type, ...)                \
+    DUMP_BEGIN(type)                       \
+    EVAL(MAP_TUPLE(DUMP_ARG, __VA_ARGS__)) \
+    DUMP_END()
 #include "services/services.h"
 #undef DATATYPE
 #undef DUMP_BEGIN
@@ -117,11 +115,11 @@ Can::ServiceResponseType Can::request_to_response_type(
     offset += 8;                                                    \
     switch (m_subfunction)
 #define CASE(name) case CONCAT(Can::SERVICE, _SubfunctionType)::name:
-#define FIELD_DATA(name)                                        \
-    {                                                           \
-        int len_t = 0;                                          \
-        std::vector<uint8_t> payload_t = name->dump(&len_t);    \
-        FIELD_VEC(payload_t, len_t);                            \
+#define FIELD_DATA(name)                                     \
+    {                                                        \
+        int len_t = 0;                                       \
+        std::vector<uint8_t> payload_t = name->dump(&len_t); \
+        FIELD_VEC(payload_t, len_t);                         \
     }
 #define FIELD_VEC(value, len)                          \
     payload.resize(payload.size() + (len + 7) / 8, 0); \
@@ -151,11 +149,12 @@ Can::ServiceResponseType Can::request_to_response_type(
 // ---------- Service Response -------------
 Can::ServiceResponseFactory::ServiceResponseFactory(
     std::vector<uint8_t> payload)
-    : m_offset(0), m_reader(payload), m_size(payload.size()*8) {}
+    : m_offset(0), m_reader(payload), m_size(payload.size() * 8) {}
 
 #define ALL m_size - m_offset
-#define RETURN(...) \
-    return std::make_shared<CONCAT(Can::ServiceResponse_, SERVICE)>(__VA_ARGS__);
+#define RETURN(...)                                                  \
+    return std::make_shared<CONCAT(Can::ServiceResponse_, SERVICE)>( \
+        __VA_ARGS__);
 #define FIELD_VEC(name, len)                                  \
     std::vector<uint8_t> name = m_reader.read(m_offset, len); \
     m_offset += len;
@@ -169,10 +168,10 @@ Can::ServiceResponseFactory::ServiceResponseFactory(
 #define FIELD_ENUM(name, type, len)                                           \
     Can::type name = static_cast<Can::type>(m_reader.read_64(m_offset, len)); \
     m_offset += len;
-#define FIELD_DATA(name, type)                   \
-    m_reader.add_offset(m_offset);               \
+#define FIELD_DATA(name, type)                                    \
+    m_reader.add_offset(m_offset);                                \
     std::shared_ptr<Can::type> name = Can::type::parse(m_reader); \
-    m_offset = 0;                                \
+    m_offset = 0;                                                 \
     m_size -= m_reader.get_offset();
 #define FIELD_INT(name, len)                         \
     uint64_t name = m_reader.read_64(m_offset, len); \
@@ -180,14 +179,16 @@ Can::ServiceResponseFactory::ServiceResponseFactory(
 #define FIELD(func, ...) FIELD_##func(__VA_ARGS__)
 
 #define PARSE
-#define SERVICE_BEGIN \
-    std::shared_ptr<Can::ServiceResponse> CONCAT(Can::ServiceResponseFactory::parse_, SERVICE)()
+#define SERVICE_BEGIN                             \
+    std::shared_ptr<Can::ServiceResponse> CONCAT( \
+        Can::ServiceResponseFactory::parse_, SERVICE)()
 #include "services/services.h"
 #undef SERVICE_BEGIN
 #undef PARSE
 
 #define SERVICE Negative
-std::shared_ptr<Can::ServiceResponse> Can::ServiceResponseFactory::parse_Negative() {
+std::shared_ptr<Can::ServiceResponse>
+Can::ServiceResponseFactory::parse_Negative() {
     FIELD(ENUM, service, ServiceRequestType, 8);
     FIELD(INT, code, 8);
     RETURN(service, code);

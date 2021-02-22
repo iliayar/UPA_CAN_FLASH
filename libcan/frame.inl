@@ -1,21 +1,20 @@
+/// --- FRAME --- 
+/// Frame Types
+/// --------------
+/// <Alias>, <4 Bit value>, [FIELD]...
+/// --------------
 
-// --- FRAME --- 
-// Frame Types
-// --------------
-// <Alias>, <4 Bit value>, [FIELD]...
-// --------------
-
-// ------ FIELD ------
-// Define fields in frame
-// <INT|VEC|ENUM>(Frame type), <Field type args>...
-// --- Field types ---
-// - INT - One number value
-//   <field alias>, <Bit len of field>
-// - VEC - Array of bytes
-//   <field alias>, <Bit len of field|ALL>(ALL - the rest of bits)
-// - ENUM - Predefined enumeration
-//   <field alias>, <Predefined enum class name>, <Bit len of field>
-// -------------------
+/// ------ FIELD ------
+/// Define fields in frame
+/// <INT|VEC|ENUM>(Frame type), <Field type args>...
+/// --- Field types ---
+/// - INT - One number value
+///   <field alias>, <Bit len of field>
+/// - VEC - Array of bytes
+///   <field alias>, <Bit len of field|ALL>(ALL - the rest of bits)
+/// - ENUM - Predefined enumeration
+///   <field alias>, <Predefined enum class name>, <Bit len of field>
+/// -------------------
 
 FRAME(SingleFrame, 0x00,
 (INT, len, 4),
