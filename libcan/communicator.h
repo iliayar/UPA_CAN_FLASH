@@ -46,7 +46,6 @@ std::shared_ptr<ServiceResponse> frames_to_service(
  */
 class Worker {
 public:
-
     /**
      * Type of worker to determine Receiver/Transmitter
      */
@@ -89,14 +88,12 @@ protected:
     }
 };
 
-
 /**
  * Received complete response, sends FlowControl with zero parameters
  * of delay and block size.
  */
 class Receiver : public Worker {
 public:
-
     /**
      * @param First frame of response recieved. Pass to determine
      * if there is long or short response
@@ -121,7 +118,6 @@ private:
 
 class Transmitter : public Worker {
 public:
-
     /**
      * @param Request to send to ECU.
      * @constructor

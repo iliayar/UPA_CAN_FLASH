@@ -1,18 +1,18 @@
 #include <QApplication>
-#include <QMessageBox>
 #include <QDesktopWidget>
+#include <QMessageBox>
+#include <QStyleFactory>
 #include <QTextCharFormat>
 #include <QTextCursor>
-#include <QStyleFactory>
 #include <iostream>
 #include <memory>
-#include <vector>
 #include <string>
+#include <vector>
 
-#include "mainwindow.h"
 #include "frame.h"
-#include "service.h"
+#include "mainwindow.h"
 #include "qtask.h"
+#include "service.h"
 
 Q_DECLARE_METATYPE(QTextCharFormat)
 Q_DECLARE_METATYPE(QTextCursor)
@@ -29,14 +29,14 @@ Q_DECLARE_METATYPE(std::string)
 
 #define STR(a) #a
 
-class Application : public QApplication  {
+class Application : public QApplication {
 public:
     Application(int& argc, char** argv) : QApplication(argc, argv) {}
-    bool notify(QObject *receiver, QEvent* e) override {
+    bool notify(QObject* receiver, QEvent* e) override {
         try {
             QApplication::notify(receiver, e);
             return true;
-        } catch(std::runtime_error e) {
+        } catch (std::runtime_error e) {
             m_box.critical(nullptr, "Error", e.what());
             std::cout << e.what() << std::endl;
             return false;
@@ -44,12 +44,10 @@ public:
     }
 
 private:
-
     QMessageBox m_box;
 };
 
-
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     Application app(argc, argv);
     app.setApplicationName("UPA_CAN_FLASH " APP_VERSION);
     app.setStyle(QStyleFactory::create("Fusion"));
@@ -65,12 +63,12 @@ int main(int argc, char *argv[]) {
     qRegisterMetaType<WorkerError>();
     qRegisterMetaType<QTextCharFormat>();
     qRegisterMetaType<QTextCursor>();
-    
+
     QDesktopWidget dw;
     MainWindow main_window{};
 
-    main_window.resize(dw.availableGeometry(&main_window).size()*0.8);
-    
+    main_window.resize(dw.availableGeometry(&main_window).size() * 0.8);
+
     main_window.show();
 
     return app.exec();

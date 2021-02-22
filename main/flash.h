@@ -6,9 +6,9 @@
 
 #include <string>
 
-#include "task.h"
 #include "logger.h"
 #include "qtask.h"
+#include "task.h"
 
 /**
  * Implement QTask interface to
@@ -16,14 +16,12 @@
  */
 class FlashTask : public QTask {
 public:
-
     /**
      * @param file Main programm file in Intel HEX format
      * @param logger
      */
     FlashTask(std::string file, std::shared_ptr<QLogger> logger)
         : QTask(logger), m_file(file) {}
-
 
     /**
      * Implementation of abstrct method task
@@ -33,6 +31,7 @@ public:
 
 protected:
     void task_main();
+
 private:
     std::string m_file;
 };
