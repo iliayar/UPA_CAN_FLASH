@@ -17,7 +17,7 @@ TEST(testHexCRC, testHexCRC) {
 :045170000000000437\n\
 :0400000508002CEDD6\n\
 :00000001FF\n";
-    Hex::HexReader reader(new Hex::StringSource(hex));
+    Hex::HexReader reader(std::make_shared<Hex::StringSource>(hex));
     Hex::HexInfo info = Hex::read_hex_info(reader);
     EXPECT_EQ(info.size, 4);
     EXPECT_EQ(info.crc, 0xC444);
@@ -35,14 +35,14 @@ TEST(testHecCTC, testReadingData) {
 :045170000000000437\n\
 :0400000508002CEDD6\n\
 :00000001FF\n";
-    Hex::HexReader reader(new Hex::StringSource(hex));
+    Hex::HexReader reader(std::make_shared<Hex::StringSource>(hex));
     while (!reader.is_eof()) {
-        Hex::HexLine *line = reader.read_line();
+        std::shared_ptr<Hex::HexLine >line = reader.read_line();
         if (line->get_type() == Hex::HexLineType::Data ||
             line->get_type() == Hex::HexLineType::EndOfFile) {
             std::vector<uint8_t> line_data;
             if (line->get_type() == Hex::HexLineType::Data) {
-                line_data = static_cast<Hex::DataLine *>(line)->get_data();
+                line_data = static_cast<Hex::DataLine *>(line.get())->get_data();
             } else {
                 line_data = {data[i-1]};
                 data.resize(i);
@@ -52,7 +52,7 @@ TEST(testHecCTC, testReadingData) {
                 data[i++] = d;
                 n_size++;
                 if (i >= data.size()) {
-                    EXPECT_EQ(data, std::vector<uint8_t>({0x00, 0x00, 0x00, 0x00}));
+                    EXPECT_EQ(data, std::vector<uint8_t>({0x00, 0x00, 0x00, 0x04}));
                     i = 0;
                 }
             }

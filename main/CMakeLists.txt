@@ -4,6 +4,8 @@ set(Main_SRCS
     mainwindow.cpp
     qtask.h
     qtask.cpp
+    qlogger.h
+    qlogger.cpp
     flash.h
     flash.cpp
     qcommunicator.h
@@ -28,21 +30,8 @@ add_executable(UPA_CAN_FLASH
 )
 endif()
 
-# set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -fsanitize=address)
-# set(CMAKE_CXX_LINKER_FLAGS ${CMAKE_CXX_LINKER_FLAGS} -fsanitize=address)
-
 if(WIN32)
-#    set(CMAKE_CXX_STANDARD_LIBRARIES "-static-libgcc -static-libstdc++ -lwsock32 -lws2_32 ${CMAKE_CXX_STANDARD_LIBRARIES}")
-#    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive")
-#    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic")
-#    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
-#    target_link_libraries(UPA_CAN_FLASH -static gcc stdc++ winpthread -dynamic)
-#    set_target_properties(UPA_CAN_FLASH PROPERTIES COMPILE_DEFINITIONS BUILDER_STATIC_DEFINE)
-
     get_filename_component(MINGW_DLL_DIR ${CMAKE_CXX_COMPILER} PATH)
-#    get_target_property(QtCore_LOCATION Qt5::Core LOCATION)
-#    get_filename_component(QT_DLL_DIR ${QtCore_LOCATION} PATH)
-#	qt_import_plugins(UPA_CAN_FLASH INCLUDE Qt5::IXXAT)
     add_custom_command(
         TARGET UPA_CAN_FLASH POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -69,21 +58,10 @@ if(WIN32)
             ${MINGW_DLL_DIR}/libbrotlicommon.dll
             ${MINGW_DLL_DIR}/libiconv-2.dll
             ${MINGW_DLL_DIR}/libpcre2-16-0.dll
-#            ${QT_DLL_DIR}/Qt5Widgets.dll
-#            ${QT_DLL_DIR}/Qt5Gui.dll
-#            ${QT_DLL_DIR}/Qt5Network.dll
-#            ${QT_DLL_DIR}/Qt5SerialPort.dll
-#            ${QT_DLL_DIR}/Qt5SerialBus.dll
-#            ${QT_DLL_DIR}/Qt5Core.dll
             $<TARGET_FILE_DIR:UPA_CAN_FLASH>
     )
 
  target_link_libraries(UPA_CAN_FLASH -static -static-libstdc++ -static-libgcc)
-# set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
-# target_compile_options(UPA_CAN_FLASH PRIVATE /MT)
-# target_link_options(UPA_CAN_FLASH PRIVATE /INCREMENTAL:NO /NODEFAULTLIB:MSVCRT)
-
-
 
 get_target_property(_qmake_executable Qt5::qmake IMPORTED_LOCATION)
 get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
@@ -114,27 +92,14 @@ target_link_libraries(UPA_CAN_FLASH
 )
 
 
-# install(TARGETS UPA_CAN_FLASH DESTINATION bin)
 IF(WIN32)
 include(InstallRequiredSystemLibraries)
-# install(
-#   TARGETS libhex libcan libutil
-#   ARCHIVE
-#   DESTINATION lib
-#   COMPONENT libraries
-#   )
 install(
     DIRECTORY ${CMAKE_BINARY_DIR}/main/
     DESTINATION bin
     COMPONENT applications
 )
-# install(
-#   TARGETS UPA_CAN_FLASH
-#   RUNTIME
-#   DESTINATION bin
-#   COMPONENT applications
-#   )
-#
+
 # CPACK macros below here
 #
 set (CPACK_PACKAGE_NAME "UPA_CAN_FLASH")
@@ -169,7 +134,7 @@ set(CPACK_COMPONENT_LIBRARIES_GROUP "Development")
 set(CPACK_COMPONENT_HEADERS_GROUP "Development")
 
 set(CPACK_COMPONENT_GROUP_DEVELOPMENT_DESCRIPTION
-   "All of the tools you'll ever need to develop software")
+  "All of the tools you'll ever need to develop software")
 
 # Define NSIS installation types
 set(CPACK_ALL_INSTALL_TYPES Full Developer)
@@ -178,12 +143,12 @@ set(CPACK_COMPONENT_HEADERS_INSTALL_TYPES Developer Full)
 set(CPACK_COMPONENT_APPLICATIONS_INSTALL_TYPES Full)
 
 set(CPACK_NSIS_CREATE_ICONS_EXTRA
-	"CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\UPA_CAN_FLASH.lnk' '$INSTDIR\\\\bin\\\\UPA_CAN_FLASH.exe'"
-)
+  "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\UPA_CAN_FLASH.lnk' '$INSTDIR\\\\bin\\\\UPA_CAN_FLASH.exe'"
+  )
 
 SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS 
-	"CreateDirectory \\\"\$ENV{APPDATA}\\\\UPA_CAN_FLASH\\\"")
- 
+  "CreateDirectory \\\"\$ENV{APPDATA}\\\\UPA_CAN_FLASH\\\"")
+
 # Must be after the last CPACK macros
 include(CPack)
 

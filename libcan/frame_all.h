@@ -23,6 +23,9 @@ enum class FlowStatus {
 };
 
 #define FRAME(type, value, ...) type = value,
+/**
+ * Enum class of frame types defined in {{ frame.inl }}
+ */
 enum class FrameType {
 #include "frame.inl"
 };

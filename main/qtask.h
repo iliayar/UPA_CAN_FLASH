@@ -1,11 +1,13 @@
+/**
+ * @file qtask.h
+ * Defined interface of task passed into {@link QCommunicator}
+ */
 #pragma once
 
 #include <QObject>
-#include <QTextEdit>
 #include <QElapsedTimer>
 #include <QThread>
 #include <QSignalSpy>
-#include <QProgressBar>
 #include <memory>
 
 #include "communicator.h"
@@ -14,121 +16,17 @@
 #include "service_all.h"
 #include "task.h"
 #include "util.h"
+#include "qlogger.h"
 
+/**
+ * Timeout of receiving complete response
+ */
 #define RESPONSE_TIMEOUT 1000
 #define IF_NEGATIVE(res) if(res->get_type() == Can::ServiceResponseType::Negative)
 
-class QLoggerWorker : public QObject {
-    Q_OBJECT
-public:
-    QLoggerWorker(QObject*, QTextEdit*, QTextEdit*, QProgressBar* bar = nullptr);
-
-public slots:
-
-    void received_frame(std::shared_ptr<Can::Frame>);
-    void transmitted_frame(std::shared_ptr<Can::Frame>);
-    void received_service_response(std::shared_ptr<Can::ServiceResponse>);
-    void transmitted_service_request(std::shared_ptr<Can::ServiceRequest>);
-
-    void error(std::string);
-    void info(std::string);
-    void warning(std::string);
-    void important(std::string);
-    void progress(int, bool err);
-    
-private:
-    QString vec_to_qstr(std::vector<uint8_t>);
-
-    QElapsedTimer m_timer;
-    
-    QTextEdit* m_frame_log;
-    QTextEdit* m_message_log;
-
-    QProgressBar* m_progress;
-
-    std::mutex m_mutex;
-};
-
-class QLogger : public QObject, public Can::Logger {
-    Q_OBJECT
-public:
-#define CONNECT(sig) connect(this, &QLogger::signal_##sig, worker, &QLoggerWorker::sig)
-    QLogger(QLoggerWorker* worker) : m_worker(worker) {
-        CONNECT(info);
-        CONNECT(error);
-        CONNECT(warning);
-        CONNECT(important);
-        CONNECT(received_frame);
-        CONNECT(transmitted_frame);
-        CONNECT(received_service_response);
-        CONNECT(transmitted_service_request);
-        CONNECT(progress);
-    }
-#undef CONNECT
-
-    QLoggerWorker* get_worker() { return m_worker; }
-    void received_frame(std::shared_ptr<Can::Frame> frame) {
-        emit signal_received_frame(frame);
-    }
-    void transmitted_frame(std::shared_ptr<Can::Frame> frame) {
-        emit signal_transmitted_frame(frame);
-    }
-    void received_service_response(std::shared_ptr<Can::ServiceResponse> response) {
-        emit signal_received_service_response(response);
-    }
-    void transmitted_service_request(std::shared_ptr<Can::ServiceRequest> request) {
-        emit signal_transmitted_service_request(request);
-    }
-
-    void error(std::string s) {
-        emit signal_error(s);
-    }
-    void info(std::string s) {
-        emit signal_info(s);
-    }
-    void warning(std::string s) {
-        emit signal_warning(s);
-    }
-    void important(std::string s) {
-        emit signal_important(s);
-    }
-    void progress(int a, bool err = false) {
-        emit signal_progress(a, err);
-    }
-
-#define DISCONNECT(sig) connect(this, &QLogger::signal_##sig, m_worker, &QLoggerWorker::sig)
-    ~QLogger() {
-        DISCONNECT(info);
-        DISCONNECT(error);
-        DISCONNECT(warning);
-        DISCONNECT(important);
-        DISCONNECT(received_frame);
-        DISCONNECT(transmitted_frame);
-        DISCONNECT(received_service_response);
-        DISCONNECT(transmitted_service_request);
-        DISCONNECT(progress);
-    }
-#undef DISCONNECT
-
-signals:
-    
-    void signal_received_frame(std::shared_ptr<Can::Frame> frame);
-    void signal_transmitted_frame(std::shared_ptr<Can::Frame>);
-    void signal_received_service_response(std::shared_ptr<Can::ServiceResponse>);
-    void signal_transmitted_service_request(std::shared_ptr<Can::ServiceRequest>);
-
-    void signal_error(std::string);
-    void signal_info(std::string);
-    void signal_warning(std::string);
-    void signal_important(std::string);
-    void signal_progress(int, bool);
-    
-private:
-    QLoggerWorker* m_worker;
-
-};
-
-
+/**
+ * Interface of task passed into {@link QCommunicator}
+ */
 class QTask : public QThread {
     Q_OBJECT
 public:
@@ -146,12 +44,26 @@ public:
     virtual void task() = 0;
 
 protected:
+
+    /**
+     * Method to call in task(). Provides convenient way to communicate with ECU
+     */
     std::shared_ptr<Can::ServiceResponse> call(std::shared_ptr<Can::ServiceRequest>);
 
 public slots:
+    /**
+     * Triggers by {@link QCommunicator} when complete response recieved.
+     * @param response from ECU
+     * @param wait for more inforamtion watch {@link QCommunicator::response}
+     */
     void response(std::shared_ptr<Can::ServiceResponse>, int wait = 0);
 
 signals:
+
+    /**
+     * Emits when new request to ECU ready
+     * @param request passed to communicator
+     */
     void request(std::shared_ptr<Can::ServiceRequest>);
     void response_imp(std::shared_ptr<Can::ServiceResponse>);
 
