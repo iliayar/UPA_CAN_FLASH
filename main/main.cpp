@@ -36,10 +36,10 @@ public:
         try {
             QApplication::notify(receiver, e);
             return true;
-        } catch (std::runtime_error e) {
+        } catch (std::exception e) {
             m_box.critical(nullptr, "Error", e.what());
             std::cout << e.what() << std::endl;
-            return false;
+            return true;
         }
     }
 

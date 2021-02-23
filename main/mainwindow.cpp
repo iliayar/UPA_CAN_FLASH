@@ -76,175 +76,157 @@ MainWindow::MainWindow(QWidget* parent)
 }
 void MainWindow::create_layout(QWidget* root) {
     DEBUG(info, "Creating layout");
-    // Actions
+    const QFont fixedFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
 
-    m_file_menu_act = new QAction(tr("&Choose"), this);
-    connect(m_file_menu_act, &QAction::triggered, this,
-            &MainWindow::choose_file);
+    // Creating GUI Windgets
 
-    // Menu
     QMenu* file_menu = new QMenu(tr("File"));
-    file_menu->addAction(m_file_menu_act);
-    menuBar()->addMenu(file_menu);
 
-    // Main layout
-
-    QHBoxLayout* main_layout = new QHBoxLayout(root);
     QGroupBox* log_group = new QGroupBox(tr("Logs"));
     QGroupBox* options_group = new QGroupBox(tr("Options"));
+    QGroupBox* message_log_progress_group = new QGroupBox();
+    QGroupBox* file_group = new QGroupBox(tr("File"));
+    QGroupBox* devices_group = new QGroupBox(tr("Devices"));
+    QGroupBox* devices_buttons_group = new QGroupBox();
+    QGroupBox* tasks_group = new QGroupBox(tr("Tasks"));
+    QGroupBox* tasks_buttons_group = new QGroupBox();
+    QFrame* tester_id_frame = new QFrame();
+    QFrame* ecu_id_frame = new QFrame();
+
+    QHBoxLayout* main_layout = new QHBoxLayout(root);
+    QHBoxLayout* log_layout = new QHBoxLayout(log_group);
+    QVBoxLayout* message_log_progress_layout =
+        new QVBoxLayout(message_log_progress_group);
+    QVBoxLayout* options_layout = new QVBoxLayout(options_group);
+    QVBoxLayout* file_layout = new QVBoxLayout(file_group);
+    QVBoxLayout* devices_group_layout = new QVBoxLayout(devices_group);
+    QHBoxLayout* devices_buttons_layout =
+        new QHBoxLayout(devices_buttons_group);
+    QVBoxLayout* tasks_group_layout = new QVBoxLayout(tasks_group);
+    QHBoxLayout* tasks_buttons_layout = new QHBoxLayout(tasks_buttons_group);
+    QHBoxLayout* tester_id_layout = new QHBoxLayout(tester_id_frame);
+    QHBoxLayout* ecu_id_layout = new QHBoxLayout(ecu_id_frame);
+
+    QTextEdit* log_frames = new QTextEdit();
+    QTextEdit* log_messages = new QTextEdit();
+
+    QProgressBar* progress_bar = new QProgressBar();
+
+    QComboBox* plugins_list = new QComboBox();
+    QComboBox* devices_list = new QComboBox(devices_group);
+    QComboBox* bitrate_list = new QComboBox(devices_group);
+    QComboBox* tasks_list = new QComboBox(tasks_group);
+
+    QPushButton* device_connect_btn = new QPushButton("Connect");
+    QPushButton* device_disconnect_btn = new QPushButton("Disconnect");
+    QPushButton* task_start_btn = new QPushButton("Start");
+
+    QSpinBox* tester_id_box = new QSpinBox();
+    QSpinBox* ecu_id_box = new QSpinBox();
 
     QSizePolicy log_policy = log_group->sizePolicy();
-    log_policy.setHorizontalStretch(6);
-    log_group->setSizePolicy(log_policy);
-
     QSizePolicy options_policy = options_group->sizePolicy();
+
+    QLabel* filename_label = new QLabel("Choose file..");
+    QLabel* crc_label = new QLabel("CRC: ???");
+    QLabel* size_label = new QLabel("Size: ???");
+    QLabel* addr_label = new QLabel("Begin address: ???");
+
+    // Creating layout
+    
+    log_policy.setHorizontalStretch(6);
     options_policy.setHorizontalStretch(1);
-    options_group->setSizePolicy(options_policy);
 
     main_layout->addWidget(log_group);
     main_layout->addWidget(options_group);
 
-    // Log layout
-
-    const QFont fixedFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
-
-    QHBoxLayout* log_layout = new QHBoxLayout(log_group);
-    QGroupBox* message_log_progress_group = new QGroupBox();
-    QVBoxLayout* message_log_progress_layout =
-        new QVBoxLayout(message_log_progress_group);
-    QTextEdit* log_frames = new QTextEdit();
-    log_frames->setReadOnly(true);
-    log_frames->setFont(fixedFont);
-    QTextEdit* log_messages = new QTextEdit();
-    log_messages->setReadOnly(true);
-    log_messages->setFont(fixedFont);
-    QProgressBar* progress_bar = new QProgressBar();
-    progress_bar->setMaximum(100);
-    progress_bar->setMinimum(0);
-
     log_layout->addWidget(message_log_progress_group);
     log_layout->addWidget(log_frames);
+
     message_log_progress_layout->addWidget(log_messages);
     message_log_progress_layout->addWidget(progress_bar);
-
-    m_progress_bar = progress_bar;
-
-    m_logger_worker =
-        new QLoggerWorker(this, log_frames, log_messages, m_progress_bar);
-    m_logger = new QLogger(m_logger_worker);
-
-    m_log_frames = log_frames;
-    m_log_messages = log_messages;
-
-    // Options layout
-    QVBoxLayout* options_layout = new QVBoxLayout(options_group);
-    //   file options layout
-    QComboBox* plugins_list = new QComboBox();
-    for (std::pair<std::string, std::string> plugin :
-         std::vector<std::pair<std::string, std::string>>(CAN_PLUGINS)) {
-        plugins_list->addItem(QString::fromStdString(plugin.first),
-                              QString::fromStdString(plugin.second));
-    }
-    QGroupBox* file_group = new QGroupBox(tr("File"));
 
     options_layout->addWidget(plugins_list);
     options_layout->addWidget(file_group);
 
-    QVBoxLayout* file_layout = new QVBoxLayout(file_group);
-    m_filename_label = new QLabel("Choose file..");
-    m_crc_label = new QLabel("CRC: ???");
-    m_size_label = new QLabel("Size: ???");
-    m_addr_label = new QLabel("Begin address: ???");
-
-    file_layout->addWidget(m_filename_label);
-    file_layout->addWidget(m_crc_label);
-    file_layout->addWidget(m_size_label);
-    file_layout->addWidget(m_addr_label);
-
-    auto update_device_list = [=](const QString& str) {
-        m_device_list->clear();
-        QString errorString;
-        QList<QCanBusDeviceInfo> devices =
-            QCanBus::instance()->availableDevices(
-                m_plugin_list->currentData().toString(), &errorString);
-        if (!errorString.isEmpty()) {
-            m_logger->error(errorString.toStdString());
-        } else {
-            for (auto device : devices) {
-                m_device_list->addItem(device.name());
-            }
-        }
-    };
-
-    connect(plugins_list, &QComboBox::textActivated, update_device_list);
-
-    //   devices options layout
-    QGroupBox* devices_group = new QGroupBox(tr("Devices"));
+    file_layout->addWidget(filename_label);
+    file_layout->addWidget(crc_label);
+    file_layout->addWidget(size_label);
+    file_layout->addWidget(addr_label);
 
     options_layout->addWidget(devices_group);
-
-    QVBoxLayout* devices_group_layout = new QVBoxLayout(devices_group);
-    QGroupBox* devices_buttons_group = new QGroupBox();
-    QHBoxLayout* devices_buttons_layout =
-        new QHBoxLayout(devices_buttons_group);
-
-    QComboBox* devices_list = new QComboBox(devices_group);
-    QComboBox* bitrate_list = new QComboBox(devices_group);
+    options_layout->addWidget(tasks_group);
 
     devices_group_layout->addWidget(devices_list);
     devices_group_layout->addWidget(bitrate_list);
     devices_group_layout->addWidget(devices_buttons_group);
 
-    QPushButton* device_connect_btn = new QPushButton("Connect");
-    QPushButton* device_disconnect_btn = new QPushButton("Disconnect");
     devices_buttons_layout->addWidget(device_connect_btn);
     devices_buttons_layout->addWidget(device_disconnect_btn);
-    device_disconnect_btn->setDisabled(true);
-
-    m_disconnect_device_button = device_disconnect_btn;
-    m_connect_device_button = device_connect_btn;
-
-    m_device_list = devices_list;
-    connect(device_connect_btn, &QPushButton::released, this,
-            &MainWindow::connect_device);
-    connect(device_disconnect_btn, &QPushButton::released, this,
-            &MainWindow::disconnect_device);
-    bitrate_list->addItem("125000");
-    bitrate_list->addItem("250000");
-    bitrate_list->addItem("500000");
-    QString bitrate_last = m_settings.value("device/bitrate").toString();
-    int bitrate_id = bitrate_list->findText(bitrate_last);
-    if (bitrate_id != -1) bitrate_list->setCurrentIndex(bitrate_id);
-    m_bitrate_list = bitrate_list;
-    connect(m_bitrate_list, &QComboBox::currentTextChanged, [&]() {
-        m_settings.setValue("device/bitrate", m_bitrate_list->currentText());
-    });
-    //   tasks options layout
-
-    QGroupBox* tasks_group = new QGroupBox(tr("Tasks"));
-
-    options_layout->addWidget(tasks_group);
-
-    QVBoxLayout* tasks_group_layout = new QVBoxLayout(tasks_group);
-    QGroupBox* tasks_buttons_group = new QGroupBox();
-    QHBoxLayout* tasks_buttons_layout = new QHBoxLayout(tasks_buttons_group);
-    QComboBox* tasks_list = new QComboBox(tasks_group);
-
-    QSpinBox* tester_id_box = new QSpinBox();
-    QSpinBox* ecu_id_box = new QSpinBox();
-
-    QFrame* tester_id_frame = new QFrame();
-    QFrame* ecu_id_frame = new QFrame();
-
-    QHBoxLayout* tester_id_layout = new QHBoxLayout(tester_id_frame);
-    QHBoxLayout* ecu_id_layout = new QHBoxLayout(ecu_id_frame);
 
     tester_id_layout->addWidget(new QLabel("Tester:"));
-    ecu_id_layout->addWidget(new QLabel("ECU:"));
     tester_id_layout->addWidget(tester_id_box);
+
+    ecu_id_layout->addWidget(new QLabel("ECU:"));
     ecu_id_layout->addWidget(ecu_id_box);
+
+    tasks_group_layout->addWidget(tester_id_frame);
+    tasks_group_layout->addWidget(ecu_id_frame);
+    tasks_group_layout->addWidget(tasks_list);
+    tasks_group_layout->addWidget(tasks_buttons_group);
+
+    tasks_buttons_layout->addWidget(task_start_btn);
+
+    // Setting up widgets
+
+    log_group->setSizePolicy(log_policy);
+    options_group->setSizePolicy(options_policy);
+
+    m_file_menu_act = new QAction(tr("&Choose"), this);
+    connect(m_file_menu_act, &QAction::triggered, this,
+            &MainWindow::choose_file);
+
+    file_menu->addAction(m_file_menu_act);
+    menuBar()->addMenu(file_menu);
+
+    log_frames->setReadOnly(true);
+    log_frames->setFont(fixedFont);
+    log_messages->setReadOnly(true);
+    log_messages->setFont(fixedFont);
+    progress_bar->setMaximum(100);
+    progress_bar->setMinimum(0);
+
     tester_id_box->setPrefix("0x");
     ecu_id_box->setPrefix("0x");
+
+    tester_id_box->setRange(0x000, 0xfff);
+    ecu_id_box->setRange(0x000, 0xfff);
+    tester_id_box->setDisplayIntegerBase(16);
+    ecu_id_box->setDisplayIntegerBase(16);
+
+    // Storting widgets
+
+    m_filename_label = filename_label;
+    m_crc_label = crc_label;
+    m_size_label = size_label;
+    m_addr_label = addr_label;
+    m_progress_bar = progress_bar;
+    m_log_frames = log_frames;
+    m_log_messages = log_messages;
+    m_disconnect_device_button = device_disconnect_btn;
+    m_connect_device_button = device_connect_btn;
+    m_device_list = devices_list;
+    m_start_task_button = task_start_btn;
+    m_task_list = tasks_list;
+    m_tester_id_box = tester_id_box;
+    m_ecu_id_box = ecu_id_box;
+    m_plugin_list = plugins_list;
+    m_bitrate_list = bitrate_list;
+    m_logger_worker =
+        new QLoggerWorker(this, log_frames, log_messages, m_progress_bar);
+    m_logger = new QLogger(m_logger_worker);
+
+    // Filling widgets
 
     QString tester_id_str = m_settings.value("task/testerId").toString();
     QString ecu_id_str = m_settings.value("task/ecuId").toString();
@@ -255,46 +237,47 @@ void MainWindow::create_layout(QWidget* root) {
     if (ecu_id == 0) ecu_id = 0x76e;
     if (tester_id == 0) tester_id = 0x74e;
 
-    tester_id_box->setRange(0x000, 0xfff);
-    ecu_id_box->setRange(0x000, 0xfff);
-    tester_id_box->setDisplayIntegerBase(16);
-    ecu_id_box->setDisplayIntegerBase(16);
+
+    for (std::pair<std::string, std::string> plugin :
+         std::vector<std::pair<std::string, std::string>>(CAN_PLUGINS)) {
+        plugins_list->addItem(QString::fromStdString(plugin.first),
+                              QString::fromStdString(plugin.second));
+    }
+
     tester_id_box->setValue(tester_id);
     ecu_id_box->setValue(ecu_id);
 
-    tasks_group_layout->addWidget(tester_id_frame);
-    tasks_group_layout->addWidget(ecu_id_frame);
-    tasks_group_layout->addWidget(tasks_list);
-    tasks_group_layout->addWidget(tasks_buttons_group);
-
-    QPushButton* task_start_btn = new QPushButton("Start");
-    // QPushButton* task_abort_btn = new QPushButton("Abort");
-    tasks_buttons_layout->addWidget(task_start_btn);
-    // tasks_buttons_layout->addWidget(task_abort_btn);
-
-    m_start_task_button = task_start_btn;
-    // m_abort_task_button = task_abort_btn;
-    // task_abort_btn->setDisabled(true);
-
     tasks_list->addItem("Flash");
     tasks_list->addItem("Test");
-    m_task_list = tasks_list;
 
-    m_tester_id_box = tester_id_box;
-    m_ecu_id_box = ecu_id_box;
+    bitrate_list->addItem("125000");
+    bitrate_list->addItem("250000");
+    bitrate_list->addItem("500000");
 
-    m_plugin_list = plugins_list;
+    device_disconnect_btn->setDisabled(true);
 
-    connect(m_tester_id_box, &QSpinBox::textChanged,
-            [&](QString v) { m_settings.setValue("task/testerId", v); });
-    connect(m_ecu_id_box, &QSpinBox::textChanged,
-            [&](QString v) { m_settings.setValue("task/ecuId", v); });
+    QString bitrate_last = m_settings.value("device/bitrate").toString();
+    int bitrate_id = bitrate_list->findText(bitrate_last);
+    if (bitrate_id != -1) bitrate_list->setCurrentIndex(bitrate_id);
+    connect(bitrate_list, &QComboBox::currentTextChanged, [&]() {
+        m_settings.setValue("device/bitrate", bitrate_list->currentText());
+    });
 
-    connect(task_start_btn, &QPushButton::released, this,
-            &MainWindow::start_task);
-    // connect(task_abort_btn, &QPushButton::released, this,
-    //         &MainWindow::abort_task);
-    DEBUG(info, "Layout created");
+    auto update_device_list = [&](const QString& str) {
+        devices_list->clear();
+        QString errorString;
+        QList<QCanBusDeviceInfo> devices =
+            QCanBus::instance()->availableDevices(
+                plugins_list->currentData().toString(), &errorString);
+        if (!errorString.isEmpty()) {
+            m_logger->error(errorString.toStdString());
+        } else {
+            for (auto device : devices) {
+                devices_list->addItem(device.name());
+            }
+        }
+    };
+
 
     int i = 0;
     for (std::pair<std::string, std::string> plugin :
@@ -306,12 +289,29 @@ void MainWindow::create_layout(QWidget* root) {
                 QString::fromStdString(plugin.second), &errorString);
         if (!errorString.isEmpty()) {
         } else {
-            m_plugin_list->setCurrentText(QString::fromStdString(plugin.first));
+            plugins_list->setCurrentText(QString::fromStdString(plugin.first));
             if (devices.size() == 0) continue;
             update_device_list(QString::fromStdString(plugin.first));
             break;
         }
     }
+
+    // Setting up events
+
+    connect(plugins_list, &QComboBox::textActivated, update_device_list);
+    connect(device_connect_btn, &QPushButton::released, this,
+            &MainWindow::connect_device);
+    connect(device_disconnect_btn, &QPushButton::released, this,
+            &MainWindow::disconnect_device);
+    connect(tester_id_box, &QSpinBox::textChanged,
+            [&](QString v) { m_settings.setValue("task/testerId", v); });
+    connect(ecu_id_box, &QSpinBox::textChanged,
+            [&](QString v) { m_settings.setValue("task/ecuId", v); });
+    connect(task_start_btn, &QPushButton::released, this,
+            &MainWindow::start_task);
+
+
+    DEBUG(info, "Layout created");
 }
 
 void MainWindow::choose_file() {
@@ -477,6 +477,8 @@ void MainWindow::processReceivedFrames() {
 }
 
 MainWindow::~MainWindow() {
+    m_communicator_thread.terminate();
+    m_communicator_thread.wait();
     if (m_device != nullptr) delete m_device;
     if (m_communicator != nullptr) delete m_communicator;
 }

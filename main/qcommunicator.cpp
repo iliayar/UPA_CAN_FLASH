@@ -177,6 +177,11 @@ void QCommunicator::worker_done() {
     DEBUG(info, "QCommunicator worker_done quit");
 }
 
+QCommunicator::~QCommunicator() {
+    m_worker_thread.terminate();
+    m_worker_thread.wait();
+}
+
 void QTransmitter::init(std::shared_ptr<Can::ServiceRequest> request) {
     init_timer();
     m_frames = Can::service_to_frames(request);

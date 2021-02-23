@@ -214,6 +214,8 @@ public:
             m_worker_thread.start();
         }
 
+    ~QCommunicator();
+
 public slots:
 
     /**
