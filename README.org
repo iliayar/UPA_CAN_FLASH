@@ -1,0 +1,30 @@
+
+
+* Description
+    Can bus flashing software on top of ISO-14229.
+
+* Dependecies
+** Windows
+Tested with following setup:
+- MSYS2 MinGW 64
+- Qt 5.12.2
+- MinGW gcc 10.2.0
+- MinGW CMake 3.19.2
+- MinGW make 4.3
+- NSIS
+
+** Linux
+Tested with:
+- CMake 3.19.5
+- gcc 10.2.0
+- Qt 5.12.2
+- OPTIONAL Doxygen 1.9.1 for docs
+* Building
+- Clone this repository
+- Create build directory =mkdir build= and cd into it =cd build=
+** Windows
+- Generate Makefile =cmake -DCMAKE_BUILD_TYPE=Release -G "MinGW Makefiles" ..=
+- Compile binaries using =mingw32-make=
+** Linux
+- Generate Makefile =cmake -DCMAKE_BUILD_TYPE=Release ..=
+- Compile binaries and docs =make=
