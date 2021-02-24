@@ -69,4 +69,6 @@ jobs:
         env:
           MSYSTEM: ${{ matrix.msystem }}
         shell: msys2 {0}
-        run: ctest -VV
+        run: |
+          cd /C/_
+          ctest -VV
