@@ -13,14 +13,33 @@ on:
   workflow_dispatch:
 
 jobs:
+  create-release:
+    name: Create release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+          
+
   build-release:
     runs-on: windows-latest
+    needs: create_release
     strategy:
       fail-fast: false
       matrix:
         include: [
-          { msystem: MINGW64, arch: x86_64 }
-          # { msystem: MINGW32, arch: i686   }
+          { msystem: MINGW64, arch: x86_64 },
+          { msystem: MINGW32, arch: i686   }
         ]
     steps:
       - uses: actions/checkout@v2
@@ -47,18 +66,7 @@ jobs:
           mingw32-make package
           cp -r main ./UPA_CAN_FLASH
           zip -r UPA_CAN_FLASH.zip UPA_CAN_FLASH
-          cp UPA_CAN_FLASH-*-win64.exe UPA_CAN_FLASH-win64.exe
-          
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
+          cp UPA_CAN_FLASH-*.exe UPA_CAN_FLASH.exe
           
       - name: Upload Release Zip
         id: upload-release-zip 
@@ -66,9 +74,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          upload_url: ${{ needs.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: C:\_\build\UPA_CAN_FLASH.zip
-          asset_name: UPA_CAN_FLASH-Portable.zip
+          asset_name: UPA_CAN_FLASH-${{ matrix.arch }}-Portable.zip
           asset_content_type: application/zip
       - name: Upload Release Installer
         id: upload-release-installer
@@ -76,8 +84,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: C:\_\build\UPA_CAN_FLASH-win64.exe
-          asset_name: UPA_CAN_FLASH-Installer.exe
+          upload_url: ${{ needs.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: C:\_\build\UPA_CAN_FLASH.exe
+          asset_name: UPA_CAN_FLASH-${{ matrix.arch }}-Installer.exe
           asset_content_type: application/octet-stream
 
