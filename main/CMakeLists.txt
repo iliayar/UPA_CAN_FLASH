@@ -32,9 +32,7 @@ endif()
 
 if(WIN32)
     get_filename_component(MINGW_DLL_DIR ${CMAKE_CXX_COMPILER} PATH)
-    add_custom_command(
-        TARGET UPA_CAN_FLASH POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    set(MINGW_DLLS 
             ${MINGW_DLL_DIR}/libstdc++-6.dll
             ${MINGW_DLL_DIR}/libwinpthread-1.dll
             ${MINGW_DLL_DIR}/libharfbuzz-0.dll
@@ -42,7 +40,6 @@ if(WIN32)
             ${MINGW_DLL_DIR}/libdouble-conversion.dll
             ${MINGW_DLL_DIR}/libpcre2-16-0.dll
             ${MINGW_DLL_DIR}/zlib1.dll
-            ${MINGW_DLL_DIR}/libgcc_s_seh-1.dll
             ${MINGW_DLL_DIR}/libicuin68.dll
             ${MINGW_DLL_DIR}/libicuuc68.dll
             ${MINGW_DLL_DIR}/libpcre2-16-0.dll
@@ -57,7 +54,16 @@ if(WIN32)
             ${MINGW_DLL_DIR}/libpcre-1.dll
             ${MINGW_DLL_DIR}/libbrotlicommon.dll
             ${MINGW_DLL_DIR}/libiconv-2.dll
-            ${MINGW_DLL_DIR}/libpcre2-16-0.dll
+            ${MINGW_DLL_DIR}/libpcre2-16-0.dll)
+    if ($ENV{MSYSTEM} STREQUAL "MINGW32") 
+        set(MINGW_DLLS ${MINGW_DLLS} ${MINGW_DLL_DIR}/libgcc_s_dw2-1.dll)
+    else ($ENV{MSYSTEM} STREQUAL "MINGW32") 
+        set(MINGW_DLLS ${MINGW_DLLS} ${MINGW_DLL_DIR}/libgcc_s_seh-1.dll)
+    endif ($ENV{MSYSTEM} STREQUAL "MINGW32") 
+    add_custom_command(
+        TARGET UPA_CAN_FLASH POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+	    ${MINGW_DLLS}
             $<TARGET_FILE_DIR:UPA_CAN_FLASH>
     )
 
