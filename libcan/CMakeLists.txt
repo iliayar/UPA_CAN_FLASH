@@ -10,6 +10,7 @@ set(libcan_SRCS
     task.h
     task.cpp
     security.h
+    security.cpp
     logger.h
     logger.cpp
 )

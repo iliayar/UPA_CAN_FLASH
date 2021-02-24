@@ -26,13 +26,40 @@
 namespace Crypto {
 
 /**
+ * Global Settings for security access
+ */
+class SecuritySettings {
+public:
+
+    /**
+     * @param mask02 value to be global now
+     */
+    static void set_mask02(uint32_t v);
+
+    /**
+     * @param mask03 value to be global now
+     */
+    static void set_mask03(uint32_t v);
+
+    /**
+     * @return mask02 global value
+     */
+    static uint32_t get_mask02();
+
+    /**
+     * @return mask03 global value
+     */
+    static uint32_t get_mask03();
+
+private:
+    static uint32_t m_mask02;
+    static uint32_t m_mask03;
+};
+
+/**
  * @return random 1 byte parameter for received seed
  */
-uint8_t get_RND() {
-    std::srand(std::time(nullptr));
-
-    return std::rand();
-}
+uint8_t get_RND();
 
 /**
  * Calcualte received seed to key
@@ -49,20 +76,11 @@ static uint32_t seed_to_key(uint32_t seed, uint8_t rnd, uint32_t mask) {
  * Uses MASK03 in seed_to_key function to
  * enter programming mode
  */
-uint32_t seed_to_key_03(uint32_t seed, uint8_t rnd) {
-    return seed_to_key(seed, rnd, MASK03);
-}
+    uint32_t seed_to_key_03(uint32_t seed, uint8_t rnd);
 
 /**
  * Uses MASK02 in seed_to_key function to
  * enter diagnostic? mode
  */
-uint32_t seed_to_key_02(uint32_t seed, uint8_t rnd) {
-    return seed_to_key(seed, rnd, MASK02);
-}
-
+uint32_t seed_to_key_02(uint32_t seed, uint8_t rnd);
 }  // namespace Crypto
-
-#undef MASK03
-#undef MASK02
-#undef RND
