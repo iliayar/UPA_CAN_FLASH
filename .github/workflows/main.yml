@@ -58,7 +58,7 @@ jobs:
           Copy-Item -Path ".\temp" -Destination "C:\_" -Recurse
       - name: Build
         env:
-          - MSYSTEM: ${{ matrix.msystem }}
+          MSYSTEM: ${{ matrix.msystem }}
         shell: msys2 {0}
         run: |
           export PATH=$PATH:/mingw64/bin
