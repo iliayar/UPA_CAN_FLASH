@@ -14,21 +14,50 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
-  build-linux:
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+#   build-linux:
+#     # The type of runner that the job will run on
+#     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
+#     # Steps represent a sequence of tasks that will be executed as part of the job
+#     steps:
+#       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+#       - uses: actions/checkout@v2
+#       - name: Installing Qt
+#         run: sudo apt-get install qt5-default libqt5serialbus5-dev libqt5serialport5-dev
+#       - name: Creating build environment
+#         run: mkdir ${{github.workspace}}/build &&
+#              cd ${{github.workspace}}/build &&
+#              cmake -DCMAKE_BUILD_TYPE=Debug ..
+#       - name: Build
+#         run: cd ${{github.workspace}}/build && make
+#       - name: Test
+#         run: cd ${{github.workspace}}/build && make test
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: [
+          { msystem: MINGW64, arch: x86_64 },
+          { msystem: MINGW32, arch: i686   }
+        ]
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-      - name: Installing Qt
-        run: sudo apt-get install qt5-default libqt5serialbus5-dev libqt5serialport5-dev
-      - name: Creating build environment
-        run: mkdir ${{github.workspace}}/build &&
-             cd ${{github.workspace}}/build &&
-             cmake -DCMAKE_BUILD_TYPE=Debug ..
-      - name: Build
-        run: cd ${{github.workspace}}/build && make
-      - name: Test
-        run: cd ${{github.workspace}}/build && make test
+        with:
+          path: temp
+          fetch-depth: 0
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MSYS
+          install: git msys2-devel base-devel binutils mingw-w64-${{ matrix.arch }}-toolchain
+          update: true
+
+      - name: Move Checkout
+        run: |
+          Copy-Item -Path ".\temp" -Destination "C:\_" -Recurse
+      - name: CI-Build
+        shell: msys2 {0}
+        run: |
+          cd /C/_
+          ls -la .
