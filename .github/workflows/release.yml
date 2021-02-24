@@ -33,7 +33,7 @@ jobs:
 
   build-release:
     runs-on: windows-latest
-    needs: create_release
+    needs: create-release
     strategy:
       fail-fast: false
       matrix:
