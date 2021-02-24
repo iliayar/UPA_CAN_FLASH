@@ -29,6 +29,6 @@ jobs:
              cd ${{github.workspace}}/build &&
              cmake -DCMAKE_BUILD_TYPE=Debug ..
       - name: Build
-        run: make
+        run: cd ${{github.workspace}}/build && make
       - name: Test
-        run: make test
+        run: cd ${{github.workspace}}/build && make test
