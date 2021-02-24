@@ -38,8 +38,8 @@ jobs:
       fail-fast: false
       matrix:
         include: [
-          { msystem: mingw64, arch: x86_64 },
-          { msystem: mingw32, arch: i686   }
+          { msystem: MINGW64, arch: x86_64 },
+          { msystem: MINGW32, arch: i686   }
         ]
     steps:
       - uses: actions/checkout@v2
@@ -57,9 +57,11 @@ jobs:
         run: |
           Copy-Item -Path ".\temp" -Destination "C:\_" -Recurse
       - name: Build
+        env:
+          - MSYSTEM: ${{ matrix.msystem }}
         shell: msys2 {0}
         run: |
-          export PATH=$PATH:/c/msys2/${{ matrix.msystem }}/bin
+          export PATH=$PATH:/mingw64/bin
           echo $PATH
           cd /C/_
           mkdir build && cd build
