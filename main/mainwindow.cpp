@@ -300,11 +300,9 @@ void MainWindow::create_layout(QWidget* root) {
             &MainWindow::connect_device);
     connect(device_disconnect_btn, &QPushButton::released, this,
             &MainWindow::disconnect_device);
-    connect(tester_id_box,
-            static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
+    connect(tester_id_box, QOverload<int>::of(&QSpinBox::valueChanged),
             [&](int v) { m_settings.setValue("task/testerId", v); });
-    connect(ecu_id_box,
-            static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
+    connect(ecu_id_box, QOverload<int>::of(&QSpinBox::valueChanged),
             [&](int v) { m_settings.setValue("task/ecuId", v); });
     connect(task_start_btn, &QPushButton::released, this,
             &MainWindow::start_task);
