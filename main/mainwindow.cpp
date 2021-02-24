@@ -295,7 +295,7 @@ void MainWindow::create_layout(QWidget* root) {
 
     // Setting up events
 
-    connect(plugins_list, &QComboBox::textActivated, update_device_list);
+    connect(plugins_list, QOverload<const QString&>::of(&QComboBox::activated), update_device_list);
     connect(device_connect_btn, &QPushButton::released, this,
             &MainWindow::connect_device);
     connect(device_disconnect_btn, &QPushButton::released, this,
