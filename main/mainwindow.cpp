@@ -228,11 +228,8 @@ void MainWindow::create_layout(QWidget* root) {
 
     // Filling widgets
 
-    QString tester_id_str = m_settings.value("task/testerId").toString();
-    QString ecu_id_str = m_settings.value("task/ecuId").toString();
-    int tester_id =
-        tester_id_str.right(tester_id_str.size() - 2).toLong(nullptr, 16);
-    int ecu_id = ecu_id_str.right(ecu_id_str.size() - 2).toLong(nullptr, 16);
+    int tester_id = m_settings.value("task/testerId").toInt();
+    int ecu_id = m_settings.value("task/ecuId").toInt();
 
     if (ecu_id == 0) ecu_id = 0x76e;
     if (tester_id == 0) tester_id = 0x74e;
@@ -303,13 +300,14 @@ void MainWindow::create_layout(QWidget* root) {
             &MainWindow::connect_device);
     connect(device_disconnect_btn, &QPushButton::released, this,
             &MainWindow::disconnect_device);
-    connect(tester_id_box, &QSpinBox::textChanged,
-            [&](QString v) { m_settings.setValue("task/testerId", v); });
-    connect(ecu_id_box, &QSpinBox::textChanged,
-            [&](QString v) { m_settings.setValue("task/ecuId", v); });
+    connect(tester_id_box,
+            static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
+            [&](int v) { m_settings.setValue("task/testerId", v); });
+    connect(ecu_id_box,
+            static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
+            [&](int v) { m_settings.setValue("task/ecuId", v); });
     connect(task_start_btn, &QPushButton::released, this,
             &MainWindow::start_task);
-
 
     DEBUG(info, "Layout created");
 }
