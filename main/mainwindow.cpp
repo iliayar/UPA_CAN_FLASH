@@ -34,6 +34,7 @@
 #include "qcommunicator.h"
 #include "qtask.h"
 #include "task.h"
+#include "security.h"
 
 #ifdef __MINGW32__
 #define CAN_PLUGINS                                         \
@@ -56,6 +57,12 @@ MainWindow::MainWindow(QWidget* parent)
     QWidget* window = new QWidget();
 
     create_layout(window);
+
+    bool ok;
+    uint32_t mask = m_settings.value("crypto/mask02").toString().toUInt(&ok, 0);
+    if(ok) Crypto::SecuritySettings::set_mask02(mask);
+    mask = m_settings.value("crypto/mask03").toString().toUInt(&ok, 0);
+    if(ok) Crypto::SecuritySettings::set_mask03(mask);
 
     m_device = nullptr;
 
@@ -132,6 +139,18 @@ void MainWindow::create_layout(QWidget* root) {
     QLabel* size_label = new QLabel("Size: ???");
     QLabel* addr_label = new QLabel("Begin address: ???");
 
+    QWidget* settings_window = new QWidget(nullptr);
+
+    QFrame* settings_mask02_frame = new QFrame();
+    QFrame* settings_mask03_frame = new QFrame();
+
+    QVBoxLayout* settings_window_layout = new QVBoxLayout(settings_window);
+    QHBoxLayout* settings_mask02_layout = new QHBoxLayout(settings_mask02_frame);
+    QHBoxLayout* settings_mask03_layout = new QHBoxLayout(settings_mask03_frame);
+
+    QLineEdit* mask02_box = new QLineEdit();
+    QLineEdit* mask03_box = new QLineEdit();
+
     // Creating layout
     
     log_policy.setHorizontalStretch(6);
@@ -177,16 +196,24 @@ void MainWindow::create_layout(QWidget* root) {
 
     tasks_buttons_layout->addWidget(task_start_btn);
 
+    settings_window_layout->addWidget(settings_mask02_frame);
+    settings_window_layout->addWidget(settings_mask03_frame);
+
+    settings_mask02_layout->addWidget(new QLabel("MASK02"));
+    settings_mask02_layout->addWidget(mask02_box);
+    settings_mask03_layout->addWidget(new QLabel("MASK03"));
+    settings_mask03_layout->addWidget(mask03_box);
+
     // Setting up widgets
 
     log_group->setSizePolicy(log_policy);
     options_group->setSizePolicy(options_policy);
 
     m_file_menu_act = new QAction(tr("&Choose"), this);
-    connect(m_file_menu_act, &QAction::triggered, this,
-            &MainWindow::choose_file);
+    m_settings_menu_act = new QAction(tr("&Settings"), this);
 
     file_menu->addAction(m_file_menu_act);
+    file_menu->addAction(m_settings_menu_act);
     menuBar()->addMenu(file_menu);
 
     log_frames->setReadOnly(true);
@@ -225,6 +252,9 @@ void MainWindow::create_layout(QWidget* root) {
     m_logger_worker =
         new QLoggerWorker(this, log_frames, log_messages, m_progress_bar);
     m_logger = new QLogger(m_logger_worker);
+    m_settings_window = settings_window;
+    m_mask02 = mask02_box;
+    m_mask03 = mask03_box;
 
     // Filling widgets
 
@@ -295,6 +325,41 @@ void MainWindow::create_layout(QWidget* root) {
 
     // Setting up events
 
+    connect(m_mask02, &QLineEdit::textChanged, [&](const QString& value) {
+        if(value.length() <= 2) {
+            return;
+        }
+        bool ok;
+        m_settings.setValue("crypto/mask02", value);
+        uint32_t mask = value.toUInt(&ok, 0);
+        if(!ok) {
+            m_logger->warning("Invalid Mask02 format");
+        } else {
+            Crypto::SecuritySettings::set_mask02(mask);
+        }
+    });
+    connect(m_mask03, &QLineEdit::textChanged, [&](const QString& value) {
+        if(value.length() <= 2) {
+            return;
+        }
+        bool ok;
+        m_settings.setValue("crypto/mask03", value);
+        uint32_t mask = value.toUInt(&ok, 0);
+        if(!ok) {
+            m_logger->warning("Invalid Mask03 format");
+        } else {
+            Crypto::SecuritySettings::set_mask03(mask);
+        }
+    });
+    connect(m_file_menu_act, &QAction::triggered, this,
+            &MainWindow::choose_file);
+    connect(m_settings_menu_act, &QAction::triggered, this, [&]() {
+        m_mask02->setText(m_settings.value("crypto/mask02").toString());
+        m_mask03->setText(m_settings.value("crypto/mask03").toString());
+
+        m_settings_window->show();
+        m_settings_window->setFocus();
+    });
     connect(plugins_list, QOverload<const QString&>::of(&QComboBox::activated), update_device_list);
     connect(device_connect_btn, &QPushButton::released, this,
             &MainWindow::connect_device);

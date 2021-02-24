@@ -4,11 +4,13 @@
 #include <QComboBox>
 #include <QLabel>
 #include <QMainWindow>
+#include <QWindow>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QSettings>
 #include <QSpinBox>
 #include <QThread>
+#include <QLineEdit>
 #include <mutex>
 
 #include "communicator.h"
@@ -17,7 +19,7 @@
 
 namespace Ui {
 class MainWindow;
-}
+}  // namespace Ui
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -70,6 +72,7 @@ private:
     QSpinBox* m_ecu_id_box;
 
     QAction* m_file_menu_act;
+    QAction* m_settings_menu_act;
 
     QLabel* m_filename_label;
     QLabel* m_crc_label;
@@ -78,4 +81,9 @@ private:
 
     int m_tester_id;
     int m_ecu_id;
+
+    QWidget* m_settings_window;
+
+    QLineEdit* m_mask02;
+    QLineEdit* m_mask03;
 };
