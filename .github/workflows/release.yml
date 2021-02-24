@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  create-release:
+  create_release:
     name: Create release
     runs-on: ubuntu-latest
     outputs:
@@ -31,9 +31,9 @@ jobs:
           prerelease: false
           
 
-  build-release:
+  build_release:
     runs-on: windows-latest
-    needs: create-release
+    needs: create_release
     strategy:
       fail-fast: false
       matrix:
