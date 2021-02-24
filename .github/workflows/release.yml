@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: Publish release
 
 # Controls when the action will run. 
 on:
@@ -47,7 +47,7 @@ jobs:
           cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release ..
           mingw32-make package
           cp -r main ./UPA_CAN_FLASH
-          zip -r UPA_CAN_FASH.zip UPA_CAN_FLASH
+          zip -r UPA_CAN_FLASH.zip UPA_CAN_FLASH
           
       - name: Create Release
         id: create_release
@@ -60,14 +60,24 @@ jobs:
           draft: false
           prerelease: false
           
-      - name: Upload Release Asset
-        id: upload-release-asset 
+      - name: Upload Release Zip
+        id: upload-release-zip 
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: /C/_/build/UPA_CAN_FLASH.zip
-          asset_name: UPA_CAN_FLASH.zip
+          asset_name: UPA_CAN_FLASH-Portable.zip
           asset_content_type: application/zip
+      - name: Upload Release Installer
+        id: upload-release-installer
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: /C/_/build/main/UPA_CAN_FLASH-${{ github.ref }}-win64.exe
+          asset_name: UPA_CAN_FLASH-Installer.exe
+          asset_content_type: application/octet-stream
 
