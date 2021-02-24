@@ -70,5 +70,5 @@ jobs:
           MSYSTEM: ${{ matrix.msystem }}
         shell: msys2 {0}
         run: |
-          cd /C/_
+          cd /C/_/build
           ctest -VV
