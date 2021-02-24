@@ -38,8 +38,8 @@ jobs:
       fail-fast: false
       matrix:
         include: [
-          { msystem: MINGW64, arch: x86_64 },
-          { msystem: MINGW32, arch: i686   }
+          { msystem: MINGW64, arch: x86_64 }
+          # { msystem: MINGW32, arch: i686   }
         ]
     steps:
       - uses: actions/checkout@v2
@@ -61,12 +61,12 @@ jobs:
           MSYSTEM: ${{ matrix.msystem }}
         shell: msys2 {0}
         run: |
-          export PATH=$PATH:/mingw64/bin
-          echo $PATH
           cd /C/_
           mkdir build && cd build
           cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug ..
           mingw32-make
       - name: Test
+        env:
+          MSYSTEM: ${{ matrix.msystem }}
         shell: msys2 {0}
-        run: mingw32-make test
+        run: ctest -VV
