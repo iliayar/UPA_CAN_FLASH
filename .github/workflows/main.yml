@@ -59,7 +59,8 @@ jobs:
       - name: Build
         shell: msys2 {0}
         run: |
-          export PATH=$PATH:/C/msys2/${{ matrix.msystem }}/bin
+          export PATH=$PATH:/c/msys2/${{ matrix.msystem }}/bin
+          echo $PATH
           cd /C/_
           mkdir build && cd build
           cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug ..
