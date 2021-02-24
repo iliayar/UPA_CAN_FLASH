@@ -1,28 +1,30 @@
 
 # Table of Contents
 
-1.  [Description](#orgb9ac75a)
-2.  [Dependecies](#orga100cf1)
-    1.  [Windows](#org60736eb)
-    2.  [Linux](#org5f752a6)
-3.  [Building](#orgbe61656)
-    1.  [Windows](#org477a72f)
-    2.  [Linux](#org954e007)
+1.  [Description](#org8a2e5b2)
+2.  [Dependecies](#org7447265)
+    1.  [Windows](#orgf085184)
+    2.  [Linux](#orgc741a76)
+3.  [Building](#org0ee5d77)
+    1.  [Windows](#org8b0743e)
+    2.  [Linux](#org99f4cd8)
+
+![img](https://github.com/iliayar/UPA_CAN_FLASH/actions/workflows/main.yml/badge.svg)
 
 
-<a id="orgb9ac75a"></a>
+<a id="org8a2e5b2"></a>
 
 # Description
 
 Can bus flashing software on top of ISO-14229.
 
 
-<a id="orga100cf1"></a>
+<a id="org7447265"></a>
 
 # Dependecies
 
 
-<a id="org60736eb"></a>
+<a id="orgf085184"></a>
 
 ## Windows
 
@@ -36,7 +38,7 @@ Tested with following setup:
 -   NSIS
 
 
-<a id="org5f752a6"></a>
+<a id="orgc741a76"></a>
 
 ## Linux
 
@@ -48,7 +50,7 @@ Tested with:
 -   OPTIONAL Doxygen 1.9.1 for docs
 
 
-<a id="orgbe61656"></a>
+<a id="org0ee5d77"></a>
 
 # Building
 
@@ -56,7 +58,7 @@ Tested with:
 -   Create build directory `mkdir build` and cd into it `cd build`
 
 
-<a id="org477a72f"></a>
+<a id="org8b0743e"></a>
 
 ## Windows
 
@@ -64,7 +66,7 @@ Tested with:
 -   Compile binaries using `mingw32-make`
 
 
-<a id="org954e007"></a>
+<a id="org99f4cd8"></a>
 
 ## Linux
 
