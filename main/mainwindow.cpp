@@ -385,8 +385,6 @@ void MainWindow::choose_file() {
                                           tr("Intel HEX file (*.hex)"))
                  .toUtf8()
                  .toStdString();
-    std::cout << m_file << std::endl;
-
 #ifdef __MINGW32__
     std::ifstream fin(fs::u8path(m_file).wstring().c_str());
 #else
@@ -394,7 +392,6 @@ void MainWindow::choose_file() {
 #endif
     
     if (!fin) return;
-    std::cout << "Opened successfully" << std::endl;
     Hex::HexInfo info;
     try {
         Hex::HexReader reader(std::make_shared<Hex::FileSource>(fin));
