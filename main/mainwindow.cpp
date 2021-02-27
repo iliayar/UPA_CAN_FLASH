@@ -316,9 +316,10 @@ void MainWindow::create_layout(QWidget* root) {
             QCanBus::instance()->availableDevices(
                 QString::fromStdString(plugin.second), &errorString);
         if (!errorString.isEmpty()) {
+            m_logger->error("Error while loading " + plugin.first);
+        } else {
             m_plugin_list->addItem(QString::fromStdString(plugin.first),
                                    QString::fromStdString(plugin.second));
-        } else {
             m_plugin_list->setCurrentText(QString::fromStdString(plugin.first));
             if (devices.size() == 0) continue;
             update_device_list(QString::fromStdString(plugin.first));
