@@ -81,7 +81,7 @@ add_custom_command(TARGET UPA_CAN_FLASH POST_BUILD
 )
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -pthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -pthread -lstdc++fs")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -92,6 +92,7 @@ target_link_libraries(UPA_CAN_FLASH
     libhex
     libutil
     libcan
+    stdc++fs
     Qt5::Widgets
     Qt5::SerialBus
     Qt5::Test

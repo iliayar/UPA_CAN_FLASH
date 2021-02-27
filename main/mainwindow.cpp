@@ -25,6 +25,7 @@
 #include <memory>
 #include <sstream>
 #include <vector>
+#include <experimental/filesystem>
 
 #include "communicator.h"
 #include "flash.h"
@@ -49,6 +50,8 @@
         { "SocketCAN", "socketcan" } \
     }
 #endif
+
+namespace fs = std::experimental::filesystem;
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent),
@@ -382,8 +385,10 @@ void MainWindow::choose_file() {
                                           tr("Intel HEX file (*.hex)"))
                  .toUtf8()
                  .toStdString();
-    std::ifstream fin(m_file);
+    std::cout << m_file << std::endl;
+    std::ifstream fin(fs::u8path(m_file).wstring().c_str());
     if (!fin) return;
+    std::cout << "Opened successfully" << std::endl;
     Hex::HexInfo info;
     try {
         Hex::HexReader reader(std::make_shared<Hex::FileSource>(fin));
