@@ -380,13 +380,19 @@ void MainWindow::create_layout(QWidget* root) {
 
 void MainWindow::choose_file() {
     DEBUG(info, "Choosing file");
-    QString path = m_settings.value("general/file").toString();
+    QString path = m_settings.value("task/file").toString();
     m_file = QFileDialog::getOpenFileName(this, tr("Open HEX"), path,
                                           tr("Intel HEX file (*.hex)"))
                  .toUtf8()
                  .toStdString();
     std::cout << m_file << std::endl;
+
+#ifdef __MINGW32__
     std::ifstream fin(fs::u8path(m_file).wstring().c_str());
+#else
+    std::ifstream fin(m_file);
+#endif
+    
     if (!fin) return;
     std::cout << "Opened successfully" << std::endl;
     Hex::HexInfo info;
@@ -423,7 +429,7 @@ void MainWindow::choose_file() {
            << std::hex << info.start_addr;
         m_addr_label->setText(QString::fromStdString(ss.str()));
     }
-    m_settings.setValue("general/file", QString::fromStdString(m_file));
+    m_settings.setValue("task/file", QString::fromStdString(m_file));
 }
 
 void MainWindow::disconnect_device() {
