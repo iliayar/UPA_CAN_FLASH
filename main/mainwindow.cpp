@@ -64,8 +64,14 @@ MainWindow::MainWindow(QWidget* parent)
     bool ok;
     uint32_t mask = m_settings.value("crypto/mask02").toString().toUInt(&ok, 0);
     if(ok) Crypto::SecuritySettings::set_mask02(mask);
+    else {
+        m_settings.setValue("crypto/mask02", Crypto::SecuritySettings::get_mask02());
+    }
     mask = m_settings.value("crypto/mask03").toString().toUInt(&ok, 0);
     if(ok) Crypto::SecuritySettings::set_mask03(mask);
+    else {
+        m_settings.setValue("crypto/mask03", Crypto::SecuritySettings::get_mask03());
+    }
 
     m_device = nullptr;
 
@@ -267,13 +273,6 @@ void MainWindow::create_layout(QWidget* root) {
     if (ecu_id == 0) ecu_id = 0x76e;
     if (tester_id == 0) tester_id = 0x74e;
 
-
-    for (std::pair<std::string, std::string> plugin :
-         std::vector<std::pair<std::string, std::string>>(CAN_PLUGINS)) {
-        plugins_list->addItem(QString::fromStdString(plugin.first),
-                              QString::fromStdString(plugin.second));
-    }
-
     tester_id_box->setValue(tester_id);
     ecu_id_box->setValue(ecu_id);
 
@@ -303,16 +302,20 @@ void MainWindow::create_layout(QWidget* root) {
             m_logger->error(errorString.toStdString());
         } else {
             for (auto device : devices) {
-                devices_list->addItem(device.name());
+                devices_list->addItem(
+                    device.name() + " (" + device.description() + ")",
+                    device.name());
             }
         }
     };
 
 
-    int i = 0;
     for (std::pair<std::string, std::string> plugin :
          std::vector<std::pair<std::string, std::string>>(CAN_PLUGINS)) {
-        i++;
+        if(!QCanBus::instance()->plugins().contains(QString::fromStdString(plugin.second)))
+            continue;
+        plugins_list->addItem(QString::fromStdString(plugin.first),
+                              QString::fromStdString(plugin.second));
         QString errorString;
         QList<QCanBusDeviceInfo> devices =
             QCanBus::instance()->availableDevices(
@@ -391,7 +394,10 @@ void MainWindow::choose_file() {
     std::ifstream fin(m_file);
 #endif
     
-    if (!fin) return;
+    if (!fin) {
+        m_logger->error("Cannot read file. Check if you have permissions.");
+        return;
+    }
     Hex::HexInfo info;
     try {
         Hex::HexReader reader(std::make_shared<Hex::FileSource>(fin));
@@ -453,7 +459,7 @@ void MainWindow::connect_device() {
     filter.format = QCanBusDevice::Filter::MatchBaseFormat;
     filter.type = QCanBusFrame::DataFrame;
     filters.append(filter);
-    QString device_name = m_device_list->currentText();
+    QString device_name = m_device_list->currentData().toString();
     m_device = QCanBus::instance()->createDevice(
         m_plugin_list->currentData().toString(), device_name, &errorString);
     if (!m_device) {
