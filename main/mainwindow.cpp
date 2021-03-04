@@ -316,7 +316,7 @@ void MainWindow::create_layout(QWidget* root) {
             QCanBus::instance()->availableDevices(
                 QString::fromStdString(plugin.second), &errorString);
         if (!errorString.isEmpty()) {
-            m_logger->error("Error while loading " + plugin.first);
+            m_logger->error("Error while loading " + plugin.first + ": " + errorString.toStdString());
         } else {
             m_plugin_list->addItem(QString::fromStdString(plugin.first),
                                    QString::fromStdString(plugin.second));
