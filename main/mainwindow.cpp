@@ -311,13 +311,13 @@ void MainWindow::create_layout(QWidget* root) {
          std::vector<std::pair<std::string, std::string>>(CAN_PLUGINS)) {
         if(!QCanBus::instance()->plugins().contains(QString::fromStdString(plugin.second)))
             continue;
-        m_plugin_list->addItem(QString::fromStdString(plugin.first),
-                              QString::fromStdString(plugin.second));
         QString errorString;
         QList<QCanBusDeviceInfo> devices =
             QCanBus::instance()->availableDevices(
                 QString::fromStdString(plugin.second), &errorString);
         if (!errorString.isEmpty()) {
+            m_plugin_list->addItem(QString::fromStdString(plugin.first),
+                                   QString::fromStdString(plugin.second));
         } else {
             m_plugin_list->setCurrentText(QString::fromStdString(plugin.first));
             if (devices.size() == 0) continue;
