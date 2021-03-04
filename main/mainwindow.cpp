@@ -288,21 +288,18 @@ void MainWindow::create_layout(QWidget* root) {
     QString bitrate_last = m_settings.value("device/bitrate").toString();
     int bitrate_id = bitrate_list->findText(bitrate_last);
     if (bitrate_id != -1) bitrate_list->setCurrentIndex(bitrate_id);
-    connect(bitrate_list, &QComboBox::currentTextChanged, [&]() {
-        m_settings.setValue("device/bitrate", bitrate_list->currentText());
-    });
 
-    auto update_device_list = [&](const QString& str) {
-        devices_list->clear();
+    auto update_device_list = [this](const QString& str) {
+        m_device_list->clear();
         QString errorString;
         QList<QCanBusDeviceInfo> devices =
             QCanBus::instance()->availableDevices(
-                plugins_list->currentData().toString(), &errorString);
+                m_plugin_list->currentData().toString(), &errorString);
         if (!errorString.isEmpty()) {
             m_logger->error(errorString.toStdString());
         } else {
             for (auto device : devices) {
-                devices_list->addItem(
+                m_device_list->addItem(
                     device.name() + " (" + device.description() + ")",
                     device.name());
             }
@@ -314,7 +311,7 @@ void MainWindow::create_layout(QWidget* root) {
          std::vector<std::pair<std::string, std::string>>(CAN_PLUGINS)) {
         if(!QCanBus::instance()->plugins().contains(QString::fromStdString(plugin.second)))
             continue;
-        plugins_list->addItem(QString::fromStdString(plugin.first),
+        m_plugin_list->addItem(QString::fromStdString(plugin.first),
                               QString::fromStdString(plugin.second));
         QString errorString;
         QList<QCanBusDeviceInfo> devices =
@@ -322,16 +319,19 @@ void MainWindow::create_layout(QWidget* root) {
                 QString::fromStdString(plugin.second), &errorString);
         if (!errorString.isEmpty()) {
         } else {
-            plugins_list->setCurrentText(QString::fromStdString(plugin.first));
+            m_plugin_list->setCurrentText(QString::fromStdString(plugin.first));
             if (devices.size() == 0) continue;
             update_device_list(QString::fromStdString(plugin.first));
-            break;
         }
     }
 
     // Setting up events
 
-    connect(m_mask02, &QLineEdit::textChanged, [&](const QString& value) {
+    connect(bitrate_list, &QComboBox::currentTextChanged, [this]() {
+        m_settings.setValue("device/bitrate", m_bitrate_list->currentText());
+    });
+
+    connect(m_mask02, &QLineEdit::textChanged, [this](const QString& value) {
         if(value.length() <= 2) {
             return;
         }
@@ -344,7 +344,7 @@ void MainWindow::create_layout(QWidget* root) {
             Crypto::SecuritySettings::set_mask02(mask);
         }
     });
-    connect(m_mask03, &QLineEdit::textChanged, [&](const QString& value) {
+    connect(m_mask03, &QLineEdit::textChanged, [this](const QString& value) {
         if(value.length() <= 2) {
             return;
         }
@@ -359,7 +359,7 @@ void MainWindow::create_layout(QWidget* root) {
     });
     connect(m_file_menu_act, &QAction::triggered, this,
             &MainWindow::choose_file);
-    connect(m_settings_menu_act, &QAction::triggered, this, [&]() {
+    connect(m_settings_menu_act, &QAction::triggered, this, [this]() {
         m_mask02->setText(m_settings.value("crypto/mask02").toString());
         m_mask03->setText(m_settings.value("crypto/mask03").toString());
 
