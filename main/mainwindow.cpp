@@ -65,12 +65,12 @@ MainWindow::MainWindow(QWidget* parent)
     uint32_t mask = m_settings.value("crypto/mask02").toString().toUInt(&ok, 0);
     if(ok) Crypto::SecuritySettings::set_mask02(mask);
     else {
-        m_settings.setValue("crypto/mask02", Crypto::SecuritySettings::get_mask02());
+        m_settings.setValue("crypto/mask02", QString(Crypto::SecuritySettings::get_mask02()));
     }
     mask = m_settings.value("crypto/mask03").toString().toUInt(&ok, 0);
     if(ok) Crypto::SecuritySettings::set_mask03(mask);
     else {
-        m_settings.setValue("crypto/mask03", Crypto::SecuritySettings::get_mask03());
+        m_settings.setValue("crypto/mask03", QString(Crypto::SecuritySettings::get_mask03()));
     }
 
     m_device = nullptr;
