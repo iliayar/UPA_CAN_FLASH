@@ -95,7 +95,7 @@ public:
      * @return false if unable to write data, true otherwise
      * (len + 7) / 8
      */
-    bool write(std::vector<uint8_t> data, int len);
+    virtual bool write(std::vector<uint8_t> data, int len);
 
     /**
      * @return true if end of data is reached
@@ -129,10 +129,20 @@ public:
         return this->write(data_vec, len);
     }
 
-private:
+protected:
     std::vector<uint8_t> m_payload;
     int m_offset;
 };
 
+class DynamicWriter : public Writer {
+public:
+    DynamicWriter() : Writer(0) {}
+    bool write(std::vector<uint8_t> data, int size) override {
+        if(m_offset + size > m_payload.size()*8) {
+            data.resize(BYTES(m_offset + size));
+        }
+        return Writer::write(data, size);
+    }
+};
 
 }  // namespace Util

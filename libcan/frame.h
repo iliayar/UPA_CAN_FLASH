@@ -40,10 +40,7 @@ public:
      * Converts frame to raw bytes
      * @return 8 bytes representation of frame
      */
-    virtual std::vector<uint8_t> dump() = 0;
-
-protected:
-    virtual void dump_impl(Util::Writer&) = 0;
+    virtual optional<std::vector<uint8_t>> dump() = 0;
 };
 
 class FrameFactory {

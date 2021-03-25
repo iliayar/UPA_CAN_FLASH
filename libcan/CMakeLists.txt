@@ -1,3 +1,4 @@
+file(GLOB SERVICES services/*.hpp)
 set(libcan_SRCS
     frame.h
     frame_all.h
@@ -13,6 +14,8 @@ set(libcan_SRCS
     security.cpp
     logger.h
     logger.cpp
+    datatypes.h
+    ${SERVICES}
 )
 
 # Declare the library

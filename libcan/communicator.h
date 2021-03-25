@@ -18,10 +18,6 @@
 
 namespace Can {
 
-struct NothingToFetch : public std::exception {
-    const char* what() const throw() { return "No frames to fetch"; }
-};
-
 enum class CommunicatorStatus { Idle, Receive, Transmit };
 
 enum WorkerStatus { Done, Work, Error };
@@ -30,16 +26,16 @@ enum WorkerStatus { Done, Work, Error };
  * Converts Service request to frames to send to ECU
  * @param service request to convert
  */
-std::vector<std::shared_ptr<Frame>> service_to_frames(
-    std::shared_ptr<ServiceRequest>);
+optional<std::vector<std::shared_ptr<Frame::Frame>>> service_to_frames(
+    std::shared_ptr<ServiceRequest::ServiceRequest>);
 
 /**
  * Converts received frames to service response
  * @param the frames wich one to convert to response
  * @return null if the frames consequnce is invalid
  */
-std::shared_ptr<ServiceResponse> frames_to_service(
-    std::vector<std::shared_ptr<Frame>>);
+optional<std::shared_ptr<ServiceResponse::ServiceResponse>> frames_to_service(
+    std::vector<std::shared_ptr<Frame::Frame>>);
 
 /**
  * Abstract class for receiving/transmitting complete responses/requests
@@ -61,12 +57,15 @@ public:
      * @return frame
      * @throws NothingToFetch if there is no frames to send to ECU
      */
-    virtual std::shared_ptr<Frame> fetch_frame() = 0;
+    virtual optional<std::shared_ptr<Frame::Frame>> fetch_frame() = 0;
 
     /**
      * Push frames, recevied from ECU to worker
      */
-    virtual void push_frame(std::shared_ptr<Frame>) = 0;
+    virtual void push_frame(std::shared_ptr<Frame::Frame>) = 0;
+
+    virtual ~Worker() {
+    }
 
     std::chrono::milliseconds TIMEOUT{600};
 
@@ -99,16 +98,16 @@ public:
      * if there is long or short response
      * @contstructor
      */
-    Receiver(std::shared_ptr<Frame>);
+    Receiver(std::shared_ptr<Frame::Frame>);
 
     CommunicatorStatus get_type() { return CommunicatorStatus::Receive; }
     WorkerStatus get_status();
-    std::shared_ptr<Frame> fetch_frame();
-    void push_frame(std::shared_ptr<Frame>);
-    std::shared_ptr<ServiceResponse> get_response();
+    optional<std::shared_ptr<Frame::Frame>> fetch_frame();
+    void push_frame(std::shared_ptr<Frame::Frame>);
+    optional<std::shared_ptr<ServiceResponse::ServiceResponse>> get_response();
 
 private:
-    std::vector<std::shared_ptr<Frame>> m_frames;
+    std::vector<std::shared_ptr<Frame::Frame>> m_frames;
     WorkerStatus m_status;
 
     int m_consecutive_len;
@@ -122,15 +121,15 @@ public:
      * @param Request to send to ECU.
      * @constructor
      */
-    Transmitter(std::shared_ptr<ServiceRequest>);
+    Transmitter(std::shared_ptr<ServiceRequest::ServiceRequest>);
 
     CommunicatorStatus get_type() { return CommunicatorStatus::Transmit; }
     WorkerStatus get_status();
-    std::shared_ptr<Frame> fetch_frame();
-    void push_frame(std::shared_ptr<Frame>);
+    optional<std::shared_ptr<Frame::Frame>> fetch_frame();
+    void push_frame(std::shared_ptr<Frame::Frame>);
 
 private:
-    std::vector<std::shared_ptr<Frame>> m_frames;
+    std::vector<std::shared_ptr<Frame::Frame>> m_frames;
     WorkerStatus m_status;
 
     int m_fc_block_size;
@@ -171,7 +170,7 @@ public:
      * Fetch frame from current worker.
      * @throws NothingToFetch if there is no frame.
      */
-    std::shared_ptr<Frame> fetch_frame();
+    optional<std::shared_ptr<Frame::Frame>> fetch_frame();
 
     /**
      * Push frame to current worker
@@ -180,7 +179,7 @@ public:
      * @param frame to push to existing worker or create
      * a new one using this frame as first if response
      */
-    void push_frame(std::shared_ptr<Frame>);
+    void push_frame(std::shared_ptr<Frame::Frame>);
 
 private:
     void update_task();

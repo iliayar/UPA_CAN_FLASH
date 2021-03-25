@@ -34,24 +34,24 @@ public:
     /**
      * @param receive frame to log
      */
-    virtual void received_frame(std::shared_ptr<Frame>) = 0;
+    virtual void received_frame(std::shared_ptr<Frame::Frame>) = 0;
 
     /**
      * @param transmitted frame to log
      */
-    virtual void transmitted_frame(std::shared_ptr<Frame>) = 0;
+    virtual void transmitted_frame(std::shared_ptr<Frame::Frame>) = 0;
 
     /**
      * @param recveived response from ECU to log
      */
     virtual void received_service_response(
-        std::shared_ptr<ServiceResponse>) = 0;
+        std::shared_ptr<ServiceResponse::ServiceResponse>) = 0;
 
     /**
      * @param transmitted request from ECU to log
      */
     virtual void transmitted_service_request(
-        std::shared_ptr<ServiceRequest>) = 0;
+        std::shared_ptr<ServiceRequest::ServiceRequest>) = 0;
 
     /**
      * @param Error message
@@ -110,10 +110,10 @@ public:
  */
 class NoLogger : public Logger {
 public:
-    void received_frame(std::shared_ptr<Frame> _) {}
-    void transmitted_frame(std::shared_ptr<Frame> _) {}
-    void received_service_response(std::shared_ptr<ServiceResponse> _) {}
-    void transmitted_service_request(std::shared_ptr<ServiceRequest> _) {}
+    void received_frame(std::shared_ptr<Frame::Frame> _) {}
+    void transmitted_frame(std::shared_ptr<Frame::Frame> _) {}
+    void received_service_response(std::shared_ptr<ServiceResponse::ServiceResponse> _) {}
+    void transmitted_service_request(std::shared_ptr<ServiceRequest::ServiceRequest> _) {}
     void error(std::string _) {}
     void info(std::string _) {}
     void warning(std::string _) {}
@@ -129,25 +129,25 @@ class FramesStdLogger : public Logger {
 public:
     FramesStdLogger() : m_start(std::chrono::high_resolution_clock::now()) {}
 
-    void transmitted_frame(std::shared_ptr<Frame> frame) override {
+    void transmitted_frame(std::shared_ptr<Frame::Frame> frame) override {
         std::cout << "Tester request: ";
         print_frame(frame);
         m_start = std::chrono::high_resolution_clock::now();
     }
 
-    void received_frame(std::shared_ptr<Frame> frame) override {
+    void received_frame(std::shared_ptr<Frame::Frame> frame) override {
         std::cout << "ECU response:   ";
         print_frame(frame);
         m_start = std::chrono::high_resolution_clock::now();
     }
 
     void received_service_response(
-        std::shared_ptr<ServiceResponse> r) override {
+        std::shared_ptr<ServiceResponse::ServiceResponse> r) override {
         // std::cout << "Received response " << (int)r->get_type() << std::endl;
     }
 
     void transmitted_service_request(
-        std::shared_ptr<ServiceRequest> r) override {
+        std::shared_ptr<ServiceRequest::ServiceRequest> r) override {
         // std::cout << "Transmited request " << (int)r->get_type() <<
         // std::endl;
     }
@@ -165,8 +165,13 @@ public:
     void important(std::string s) override { info(s); }
 
 private:
-    void print_frame(std::shared_ptr<Frame> frame) {
-        std::vector<uint8_t> payload = frame->dump();
+    void print_frame(std::shared_ptr<Frame::Frame> frame) {
+        auto maybe_payload = frame->dump();
+        if(!maybe_payload) {
+            error("Failed to print frame");
+            return;
+        }
+        auto payload = maybe_payload.value();
         std::cout << std::setfill(' ') << std::dec << std::setw(4)
                   << std::chrono::duration_cast<std::chrono::milliseconds>(
                          std::chrono::high_resolution_clock::now() - m_start)
@@ -196,14 +201,14 @@ public:
         if (!m_fout) throw std::runtime_error("Cannot open log file");
     }
 
-    void transmitted_frame(std::shared_ptr<Frame> frame) override {
+    void transmitted_frame(std::shared_ptr<Frame::Frame> frame) override {
         std::unique_lock<std::mutex> lock(m_mutex);
         m_fout << "Tester request: ";
         print_frame(frame);
         m_start = std::chrono::high_resolution_clock::now();
     }
 
-    void received_frame(std::shared_ptr<Frame> frame) override {
+    void received_frame(std::shared_ptr<Frame::Frame> frame) override {
         std::unique_lock<std::mutex> lock(m_mutex);
         m_fout << "ECU response:   ";
         print_frame(frame);
@@ -211,12 +216,12 @@ public:
     }
 
     void received_service_response(
-        std::shared_ptr<ServiceResponse> r) override {
+        std::shared_ptr<ServiceResponse::ServiceResponse> r) override {
         // m_fout << "Received response " << (int)r->get_type() << std::endl;
     }
 
     void transmitted_service_request(
-        std::shared_ptr<ServiceRequest> r) override {
+        std::shared_ptr<ServiceRequest::ServiceRequest> r) override {
         // m_fout << "Transmited request " << (int)r->get_type() <<
         // std::endl;
     }
@@ -242,8 +247,13 @@ public:
     ~FileLogger() { m_fout.close(); }
 
 private:
-    void print_frame(std::shared_ptr<Frame> frame) {
-        std::vector<uint8_t> payload = frame->dump();
+    void print_frame(std::shared_ptr<Frame::Frame> frame) {
+        auto maybe_payload = frame->dump();
+        if(!maybe_payload) {
+            error("Failed to print frame");
+            return;
+        }
+        auto payload = maybe_payload.value();
         m_fout << std::setfill(' ') << std::dec << std::setw(4)
                << std::chrono::duration_cast<std::chrono::milliseconds>(
                       std::chrono::high_resolution_clock::now() - m_start)

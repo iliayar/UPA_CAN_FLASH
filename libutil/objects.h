@@ -3,11 +3,10 @@
 #include "bytes.h"
 
 namespace Util {
-
-template <typename T, int size>
-struct Field {
-    Field(T value) : m_value(value), m_valid(true) {}
-    Field() : m_value(), m_valid(false) {}
+template <typename T>
+struct VarField {
+    VarField(T value, int size) : m_value(value), m_valid(true) {}
+    VarField(int size) : m_value(), m_valid(false) {}
     bool write(Writer& writer) {
         if (!m_valid) return false;
         return write_impl(writer, m_value);
@@ -30,7 +29,7 @@ struct Field {
         }
     }
 
-    Field<T, size>& operator=(const T value) {
+    VarField<T>& operator=(const T& value) {
         m_value = value;
         m_valid = true;
         return *this;
@@ -41,19 +40,23 @@ struct Field {
         m_valid = true;
     }
 
-    int get_size() {
-        return size;
-    }
+    virtual int get_size() { return size; }
 
     bool valid() { return m_valid; }
 
 protected:
-    virtual optional<T> read_impl(Reader& read) = 0;
-    virtual bool write_impl(Writer& read, T value) = 0;
+    virtual optional<T> read_impl(Reader& reader) = 0;
+    virtual bool write_impl(Writer& writer, T value) = 0;
 
-private:
+    int size = 0;
     T m_value;
     bool m_valid = false;
+};
+
+template <typename T, int size>
+struct Field : VarField<T> {
+    Field(T value) : VarField<T>(value, size) {}
+    Field() : VarField<T>(size) {}
 };
 
 template <typename T, int size>
@@ -68,11 +71,20 @@ protected:
     optional<T> read_impl(Reader& reader) { return reader.read_int<T>(size); }
 };
 
-template <int size>
-struct VecField : public Field<std::vector<uint8_t>, size> {
-    VecField(std::vector<uint8_t> data)
-        : Field<std::vector<uint8_t>, size>(data) {}
-    VecField() : Field<std::vector<uint8_t>, size>() {}
+struct VarVecField : public VarField<std::vector<uint8_t>> {
+    VarVecField(std::vector<uint8_t> data, int size)
+        : VarField<std::vector<uint8_t>>(data, size) {}
+    VarVecField(int size) : VarField<std::vector<uint8_t>>(size) {}
+
+    VarVecField& operator=(std::vector<uint8_t> value) {
+        m_value = value;
+        m_valid = true;
+        return *this;
+    }
+
+    void resize(int size) {
+        this->size = size;
+    }
 
 protected:
     bool write_impl(Writer& writer, std::vector<uint8_t> value) {
@@ -83,10 +95,28 @@ protected:
     }
 };
 
+template <int size>
+struct VecField : public VarVecField {
+public:
+    VecField(std::vector<uint8_t> data)
+        : VarVecField(data, size) {}
+    VecField() : VarVecField(size) {}
+};
+
 template <typename T, typename I, int size>
 struct EnumField : public Field<T, size> {
     EnumField(T value) : Field<T, size>(value) {}
     EnumField() : Field<T, size>() {}
+
+    EnumField<T, I, size>& operator=(T value) {
+        this->m_value = value;
+        return *this;
+    } 
+
+    EnumField<T, I, size>& operator=(I value) {
+        this->m_value = static_cast<T>(value);
+        return *this;
+    } 
 
 protected:
     bool write_impl(Writer& writer, T value) {
@@ -102,20 +132,50 @@ protected:
     }
 };
 
-template <typename ...F>
-void write_args(Writer& writer, F&... args) {
-    over_all<F&...>::for_each([&](auto field) {
-        field.write(writer);
-    }, std::forward<F&>(args)...);
+/**
+ * {@c get_size()} method always returns {@c 0}
+ * @brief Field represents custom class
+ * @tparam T must contains {@c write(Util::Writer&)} method, provide static
+ * method {@c build()}, wich returns {@c Builder}, that's also implements {@c
+ * build()}, which returns {@c std::shared_ptr<T>} or {@c
+ * optional<std::shared_ptr<T>>}
+ */
+template <typename T>
+struct DataField : public VarField<std::shared_ptr<T>> {
+public:
+    DataField(T* ptr)
+        : VarField<std::shared_ptr<T>>(std::shared_ptr<T>(ptr), 0) {}
+    DataField() : VarField<std::shared_ptr<T>>(0) {}
+
+    DataField<T>& operator=(std::shared_ptr<T> value) {
+        this->m_value = value;
+        this->m_valid = true;
+        return *this;
+    }
+
+protected:
+    bool write_impl(Writer& writer, std::shared_ptr<T> value) {
+        return value->write(writer);
+    }
+    optional<std::shared_ptr<T>> read_impl(Reader& reader) {
+        return T::build(reader)->build();
+    }
+};
+
+template <typename... F>
+bool write_args(Writer& writer, F&... args) {
+    bool res = true;
+    over_all<F&...>::for_each([&](auto field) { res &= field.write(writer); },
+                              std::forward<F&>(args)...);
+    return res;
 }
 
 template <typename... F>
-std::vector<uint8_t> dump_args(F&... args) {
-    int size = 0;
-    over_all<F&...>::for_each([&](auto field) { size += field.get_size(); },
-                             std::forward<F&>(args)...);
-    Writer writer(BYTES(size));
-    write_args(writer, std::forward<F&>(args)...);
+optional<std::vector<uint8_t>> dump_args(F&... args) {
+    DynamicWriter writer{};
+    if(!write_args(writer, std::forward<F&>(args)...)) {
+        return {};
+    }
     return writer.get_payload();
 }
 
@@ -131,9 +191,10 @@ bool read_args(Reader& reader, F&... args) {
     return res;
 }
 
-template <typename R>
+template <typename R, class Self>
 class Builder {
 public:
+    using B = Util::Builder<R, Self>;
     Builder() { m_object = std::shared_ptr<R>(); }
 
     optional<std::shared_ptr<R>> build() {
@@ -144,33 +205,28 @@ public:
     }
 
 protected:
-
-    using Self = Builder<R>;
-
     template <typename... F>
     void read(Reader& reader, F&... fields) {
         if (!read_args(reader, std::forward<F&>(fields)...)) {
-            m_valid = false;
+            fail();
         }
     }
 
-    std::shared_ptr<R> object() {
-        return m_object;
-    }
+    std::shared_ptr<R> object() { return m_object; }
 
-    std::shared_ptr<Self> self() {
-        return std::unique_ptr<Self>(this);
-    }
+    virtual std::unique_ptr<Self> self() = 0;
 
     template <typename F, typename T>
-    std::shared_ptr<Self> field(F& field, T value) {
+    std::unique_ptr<Self> field(F& field, T value) {
         field = value;
         return self();
     }
+
+    void fail() { m_valid = false; }
 
 private:
     std::shared_ptr<R> m_object;
     bool m_valid = true;
 };
 
-}
+}  // namespace Util

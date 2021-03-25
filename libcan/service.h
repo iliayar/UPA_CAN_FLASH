@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "bytes.h"
+#include "objects.h"
 
 namespace Can {
 
@@ -48,23 +49,10 @@ public:
      * @return Service response parsed from passed bytes
      * Returns null if could not parse service response
      */
-    std::shared_ptr<ServiceResponse> get();
+    optional<std::shared_ptr<ServiceResponse>> get();
 
 private:
-    optional<std::shared_ptr<ServiceResponse>> parse_ReadDataByIdentifier();
-    optional<std::shared_ptr<ServiceResponse>> parse_WriteDataByIdentifier();
-    optional<std::shared_ptr<ServiceResponse>> parse_SecurityAccess();
-    optional<std::shared_ptr<ServiceResponse>> parse_DiagnosticSessionControl();
-    optional<std::shared_ptr<ServiceResponse>> parse_ControlDTCSettings();
-    optional<std::shared_ptr<ServiceResponse>> parse_CommunicationControl();
-    optional<std::shared_ptr<ServiceResponse>> parse_RequestDownload();
-    optional<std::shared_ptr<ServiceResponse>> parse_TransferData();
-    optional<std::shared_ptr<ServiceResponse>> parse_RequestTransferExit();
-    optional<std::shared_ptr<ServiceResponse>> parse_ECUReset();
-    optional<std::shared_ptr<ServiceResponse>> parse_Negative();
-
-    int m_offset;
-    int m_size;
+    Util::EnumField<Type, uint8_t, 8> m_type;
     Util::Reader m_reader;
 };
 
@@ -97,7 +85,7 @@ public:
      * Convert request to raw bytes
      * @return bytes representation of request
      */
-    virtual std::vector<uint8_t> dump() = 0;
+    virtual optional<std::vector<uint8_t>> dump() = 0;
 };
 }  // namespace ServiceRequest
 

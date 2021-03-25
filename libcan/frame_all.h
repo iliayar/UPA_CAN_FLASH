@@ -23,22 +23,30 @@ enum class FlowStatus {
 
 class SingleFrame : public Frame {
 public:
-    class Builder : public Util::Builder<SingleFrame> {
+    class Builder;
+    class Builder : public Util::Builder<SingleFrame, Builder> {
     public:
-        Builder() : Util::Builder<SingleFrame>() {}
-        Builder(Util::Reader& reader) : Util::Builder<SingleFrame>() {
+        Builder() : B() {}
+        Builder(Util::Reader& reader) : B() {
             read(reader, object()->m_len, object()->m_data);
         }
         auto len(uint8_t len) { return field(object()->m_len, len); }
         auto data(std::vector<uint8_t> data) {
             return field(object()->m_data, data);
         }
-
     protected:
-        using Self = Builder;
+        std::unique_ptr<Builder> self() {
+            return std::unique_ptr<Builder>(this);
+        }
     };
+    uint8_t get_len() {
+        return m_len.get().value();
+    }
+    std::vector<uint8_t> get_data() {
+        return m_data.get().value();
+    }
     FrameType get_type() { return FrameType::SingleFrame; }
-    std::vector<uint8_t> dump() { return Util::dump_args(m_len, m_data); }
+    optional<std::vector<uint8_t>> dump() { return Util::dump_args(m_len, m_data); }
 
     static std::unique_ptr<Builder> build() {
         return std::make_unique<Builder>();
@@ -54,22 +62,30 @@ private:
 
 class FirstFrame : public Frame {
 public:
-    class Builder : public Util::Builder<FirstFrame> {
+    class Builder;
+    class Builder : public Util::Builder<FirstFrame, Builder> {
     public:
-        Builder() : Util::Builder<FirstFrame>() {}
-        Builder(Util::Reader& reader) : Util::Builder<FirstFrame>() {
+        Builder() : B() {}
+        Builder(Util::Reader& reader) : B() {
             read(reader, object()->m_len, object()->m_data);
         }
         auto len(uint8_t len) { return field(object()->m_len, len); }
         auto data(std::vector<uint8_t> data) {
             return field(object()->m_data, data);
         }
-
     protected:
-        using Self = Builder;
+        std::unique_ptr<Builder> self() {
+            return std::unique_ptr<Builder>(this);
+        }
     };
+    uint8_t get_len() {
+        return m_len.get().value();
+    }
+    std::vector<uint8_t> get_data() {
+        return m_data.get().value();
+    }
     FrameType get_type() { return FrameType::FirstFrame; }
-    std::vector<uint8_t> dump() { return Util::dump_args(m_len, m_data); }
+    optional<std::vector<uint8_t>> dump() { return Util::dump_args(m_len, m_data); }
 
     static std::unique_ptr<Builder> build() {
         return std::make_unique<Builder>();
@@ -85,10 +101,11 @@ private:
 
 class ConsecutiveFrame : public Frame {
 public:
-    class Builder : public Util::Builder<ConsecutiveFrame> {
+    class Builder;
+    class Builder : public Util::Builder<ConsecutiveFrame, Builder> {
     public:
-        Builder() : Util::Builder<ConsecutiveFrame>() {}
-        Builder(Util::Reader& reader) : Util::Builder<ConsecutiveFrame>() {
+        Builder() : B() {}
+        Builder(Util::Reader& reader) : B() {
             read(reader, object()->m_seq_num, object()->m_data);
         }
         auto seq_num(uint8_t seq_num) {
@@ -97,12 +114,19 @@ public:
         auto data(std::vector<uint8_t> data) {
             return field(object()->m_data, data);
         }
-
     protected:
-        using Self = Builder;
+        std::unique_ptr<Builder> self() {
+            return std::unique_ptr<Builder>(this);
+        }
     };
+    uint8_t get_seq_num() {
+        return m_seq_num.get().value();
+    }
+    std::vector<uint8_t> get_data() {
+        return m_data.get().value();
+    }
     FrameType get_type() { return FrameType::ConsecutiveFrame; }
-    std::vector<uint8_t> dump() { return Util::dump_args(m_seq_num, m_data); }
+    optional<std::vector<uint8_t>> dump() { return Util::dump_args(m_seq_num, m_data); }
 
     static std::unique_ptr<Builder> build() {
         return std::make_unique<Builder>();
@@ -118,10 +142,11 @@ private:
 
 class FlowControl : public Frame {
 public:
-    class Builder : public Util::Builder<FlowControl> {
+    class Builder;
+    class Builder : public Util::Builder<FlowControl, Builder> {
     public:
-        Builder() : Util::Builder<FlowControl>() {}
-        Builder(Util::Reader& reader) : Util::Builder<FlowControl>() {
+        Builder() : B() {}
+        Builder(Util::Reader& reader) : B() {
             read(reader, object()->m_status, object()->m_block_size,
                  object()->m_min_separation_time);
         }
@@ -134,20 +159,22 @@ public:
         auto min_separation_time(int min_separation_time) {
             return field(object()->m_min_separation_time, min_separation_time);
         }
-
     protected:
-        using Self = Builder;
+        std::unique_ptr<Builder> self() {
+            return std::unique_ptr<Builder>(this);
+        }
     };
-    FlowControl(Util::Reader& reader, bool& ok) {
-        ok = Util::read_args(reader, m_status, m_block_size,
-                             m_min_separation_time);
+    FlowStatus get_status() {
+        return m_status.get().value();
     }
-    FlowControl(FlowStatus status, int block_size, int min_separation_time)
-        : m_status(status),
-          m_block_size(block_size),
-          m_min_separation_time(min_separation_time) {}
+    uint8_t get_block_size() {
+        return m_block_size.get().value();
+    }
+    uint8_t get_min_separation_time() {
+        return m_min_separation_time.get().value();
+    }
     FrameType get_type() { return FrameType::ConsecutiveFrame; }
-    std::vector<uint8_t> dump() {
+    optional<std::vector<uint8_t>> dump() {
         return Util::dump_args(m_status, m_block_size, m_min_separation_time);
     }
 
