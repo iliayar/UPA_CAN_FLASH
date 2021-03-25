@@ -10,54 +10,159 @@
 
 #include "bytes.h"
 #include "frame.h"
-#include "map.h"
-
-#define ARRAY std::vector<uint8_t>
+#include "objects.h"
 
 namespace Can {
 
+namespace Frame {
 enum class FlowStatus {
     ContinueToSend = 0,
     WaitForAnotherFlowControlMessageBeforeContinuing = 1,
     OverflowAbortTransmission = 2
 };
 
-#define FRAME(type, value, ...) type = value,
-/**
- * Enum class of frame types defined in {{ frame.inl }}
- */
-enum class FrameType {
-#include "frame.inl"
-};
-#undef FRAME
+class SingleFrame : public Frame {
+public:
+    class Builder : public Util::Builder<SingleFrame> {
+    public:
+        Builder() : Util::Builder<SingleFrame>() {}
+        Builder(Util::Reader& reader) : Util::Builder<SingleFrame>() {
+            read(reader, object()->m_len, object()->m_data);
+        }
+        auto len(uint8_t len) { return field(object()->m_len, len); }
+        auto data(std::vector<uint8_t> data) {
+            return field(object()->m_data, data);
+        }
 
-#define TYPE_INT(...) int
-#define TYPE_VEC(...) std::vector<uint8_t>
-#define TYPE_ENUM(type, ...) type
-#define FRAME_FIELD_GETTER(type, name, ...) \
-    TYPE_##type(__VA_ARGS__) get_##name() { return m_##name; }
-#define FRAME_FIELD(type, name, ...) TYPE_##type(__VA_ARGS__) m_##name;
-#define FRAME_CTR_FIELD(type, name, ...) TYPE_##type(__VA_ARGS__) name
-#define FRAME_CTR_FIELD_INIT(_, name, ...) m_##name(name)
-#define FRAME(name, _, ...)                                        \
-    class Frame_##name : public Frame {                            \
-    public:                                                        \
-        Frame_##name(MAP_TUPLE_LIST(FRAME_CTR_FIELD, __VA_ARGS__)) \
-            : MAP_TUPLE_LIST(FRAME_CTR_FIELD_INIT, __VA_ARGS__) {} \
-        FrameType get_type() { return FrameType::name; }           \
-        MAP_TUPLE(FRAME_FIELD_GETTER, __VA_ARGS__)                 \
-        std::vector<uint8_t> dump();                               \
-                                                                   \
-    private:                                                       \
-        MAP_TUPLE(FRAME_FIELD, __VA_ARGS__)                        \
+    protected:
+        using Self = Builder;
     };
-#include "frame.inl"
-#undef FRAME_FIELD_GETTER
-#undef FRAME_FIELD
-#undef FRAME_CTR_FIELD
-#undef FRAME_CTR_FIELD_INIT
-#undef FRAME
-#undef TYPE_INT
-#undef TYPE_VEC
-#undef TYPE_ENUM
+    FrameType get_type() { return FrameType::SingleFrame; }
+    std::vector<uint8_t> dump() { return Util::dump_args(m_len, m_data); }
+
+    static std::unique_ptr<Builder> build() {
+        return std::make_unique<Builder>();
+    }
+    static std::unique_ptr<Builder> build(Util::Reader& reader) {
+        return std::make_unique<Builder>(reader);
+    }
+
+private:
+    Util::IntField<uint8_t, 4> m_len;
+    Util::VecField<64 - 4> m_data;
+};
+
+class FirstFrame : public Frame {
+public:
+    class Builder : public Util::Builder<FirstFrame> {
+    public:
+        Builder() : Util::Builder<FirstFrame>() {}
+        Builder(Util::Reader& reader) : Util::Builder<FirstFrame>() {
+            read(reader, object()->m_len, object()->m_data);
+        }
+        auto len(uint8_t len) { return field(object()->m_len, len); }
+        auto data(std::vector<uint8_t> data) {
+            return field(object()->m_data, data);
+        }
+
+    protected:
+        using Self = Builder;
+    };
+    FrameType get_type() { return FrameType::FirstFrame; }
+    std::vector<uint8_t> dump() { return Util::dump_args(m_len, m_data); }
+
+    static std::unique_ptr<Builder> build() {
+        return std::make_unique<Builder>();
+    }
+    static std::unique_ptr<Builder> build(Util::Reader& reader) {
+        return std::make_unique<Builder>(reader);
+    }
+
+private:
+    Util::IntField<uint16_t, 12> m_len;
+    Util::VecField<64 - 12> m_data;
+};
+
+class ConsecutiveFrame : public Frame {
+public:
+    class Builder : public Util::Builder<ConsecutiveFrame> {
+    public:
+        Builder() : Util::Builder<ConsecutiveFrame>() {}
+        Builder(Util::Reader& reader) : Util::Builder<ConsecutiveFrame>() {
+            read(reader, object()->m_seq_num, object()->m_data);
+        }
+        auto seq_num(uint8_t seq_num) {
+            return field(object()->m_seq_num, seq_num);
+        }
+        auto data(std::vector<uint8_t> data) {
+            return field(object()->m_data, data);
+        }
+
+    protected:
+        using Self = Builder;
+    };
+    FrameType get_type() { return FrameType::ConsecutiveFrame; }
+    std::vector<uint8_t> dump() { return Util::dump_args(m_seq_num, m_data); }
+
+    static std::unique_ptr<Builder> build() {
+        return std::make_unique<Builder>();
+    }
+    static std::unique_ptr<Builder> build(Util::Reader& reader) {
+        return std::make_unique<Builder>(reader);
+    }
+
+private:
+    Util::IntField<uint8_t, 4> m_seq_num;
+    Util::VecField<64 - 4> m_data;
+};
+
+class FlowControl : public Frame {
+public:
+    class Builder : public Util::Builder<FlowControl> {
+    public:
+        Builder() : Util::Builder<FlowControl>() {}
+        Builder(Util::Reader& reader) : Util::Builder<FlowControl>() {
+            read(reader, object()->m_status, object()->m_block_size,
+                 object()->m_min_separation_time);
+        }
+        auto status(FlowStatus status) {
+            return field(object()->m_status, status);
+        }
+        auto block_size(int block_size) {
+            return field(object()->m_block_size, block_size);
+        }
+        auto min_separation_time(int min_separation_time) {
+            return field(object()->m_min_separation_time, min_separation_time);
+        }
+
+    protected:
+        using Self = Builder;
+    };
+    FlowControl(Util::Reader& reader, bool& ok) {
+        ok = Util::read_args(reader, m_status, m_block_size,
+                             m_min_separation_time);
+    }
+    FlowControl(FlowStatus status, int block_size, int min_separation_time)
+        : m_status(status),
+          m_block_size(block_size),
+          m_min_separation_time(min_separation_time) {}
+    FrameType get_type() { return FrameType::ConsecutiveFrame; }
+    std::vector<uint8_t> dump() {
+        return Util::dump_args(m_status, m_block_size, m_min_separation_time);
+    }
+
+    static std::unique_ptr<Builder> build() {
+        return std::make_unique<Builder>();
+    }
+    static std::unique_ptr<Builder> build(Util::Reader& reader) {
+        return std::make_unique<Builder>(reader);
+    }
+
+private:
+    Util::EnumField<FlowStatus, uint8_t, 4> m_status;
+    Util::IntField<uint8_t, 8> m_block_size;
+    Util::IntField<uint8_t, 8> m_min_separation_time;
+};
+
+}  // namespace Frame
 }  // namespace Can

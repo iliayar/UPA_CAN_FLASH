@@ -1,24 +1,23 @@
 #include "bytes.h"
 
 #include <cstdint>
+#include <functional>
 #include <iostream>
 #include <stdexcept>
+
 
 Util::Reader::Reader(std::vector<uint8_t> payload)
     : m_payload(payload), m_offset(0) {}
 
-void Util::Reader::add_offset(int offset) { m_offset += offset; }
-
-std::vector<uint8_t> Util::Reader::read(int offset, int len) {
-    offset += m_offset;
-    if (len + offset > m_payload.size() * 8) {
-        throw std::runtime_error("Len with offset is greater than frame size");
+optional<std::vector<uint8_t>> Util::Reader::read(int len) {
+    if (len + m_offset > m_payload.size() * 8) {
+        return {};
     }
     std::vector<uint8_t> res(BYTES(len), 0);
     int bits_read = 0;
     while (bits_read < len) {
-        int byte_offset = (offset + bits_read) % 8;
-        int byte_num = (offset + bits_read) / 8;
+        int byte_offset = (m_offset + bits_read) % 8;
+        int byte_num = (m_offset + bits_read) / 8;
         uint8_t mask = 0xff >> byte_offset;
         int n = m_payload[byte_num] & mask;
         int to_read = std::min(8 - byte_offset,
@@ -29,46 +28,21 @@ std::vector<uint8_t> Util::Reader::read(int offset, int len) {
 
         bits_read += to_read;
     }
+    m_offset += len;
     return res;
 }
 
-#define READ_N(N)                                                          \
-    uint##N##_t Util::Reader::read_##N(int offset, int len) {              \
-        if (len > N) {                                                     \
-            throw std::runtime_error("Len is greater than size of uint" #N \
-                                     "_t");                                \
-        }                                                                  \
-        std::vector<uint8_t> res_vec = this->read(offset, len);            \
-        while (res_vec.size() < N / 8) {                                   \
-            res_vec.push_back(0);                                          \
-        }                                                                  \
-        uint##N##_t res;                                                   \
-        for (int i = 0; i < N / 8; ++i) {                                  \
-            res <<= 8;                                                     \
-            res |= res_vec[i];                                             \
-        }                                                                  \
-        return res >> (N - len);                                           \
-    }
-READ_N(8)
-READ_N(16)
-READ_N(32)
-READ_N(64)
-#undef READ_N
+Util::Writer::Writer(int size)
+    : m_payload(size, 0), m_offset(0) {}
 
-Util::Writer::Writer(std::vector<uint8_t>& payload)
-    : m_payload(payload), m_offset(0) {}
-
-void Util::Writer::add_offset(int offset) { m_offset += offset; }
-
-void Util::Writer::write(std::vector<uint8_t> data, int offset, int len) {
-    offset += m_offset;
-    if (len + offset > m_payload.size() * 8) {
-        throw std::runtime_error("Len with offset is greater than frame size");
+bool Util::Writer::write(std::vector<uint8_t> data, int len) {
+    if (len + m_offset > m_payload.size() * 8) {
+        return false;
     }
     int bits_wrote = 0;
     while (bits_wrote < len) {
-        int byte_offset = (offset + bits_wrote) % 8;
-        int byte_num = (offset + bits_wrote) / 8;
+        int byte_offset = (m_offset + bits_wrote) % 8;
+        int byte_num = (m_offset + bits_wrote) / 8;
         uint8_t mask = 0xff >> (bits_wrote % 8);
         int n = data[bits_wrote / 8] & mask;
         int to_write = std::min(
@@ -79,24 +53,6 @@ void Util::Writer::write(std::vector<uint8_t> data, int offset, int len) {
 
         bits_wrote += to_write;
     }
+    m_offset += len;
+    return true;
 }
-
-#define WRITE_N(N)                                                         \
-    void Util::Writer::write_##N(uint##N##_t data, int offset, int len) {  \
-        if (len > N) {                                                     \
-            throw std::runtime_error("Len is greater than size of uint" #N \
-                                     "_t");                                \
-        }                                                                  \
-        data <<= (N - len);                                                \
-        std::vector<uint8_t> data_vec(N / 8, 0);                           \
-        for (int i = N / 8 - 1; i >= 0; --i) {                             \
-            data_vec[i] |= data;                                           \
-            data >>= 8;                                                    \
-        }                                                                  \
-        this->write(data_vec, offset, len);                                \
-    }
-WRITE_N(8)
-WRITE_N(16)
-WRITE_N(32)
-WRITE_N(64)
-#undef WRITE_N

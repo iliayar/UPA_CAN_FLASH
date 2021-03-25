@@ -1,12 +1,13 @@
 set(libutil_SRCS
     util.h
     util.cpp
-    map.h
     crc.h
     crc.cpp
     bytes.h
     bytes.cpp
     config.h
+    templates.h
+    objects.h
 )
 
 # Declare the library
