@@ -311,8 +311,6 @@ TEST(testWriter, testFail) {
         Util::Writer writer(2); 
         EXPECT_FALSE(writer.write_int<uint8_t>(0x32, 9));
         EXPECT_FALSE(writer.write_int<uint32_t>(0x334, 40));
-        EXPECT_FALSE(writer.write({0x00}, 10));
-        EXPECT_FALSE(writer.write({0x01, 0x02, 0x03}, 24));
         EXPECT_TRUE(writer.write_int<uint8_t>(0x32, 8));
         EXPECT_FALSE(writer.write_int<uint16_t>(4, 9));
         EXPECT_TRUE(writer.write({0x54}, 8));
