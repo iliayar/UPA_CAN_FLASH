@@ -7,7 +7,6 @@ enum class DataIdentifier { VIN = 0xf190, UPASystemType = 0x200e };
 
 class Data {
 public:
-    class Builder;
     class Builder : public Util::Builder<Data, Builder> {
     protected:
         std::unique_ptr<Builder> self() {

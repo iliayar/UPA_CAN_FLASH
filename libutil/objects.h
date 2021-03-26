@@ -5,8 +5,10 @@
 namespace Util {
 template <typename T>
 struct VarField {
-    VarField(T value, int size) : m_value(value), m_valid(true) {}
-    VarField(int size) : m_value(), m_valid(false) {}
+    VarField(T value, int size) : m_size(size), m_value(value), m_valid(true) {}
+    VarField(int size) : m_size(size), m_valid(false) {}
+    VarField() : m_size(0), m_valid(false) {}
+
     bool write(Writer& writer) {
         if (!m_valid) return false;
         return write_impl(writer, m_value);
@@ -40,7 +42,7 @@ struct VarField {
         m_valid = true;
     }
 
-    virtual int get_size() { return size; }
+    virtual int get_size() { return m_size; }
 
     bool valid() { return m_valid; }
 
@@ -48,7 +50,7 @@ protected:
     virtual optional<T> read_impl(Reader& reader) = 0;
     virtual bool write_impl(Writer& writer, T value) = 0;
 
-    int size = 0;
+    int m_size = 0;
     T m_value;
     bool m_valid = false;
 };
@@ -75,6 +77,7 @@ struct VarVecField : public VarField<std::vector<uint8_t>> {
     VarVecField(std::vector<uint8_t> data, int size)
         : VarField<std::vector<uint8_t>>(data, size) {}
     VarVecField(int size) : VarField<std::vector<uint8_t>>(size) {}
+    VarVecField() : VarField<std::vector<uint8_t>>() {}
 
     VarVecField& operator=(std::vector<uint8_t> value) {
         m_value = value;
@@ -83,23 +86,23 @@ struct VarVecField : public VarField<std::vector<uint8_t>> {
     }
 
     void resize(int size) {
-        this->size = size;
+        m_size = size;
+        if (m_value.size() < size) m_value.resize(size);
     }
 
 protected:
     bool write_impl(Writer& writer, std::vector<uint8_t> value) {
-        return writer.write(value, size);
+        return writer.write(value, m_size);
     }
     optional<std::vector<uint8_t>> read_impl(Reader& reader) {
-        return reader.read(size);
+        return reader.read(m_size);
     }
 };
 
 template <int size>
 struct VecField : public VarVecField {
 public:
-    VecField(std::vector<uint8_t> data)
-        : VarVecField(data, size) {}
+    VecField(std::vector<uint8_t> data) : VarVecField(data, size) {}
     VecField() : VarVecField(size) {}
 };
 
@@ -110,13 +113,15 @@ struct EnumField : public Field<T, size> {
 
     EnumField<T, I, size>& operator=(T value) {
         this->m_value = value;
+        this->m_valid = true;
         return *this;
-    } 
+    }
 
     EnumField<T, I, size>& operator=(I value) {
         this->m_value = static_cast<T>(value);
+        this->m_valid = true;
         return *this;
-    } 
+    }
 
 protected:
     bool write_impl(Writer& writer, T value) {
@@ -165,7 +170,7 @@ protected:
 template <typename... F>
 bool write_args(Writer& writer, F&... args) {
     bool res = true;
-    over_all<F&...>::for_each([&](auto field) { res &= field.write(writer); },
+    over_all<F&...>::for_each([&](auto& field) { res &= field.write(writer); },
                               std::forward<F&>(args)...);
     return res;
 }
@@ -173,7 +178,7 @@ bool write_args(Writer& writer, F&... args) {
 template <typename... F>
 optional<std::vector<uint8_t>> dump_args(F&... args) {
     DynamicWriter writer{};
-    if(!write_args(writer, std::forward<F&>(args)...)) {
+    if (!write_args(writer, std::forward<F&>(args)...)) {
         return {};
     }
     return writer.get_payload();
@@ -183,7 +188,7 @@ template <typename... F>
 bool read_args(Reader& reader, F&... args) {
     bool res = true;
     over_all<F&...>::for_each(
-        [&](auto field) {
+        [&](auto& field) {
             field.read(reader);
             res &= field.valid();
         },
@@ -195,7 +200,7 @@ template <typename R, class Self>
 class Builder {
 public:
     using B = Util::Builder<R, Self>;
-    Builder() { m_object = std::shared_ptr<R>(); }
+    Builder() { m_object = std::make_shared<R>(); }
 
     optional<std::shared_ptr<R>> build() {
         if (!m_valid) {
@@ -214,12 +219,10 @@ protected:
 
     std::shared_ptr<R> object() { return m_object; }
 
-    virtual std::unique_ptr<Self> self() = 0;
-
     template <typename F, typename T>
-    std::unique_ptr<Self> field(F& field, T value) {
+    Self* field(F& field, T value) {
         field = value;
-        return self();
+        return static_cast<Self*>(this);
     }
 
     void fail() { m_valid = false; }

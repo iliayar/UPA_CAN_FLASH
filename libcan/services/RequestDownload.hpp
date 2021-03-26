@@ -34,11 +34,6 @@ public:
             object()->m_max_blocks_number.resize(value->get_memory_size() * 8);
             return field(object()->m_length_format, value);
         }
-
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
-        }
     };
     static auto build() { return std::make_unique<Builder>(); }
     static auto build(Util::Reader& reader) {
@@ -105,11 +100,6 @@ public:
         }
         auto memory_size(std::vector<uint8_t> value) {
             return field(object()->m_memory_size, value);
-        }
-
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
         }
     };
     static auto build() { return std::make_unique<Builder>(); }

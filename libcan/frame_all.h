@@ -34,19 +34,10 @@ public:
         auto data(std::vector<uint8_t> data) {
             return field(object()->m_data, data);
         }
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
-        }
     };
-    uint8_t get_len() {
-        return m_len.get().value();
-    }
-    std::vector<uint8_t> get_data() {
-        return m_data.get().value();
-    }
-    FrameType get_type() { return FrameType::SingleFrame; }
-    optional<std::vector<uint8_t>> dump() { return Util::dump_args(m_len, m_data); }
+    uint8_t get_len() { return m_len.get().value(); }
+    std::vector<uint8_t> get_data() { return m_data.get().value(); }
+    Type get_type() { return Type::SingleFrame; }
 
     static std::unique_ptr<Builder> build() {
         return std::make_unique<Builder>();
@@ -55,9 +46,14 @@ public:
         return std::make_unique<Builder>(reader);
     }
 
+protected:
+    bool dump_impl(Util::Writer& writer) {
+        return Util::write_args(writer, m_len, m_data);
+    }
+
 private:
     Util::IntField<uint8_t, 4> m_len;
-    Util::VecField<64 - 4> m_data;
+    Util::VecField<64 - 4 - 4> m_data;
 };
 
 class FirstFrame : public Frame {
@@ -69,23 +65,14 @@ public:
         Builder(Util::Reader& reader) : B() {
             read(reader, object()->m_len, object()->m_data);
         }
-        auto len(uint8_t len) { return field(object()->m_len, len); }
+        auto len(uint16_t len) { return field(object()->m_len, len); }
         auto data(std::vector<uint8_t> data) {
             return field(object()->m_data, data);
         }
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
-        }
     };
-    uint8_t get_len() {
-        return m_len.get().value();
-    }
-    std::vector<uint8_t> get_data() {
-        return m_data.get().value();
-    }
-    FrameType get_type() { return FrameType::FirstFrame; }
-    optional<std::vector<uint8_t>> dump() { return Util::dump_args(m_len, m_data); }
+    auto get_len() { return m_len.get().value(); }
+    auto get_data() { return m_data.get().value(); }
+    Type get_type() { return Type::FirstFrame; }
 
     static std::unique_ptr<Builder> build() {
         return std::make_unique<Builder>();
@@ -94,9 +81,14 @@ public:
         return std::make_unique<Builder>(reader);
     }
 
+protected:
+    bool dump_impl(Util::Writer& writer) {
+        return Util::write_args(writer, m_len, m_data);
+    }
+
 private:
     Util::IntField<uint16_t, 12> m_len;
-    Util::VecField<64 - 12> m_data;
+    Util::VecField<64 - 12 - 4> m_data;
 };
 
 class ConsecutiveFrame : public Frame {
@@ -114,19 +106,10 @@ public:
         auto data(std::vector<uint8_t> data) {
             return field(object()->m_data, data);
         }
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
-        }
     };
-    uint8_t get_seq_num() {
-        return m_seq_num.get().value();
-    }
-    std::vector<uint8_t> get_data() {
-        return m_data.get().value();
-    }
-    FrameType get_type() { return FrameType::ConsecutiveFrame; }
-    optional<std::vector<uint8_t>> dump() { return Util::dump_args(m_seq_num, m_data); }
+    uint8_t get_seq_num() { return m_seq_num.get().value(); }
+    std::vector<uint8_t> get_data() { return m_data.get().value(); }
+    Type get_type() { return Type::ConsecutiveFrame; }
 
     static std::unique_ptr<Builder> build() {
         return std::make_unique<Builder>();
@@ -135,9 +118,14 @@ public:
         return std::make_unique<Builder>(reader);
     }
 
+protected:
+    bool dump_impl(Util::Writer& writer) {
+        return Util::write_args(writer, m_seq_num, m_data);
+    }
+
 private:
     Util::IntField<uint8_t, 4> m_seq_num;
-    Util::VecField<64 - 4> m_data;
+    Util::VecField<64 - 4 - 4> m_data;
 };
 
 class FlowControl : public Frame {
@@ -159,30 +147,24 @@ public:
         auto min_separation_time(int min_separation_time) {
             return field(object()->m_min_separation_time, min_separation_time);
         }
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
-        }
     };
-    FlowStatus get_status() {
-        return m_status.get().value();
-    }
-    uint8_t get_block_size() {
-        return m_block_size.get().value();
-    }
+    FlowStatus get_status() { return m_status.get().value(); }
+    uint8_t get_block_size() { return m_block_size.get().value(); }
     uint8_t get_min_separation_time() {
         return m_min_separation_time.get().value();
     }
-    FrameType get_type() { return FrameType::ConsecutiveFrame; }
-    optional<std::vector<uint8_t>> dump() {
-        return Util::dump_args(m_status, m_block_size, m_min_separation_time);
-    }
+    Type get_type() { return Type::FlowControl; }
 
     static std::unique_ptr<Builder> build() {
         return std::make_unique<Builder>();
     }
     static std::unique_ptr<Builder> build(Util::Reader& reader) {
         return std::make_unique<Builder>(reader);
+    }
+
+protected:
+    bool dump_impl(Util::Writer& writer) {
+        return Util::write_args(writer, m_status, m_block_size, m_min_separation_time);
     }
 
 private:

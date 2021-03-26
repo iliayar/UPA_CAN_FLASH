@@ -18,11 +18,6 @@ public:
         auto block_counter(uint16_t value) {
             return field(object()->m_block_counter, value);
         }
-
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
-        }
     };
     static auto build() { return std::make_unique<Builder>(); }
     static auto build(Util::Reader& reader) {
@@ -60,11 +55,6 @@ public:
         auto data(std::vector<uint8_t> value) {
             object()->m_data.resize(value.size()*8);
             return field(object()->m_data, value);
-        }
-
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
         }
     };
     static auto build() { return std::make_unique<Builder>(); }

@@ -1,16 +1,17 @@
 #include "task.h"
-#include "service_all.h"
-#include "util.h"
 
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
 
+#include "service_all.h"
+#include "util.h"
+
 using namespace Can;
 
-std::shared_ptr<Can::ServiceResponse> Can::AsyncTask::call_imp(
-    std::shared_ptr<Can::ServiceRequest> request) {
+std::shared_ptr<Can::ServiceResponse::ServiceResponse> Can::AsyncTask::call_imp(
+    std::shared_ptr<Can::ServiceRequest::ServiceRequest> request) {
     DEBUG(info, "task");
     while (true) {
         {
@@ -29,10 +30,11 @@ std::shared_ptr<Can::ServiceResponse> Can::AsyncTask::call_imp(
             std::unique_lock<std::mutex> lock(m_mutex);
             if (m_response != nullptr) {
                 DEBUG(info, "task get response");
-                std::shared_ptr<Can::ServiceResponse> response = m_response;
+                std::shared_ptr<Can::ServiceResponse::ServiceResponse>
+                    response = m_response;
                 if (response->get_type() ==
-                    Can::ServiceResponseType::Negative) {
-                    if (static_cast<Can::ServiceResponse_Negative*>(
+                    Can::ServiceResponse::Type::Negative) {
+                    if (static_cast<Can::ServiceResponse::Negative*>(
                             response.get())
                             ->get_service() != request->get_type()) {
                         m_response = nullptr;
@@ -40,7 +42,7 @@ std::shared_ptr<Can::ServiceResponse> Can::AsyncTask::call_imp(
                         m_logger->warning("Invalid error service code");
                         continue;
                     }
-                    if (static_cast<Can::ServiceResponse_Negative*>(
+                    if (static_cast<Can::ServiceResponse::Negative*>(
                             response.get())
                             ->get_code() == 0x78) {
                         m_response = nullptr;
@@ -64,20 +66,24 @@ std::shared_ptr<Can::ServiceResponse> Can::AsyncTask::call_imp(
     }
 }
 
-std::shared_ptr<ServiceRequest> ReadWriteTask::fetch_request() {
+optional<std::shared_ptr<ServiceRequest::ServiceRequest>>
+ReadWriteTask::fetch_request() {
     m_step++;
     switch (m_step - 1) {
         case 0:
-            return ServiceRequest_ReadDataByIdentifier::build()
+            return ServiceRequest::ReadDataByIdentifier::build()
                 ->id(DataIdentifier::UPASystemType)
                 ->build();
         case 2:
-            return ServiceRequest_WriteDataByIdentifier::build()
-                ->data(new Data(DataIdentifier::VIN,
-                                ::Util::str_to_vec("HELLO ANYBODY ...")))
+            return ServiceRequest::WriteDataByIdentifier::build()
+                ->data(Data::build()
+                           ->type(DataIdentifier::VIN)
+                           ->value(Util::str_to_vec("12345678901234567"))
+                           ->build()
+                           .value())  // FIXME
                 ->build();
         case 4:
-            return ServiceRequest_ReadDataByIdentifier::build()
+            return ServiceRequest::ReadDataByIdentifier::build()
                 ->id(DataIdentifier::VIN)
                 ->build();
         default:
@@ -86,11 +92,12 @@ std::shared_ptr<ServiceRequest> ReadWriteTask::fetch_request() {
     }
 }
 
-void ReadWriteTask::push_response(std::shared_ptr<ServiceResponse> response) {
+void ReadWriteTask::push_response(
+    std::shared_ptr<ServiceResponse::ServiceResponse> response) {
     m_step++;
     switch (m_step - 1) {
         case 1: {
-            uint8_t type = static_cast<ServiceResponse_ReadDataByIdentifier*>(
+            uint8_t type = static_cast<ServiceResponse::ReadDataByIdentifier*>(
                                response.get())
                                ->get_data()
                                ->get_value()[0];
@@ -102,7 +109,7 @@ void ReadWriteTask::push_response(std::shared_ptr<ServiceResponse> response) {
         }
         case 5: {
             std::string VIN = ::Util::vec_to_str(
-                static_cast<ServiceResponse_ReadDataByIdentifier*>(
+                static_cast<ServiceResponse::ReadDataByIdentifier*>(
                     response.get())
                     ->get_data()
                     ->get_value());
@@ -116,13 +123,14 @@ void ReadWriteTask::push_response(std::shared_ptr<ServiceResponse> response) {
 }
 
 void ReadWriteThreadedTask::task() {
-    std::shared_ptr<ServiceResponse> response;
+    std::shared_ptr<ServiceResponse::ServiceResponse> response;
     m_logger->info("Reading UPASystemType");
-    response = call(ServiceRequest_ReadDataByIdentifier::build()
+    response = call(ServiceRequest::ReadDataByIdentifier::build()
                         ->id(DataIdentifier::UPASystemType)
-                        ->build());
+                        ->build()
+                        .value());
     uint8_t type =
-        static_cast<ServiceResponse_ReadDataByIdentifier*>(response.get())
+        std::static_pointer_cast<ServiceResponse::ReadDataByIdentifier>(response)
             ->get_data()
             ->get_value()[0];
     std::stringstream ss;
@@ -130,17 +138,22 @@ void ReadWriteThreadedTask::task() {
     m_logger->info(ss.str());
 
     m_logger->info("Writing VIN");
-    call(ServiceRequest_WriteDataByIdentifier::build()
-             ->data(new Data(DataIdentifier::VIN,
-                             ::Util::str_to_vec("HELLO ANYBODY ...")))
-             ->build());
+    call(ServiceRequest::WriteDataByIdentifier::build()
+             ->data(Data::build()
+                        ->type(DataIdentifier::VIN)
+                        ->value(Util::str_to_vec("12345678901234567"))
+                        ->build()
+                        .value())
+             ->build()
+             .value());
 
     m_logger->info("Reading VIN");
-    response = call(ServiceRequest_ReadDataByIdentifier::build()
+    response = call(ServiceRequest::ReadDataByIdentifier::build()
                         ->id(DataIdentifier::VIN)
-                        ->build());
+                        ->build()
+                        .value());
     std::string VIN = ::Util::vec_to_str(
-        static_cast<ServiceResponse_ReadDataByIdentifier*>(response.get())
+        std::static_pointer_cast<ServiceResponse::ReadDataByIdentifier>(response)
             ->get_data()
             ->get_value());
     m_logger->info("VIN = " + VIN);

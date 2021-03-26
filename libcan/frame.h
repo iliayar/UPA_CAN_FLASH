@@ -21,7 +21,7 @@ namespace Frame {
 /**
  * Enum class of frame types
  */
-enum class FrameType {
+enum class Type {
     SingleFrame = 0x00,
     FirstFrame = 0x01,
     ConsecutiveFrame = 0x02,
@@ -34,23 +34,33 @@ public:
     /**
      * @return enum type of frame
      */
-    virtual FrameType get_type() = 0;
+    virtual Type get_type() = 0;
 
     /**
      * Converts frame to raw bytes
      * @return 8 bytes representation of frame
      */
-    virtual optional<std::vector<uint8_t>> dump() = 0;
+    optional<std::vector<uint8_t>> dump() {
+        Util::Writer writer(8);
+        writer.write_int<uint8_t>(static_cast<uint8_t>(get_type()), 4);
+        if(!dump_impl(writer)) {
+            return {};
+        }
+        return writer.get_payload();
+    }
+
+protected:
+    virtual bool dump_impl(Util::Writer&) = 0;
 };
 
-class FrameFactory {
+class Factory {
 public:
     /**
      * Takes an 8 bytes vector to produce frame from
      * The one can be fetched using
      * @param data data to parse frame from
      */
-    FrameFactory(std::vector<uint8_t> data);
+    Factory(std::vector<uint8_t> data);
 
     /**
      * @return optional of frame parsed from passed vector
@@ -62,7 +72,7 @@ public:
 private:
 
     Util::Reader m_reader;
-    Util::EnumField<FrameType, uint8_t, 4> m_type;
+    Util::EnumField<Type, uint8_t, 4> m_type;
 };
 }  // namespace Frame
 

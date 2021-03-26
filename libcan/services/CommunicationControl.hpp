@@ -23,11 +23,6 @@ public:
         auto subfunction(Subfunction value) {
             return field(object()->m_subfunction, value);
         }
-
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
-        }
     };
     static auto build() { return std::make_unique<Builder>(); }
     static auto build(Util::Reader& reader) {
@@ -66,11 +61,6 @@ public:
         }
         auto communication_type(std::shared_ptr<CommunicationType> value) {
             return field(object()->m_communication_type, value);
-        }
-
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
         }
     };
     static auto build() { return std::make_unique<Builder>(); }

@@ -2,9 +2,7 @@
 
 #include <cstdint>
 #include <functional>
-#include <iostream>
 #include <stdexcept>
-
 
 Util::Reader::Reader(std::vector<uint8_t> payload)
     : m_payload(payload), m_offset(0) {}
@@ -36,6 +34,9 @@ Util::Writer::Writer(int size)
     : m_payload(size, 0), m_offset(0) {}
 
 bool Util::Writer::write(std::vector<uint8_t> data, int len) {
+    while(data.size()*8 < len) {
+        data.push_back(0);
+    }
     if (len + m_offset > m_payload.size() * 8) {
         return false;
     }

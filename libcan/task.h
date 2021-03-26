@@ -30,7 +30,7 @@ public:
     /**
      * @return service request to send to ECU
      */
-    virtual std::shared_ptr<ServiceRequest::ServiceRequest> fetch_request() = 0;
+    virtual optional<std::shared_ptr<ServiceRequest::ServiceRequest>> fetch_request() = 0;
 
     /**
      * @param service response from ECU to process in task
@@ -52,7 +52,7 @@ public:
  */
 class ReadWriteTask : public Task {
 public:
-    std::shared_ptr<ServiceRequest::ServiceRequest> fetch_request();
+    optional<std::shared_ptr<ServiceRequest::ServiceRequest>> fetch_request();
     void push_response(std::shared_ptr<ServiceResponse::ServiceResponse> response);
 
     bool is_completed();
@@ -76,7 +76,7 @@ public:
           m_thread(&AsyncTask::task_imp, this),
           m_response(nullptr) {}
 
-    std::shared_ptr<ServiceRequest::ServiceRequest> fetch_request() {
+    optional<std::shared_ptr<ServiceRequest::ServiceRequest>> fetch_request() {
         std::this_thread::sleep_for(
             static_cast<std::chrono::milliseconds>(DELAY));
         DEBUG(info, "task");
@@ -89,9 +89,9 @@ public:
                     m_request = nullptr;
                     return request;
                 }
-                if (m_wait_response) return nullptr;
+                if (m_wait_response) return {};
             }
-            if (is_completed()) return nullptr;
+            if (is_completed()) return {};
         }
     }
 

@@ -15,13 +15,8 @@ public:
         Builder(Util::Reader& reader) : B() {
             read(reader, object()->m_id);
         }
-        auto data(DataIdentifier value) {
+        auto id(DataIdentifier value) {
             return field(object()->m_id, value);
-        }
-
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
         }
     };
     static auto build() { return std::make_unique<Builder>(); }
@@ -54,13 +49,8 @@ public:
         Builder(Util::Reader& reader) : B() {
             read(reader, object()->m_data);
         }
-        auto id(std::shared_ptr<Data> value) {
+        auto data(std::shared_ptr<Data> value) {
             return field(object()->m_data, value);
-        }
-
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
         }
     };
     static auto build() { return std::make_unique<Builder>(); }

@@ -37,17 +37,12 @@ public:
         Builder(Util::Reader& reader) : B() {
             read(reader, object()->m_serice, object()->m_code);
         }
-        auto service(Type value) {
+        auto service(Can::ServiceRequest::Type value) {
             return field(object()->m_serice, value);
         }
 
         auto code(uint8_t value) {
             return field(object()->m_code, value);
-        }
-
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
         }
     };
     static auto build() { return std::make_unique<Builder>(); }
@@ -67,7 +62,7 @@ public:
 
 private:
     Util::EnumField<Type, uint8_t, 8> m_type;
-    Util::EnumField<Type, uint8_t, 8> m_serice;
+    Util::EnumField<Can::ServiceRequest::Type, uint8_t, 8> m_serice;
     Util::IntField<uint8_t, 8> m_code;
 };
 }  // namespace ServiceResponse

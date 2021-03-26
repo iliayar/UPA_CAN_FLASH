@@ -15,25 +15,25 @@
 
 using namespace Can::Frame;
 
-FrameFactory::FrameFactory(std::vector<uint8_t> frame)
+Factory::Factory(std::vector<uint8_t> frame)
     : m_reader(frame) {}
 
-optional<std::shared_ptr<Frame>> FrameFactory::get() {
+optional<std::shared_ptr<Frame>> Factory::get() {
     m_type.read(m_reader);
     auto maybe_frame_type = m_type.get();
     if(!maybe_frame_type) {
         return {};
     }
-    FrameType frame_type = maybe_frame_type.value();
+    Type frame_type = maybe_frame_type.value();
 
     switch (frame_type) {
-    case FrameType::SingleFrame:       
+    case Type::SingleFrame:       
         return SingleFrame::build(m_reader)->build();
-    case FrameType::FirstFrame:       
+    case Type::FirstFrame:       
         return FirstFrame::build(m_reader)->build();
-    case FrameType::ConsecutiveFrame:       
+    case Type::ConsecutiveFrame:       
         return ConsecutiveFrame::build(m_reader)->build();
-    case FrameType::FlowControl:       
+    case Type::FlowControl:       
         return FlowControl::build(m_reader)->build();
     }
     return {};

@@ -29,44 +29,68 @@ TEST(testHex, testStringReader) {
 :00000001FF\n\
 ");
     Hex::HexReader reader(src);
-    std::shared_ptr<Hex::HexLine> line;
+    std::shared_ptr<Hex::Line::Line> line;
 
-    line = reader.read_line();
-    EXPECT_EQ(line->get_type(), Hex::HexLineType::ExtendLinearAddress);
+    {
+        auto maybe_line = reader.read_line();
+        EXPECT_TRUE(maybe_line);
+        line = maybe_line.value();
+    }
+    EXPECT_EQ(line->get_type(), Hex::Line::Type::ExtendLinearAddress);
     EXPECT_EQ(
-        static_cast<Hex::ExtendLinearAddressLine*>(line.get())->get_address(),
+        std::static_pointer_cast<Hex::Line::ExtendLinearAddress>(line)->get_address(),
         0x0800);
 
-    line = reader.read_line();
-    EXPECT_EQ(line->get_type(), Hex::HexLineType::Data);
-    EXPECT_EQ(static_cast<Hex::DataLine*>(line.get())->get_address(), 0x0000);
+    {
+        auto maybe_line = reader.read_line();
+        EXPECT_TRUE(maybe_line);
+        line = maybe_line.value();
+    }
+    EXPECT_EQ(line->get_type(), Hex::Line::Type::Data);
+    EXPECT_EQ(std::static_pointer_cast<Hex::Line::Data>(line)->get_address(), 0x0000);
     EXPECT_EQ(
-        static_cast<Hex::DataLine*>(line.get())->get_data(),
+        std::static_pointer_cast<Hex::Line::Data>(line)->get_data(),
         std::vector<uint8_t>({0x50, 0x22, 0x00, 0x20, 0x69, 0x47, 0x01, 0x08,
                               0x71, 0x47, 0x01, 0x08, 0x73, 0x47, 0x01, 0x08}));
 
-    line = reader.read_line();
-    EXPECT_EQ(line->get_type(), Hex::HexLineType::Data);
-    EXPECT_EQ(static_cast<Hex::DataLine*>(line.get())->get_address(), 0xfff0);
+    {
+        auto maybe_line = reader.read_line();
+        EXPECT_TRUE(maybe_line);
+        line = maybe_line.value();
+    }
+    EXPECT_EQ(line->get_type(), Hex::Line::Type::Data);
+    EXPECT_EQ(std::static_pointer_cast<Hex::Line::Data>(line)->get_address(), 0xfff0);
     EXPECT_EQ(
-        static_cast<Hex::DataLine*>(line.get())->get_data(),
+        std::static_pointer_cast<Hex::Line::Data>(line)->get_data(),
         std::vector<uint8_t>({0x21, 0xD1, 0x9B, 0x4B, 0x80, 0x33, 0x1A, 0x7F,
                               0x90, 0x06, 0x1C, 0xD4, 0xD9, 0x7F, 0x88, 0x06}));
 
-    line = reader.read_line();
-    EXPECT_EQ(line->get_type(), Hex::HexLineType::ExtendLinearAddress);
+    {
+        auto maybe_line = reader.read_line();
+        EXPECT_TRUE(maybe_line);
+        line = maybe_line.value();
+    }
+    EXPECT_EQ(line->get_type(), Hex::Line::Type::ExtendLinearAddress);
     EXPECT_EQ(
-        static_cast<Hex::ExtendLinearAddressLine*>(line.get())->get_address(),
+        std::static_pointer_cast<Hex::Line::ExtendLinearAddress>(line)->get_address(),
         0x0801);
 
-    line = reader.read_line();
-    EXPECT_EQ(line->get_type(), Hex::HexLineType::StartLinearAddress);
+    {
+        auto maybe_line = reader.read_line();
+        EXPECT_TRUE(maybe_line);
+        line = maybe_line.value();
+    }
+    EXPECT_EQ(line->get_type(), Hex::Line::Type::StartLinearAddress);
     EXPECT_EQ(
-        static_cast<Hex::StartLinearAddressLine*>(line.get())->get_address(),
+        std::static_pointer_cast<Hex::Line::StartLinearAddress>(line)->get_address(),
         0x080000ed);
 
-    line = reader.read_line();
-    EXPECT_EQ(line->get_type(), Hex::HexLineType::EndOfFile);
+    {
+        auto maybe_line = reader.read_line();
+        EXPECT_TRUE(maybe_line);
+        line = maybe_line.value();
+    }
+    EXPECT_EQ(line->get_type(), Hex::Line::Type::EndOfFile);
 
     EXPECT_EQ(reader.is_eof(), true);
 }

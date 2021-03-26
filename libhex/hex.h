@@ -10,11 +10,19 @@
 #include <vector>
 #include <memory>
 
-#include "map.h"
+#include <experimental/optional>
+
+using std::experimental::optional;
 
 namespace Hex {
 
-enum class HexLineType {
+
+/**
+ * Generates HEX line classes
+ */
+
+namespace Line {
+enum class Type {
     Data = 0x00,
     EndOfFile = 0x01,
     ExtendSegmentAddress = 0x02,
@@ -26,52 +34,77 @@ enum class HexLineType {
 /**
  * Class represent single line in HEX file
  */
-class HexLine {
+class Line {
 public:
-
     /**
      * @return type of single HEX file line
      */
-    virtual HexLineType get_type() = 0;
+    virtual Type get_type() = 0;
+};
+class Data : public Line {
+public:
+    Data(std::vector<uint8_t> data, uint16_t address)
+        : m_data(data), m_address(address) {}
+    Type get_type() override { return Type::Data; }
+    std::vector<uint8_t> get_data() { return m_data; }
+    uint16_t get_address() { return m_address; }
+
+private:
+    std::vector<uint8_t> m_data;
+    uint16_t m_address;
 };
 
-/**
- * Generates HEX line classes
- */
-#define HEXLINE_FIELD_GETTER(type, name) \
-    type get_##name() { return m_##name; }
-#define HEXLINE_FIELD(type, name) type m_##name;
-#define HEXLINE_CTR_FIELD(type, name) type name
-#define HEXLINE_CTR_FIELD_INIT(_, name) m_##name(name)
-#define HEXLINE_CLASS_EMPTY(name)                            \
-    class name##Line : public HexLine {                      \
-    public:                                                  \
-	name##Line() {}                                      \
-	HexLineType get_type() { return HexLineType::name; } \
-    }
-#define HEXLINE_CLASS(name, ...)                                     \
-    class name##Line : public HexLine {                              \
-    public:                                                          \
-	name##Line(MAP_TUPLE_LIST(HEXLINE_CTR_FIELD, __VA_ARGS__))   \
-	    : MAP_TUPLE_LIST(HEXLINE_CTR_FIELD_INIT, __VA_ARGS__) {} \
-	HexLineType get_type() { return HexLineType::name; }         \
-	MAP_TUPLE(HEXLINE_FIELD_GETTER, __VA_ARGS__)                 \
-    private:                                                         \
-	MAP_TUPLE(HEXLINE_FIELD, __VA_ARGS__)                        \
-    }
+class EndOfFile : public Line {
+public:
+    EndOfFile() {}
+    Type get_type() override { return Type::EndOfFile; }
+};
 
-HEXLINE_CLASS(Data, (std::vector<uint8_t>, data), (uint16_t, address));
-HEXLINE_CLASS_EMPTY(EndOfFile);
-HEXLINE_CLASS(ExtendSegmentAddress, (uint16_t, address));
-HEXLINE_CLASS(StartSegmentAddress, (uint32_t, address));
-HEXLINE_CLASS(ExtendLinearAddress, (uint16_t, address));
-HEXLINE_CLASS(StartLinearAddress, (uint32_t, address));
-#undef HEXLINE_FIELD_GETTER
-#undef HEXLINE_FIELD
-#undef HEXLINE_CTR_FIELD
-#undef HEXLINE_CTR_FIELD_INIT
-#undef HEXLINE_CLASS
-#undef HEXLINE_CLASS_EMPTY
+class ExtendSegmentAddress : public Line {
+public:
+    ExtendSegmentAddress(uint16_t address)
+        : m_address(address) {}
+    Type get_type() override { return Type::ExtendSegmentAddress; }
+    uint16_t get_address() { return m_address; }
+
+private:
+    uint16_t m_address;
+};
+
+class StartSegmentAddress : public Line {
+public:
+    StartSegmentAddress(uint32_t address)
+        : m_address(address) {}
+    Type get_type() override { return Type::ExtendSegmentAddress; }
+    uint32_t get_address() { return m_address; }
+
+private:
+    uint32_t m_address;
+};
+
+class ExtendLinearAddress : public Line {
+public:
+    ExtendLinearAddress(uint16_t address)
+        : m_address(address) {}
+    Type get_type() override { return Type::ExtendLinearAddress; }
+    uint16_t get_address() { return m_address; }
+
+private:
+    uint16_t m_address;
+};
+
+class StartLinearAddress : public Line {
+public:
+    StartLinearAddress(uint32_t address)
+        : m_address(address) {}
+    Type get_type() override { return Type::StartLinearAddress; }
+    uint32_t get_address() { return m_address; }
+
+private:
+    uint32_t m_address;
+};
+
+}  // namespace Line
 
 /**
  * @interface
@@ -80,7 +113,6 @@ HEXLINE_CLASS(StartLinearAddress, (uint32_t, address));
  */
 class Source {
 public:
-
     /**
      * @return single char at current position
      */
@@ -97,7 +129,6 @@ public:
      */
     virtual bool is_eof() = 0;
 };
-
 
 /**
  * Implementation pf Source interface
@@ -151,7 +182,7 @@ public:
     /**
      * @return next line of HEX file
      */
-    std::shared_ptr<HexLine> read_line();
+    optional<std::shared_ptr<Line::Line>> read_line();
 
     /**
      * @return true if there is and EOF of provided Source
@@ -189,7 +220,7 @@ struct HexInfo {
  * @param HEX file reader
  * @return HEX file info
  */
-HexInfo read_hex_info(HexReader& reader);
+optional<HexInfo> read_hex_info(HexReader& reader);
 
 std::vector<uint8_t> str_to_bytes(std::string str);
 

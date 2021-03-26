@@ -18,7 +18,9 @@ TEST(testHexCRC, testHexCRC) {
 :0400000508002CEDD6\n\
 :00000001FF\n";
     Hex::HexReader reader(std::make_shared<Hex::StringSource>(hex));
-    Hex::HexInfo info = Hex::read_hex_info(reader);
+    auto maybe_info = Hex::read_hex_info(reader);
+    EXPECT_TRUE(maybe_info);
+    Hex::HexInfo info = maybe_info.value();
     EXPECT_EQ(info.size, 4);
     EXPECT_EQ(info.crc, 0xC444);
     EXPECT_EQ(info.start_addr, 0x08005170);
@@ -37,12 +39,14 @@ TEST(testHecCTC, testReadingData) {
 :00000001FF\n";
     Hex::HexReader reader(std::make_shared<Hex::StringSource>(hex));
     while (!reader.is_eof()) {
-        std::shared_ptr<Hex::HexLine >line = reader.read_line();
-        if (line->get_type() == Hex::HexLineType::Data ||
-            line->get_type() == Hex::HexLineType::EndOfFile) {
+        auto maybe_line = reader.read_line();
+        EXPECT_TRUE(maybe_line);
+        std::shared_ptr<Hex::Line::Line> line = maybe_line.value();
+        if (line->get_type() == Hex::Line::Type::Data ||
+            line->get_type() == Hex::Line::Type::EndOfFile) {
             std::vector<uint8_t> line_data;
-            if (line->get_type() == Hex::HexLineType::Data) {
-                line_data = static_cast<Hex::DataLine *>(line.get())->get_data();
+            if (line->get_type() == Hex::Line::Type::Data) {
+                line_data = std::static_pointer_cast<Hex::Line::Data>(line)->get_data();
             } else {
                 line_data = {data[i-1]};
                 data.resize(i);

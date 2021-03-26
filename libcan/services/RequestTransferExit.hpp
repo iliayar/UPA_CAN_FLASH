@@ -18,11 +18,6 @@ public:
         auto crc(uint16_t value) {
             return field(object()->m_crc, value);
         }
-
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
-        }
     };
     static auto build() { return std::make_unique<Builder>(); }
     static auto build(Util::Reader& reader) {
@@ -56,11 +51,6 @@ public:
         }
         auto crc(uint16_t value) {
             return field(object()->m_crc, value);
-        }
-
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
         }
     };
     static auto build() { return std::make_unique<Builder>(); }

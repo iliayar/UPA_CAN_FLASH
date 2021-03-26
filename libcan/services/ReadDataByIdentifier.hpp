@@ -18,11 +18,6 @@ public:
         auto data(std::shared_ptr<Data> value) {
             return field(object()->m_data, value);
         }
-
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
-        }
     };
     static auto build() { return std::make_unique<Builder>(); }
     static auto build(Util::Reader& reader) {
@@ -55,13 +50,8 @@ public:
         Builder(Util::Reader& reader) : B() {
             read(reader, object()->m_id);
         }
-        auto id(uint16_t value) {
+        auto id(DataIdentifier value) {
             return field(object()->m_id, value);
-        }
-
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
         }
     };
     static auto build() { return std::make_unique<Builder>(); }

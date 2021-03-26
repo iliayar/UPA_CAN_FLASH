@@ -1,4 +1,9 @@
-file(GLOB SRCS *.cpp)
+# file(GLOB SRCS *.cpp)
+set(SRCS
+  main.cpp
+  testcrypto.cpp
+  testframe.cpp
+  )
 
 ADD_EXECUTABLE(testcan ${SRCS})
 

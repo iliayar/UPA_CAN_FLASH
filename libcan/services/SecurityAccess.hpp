@@ -25,11 +25,6 @@ public:
             return field(object()->m_subfunction, value);
         }
         auto seed(uint32_t value) { return field(object()->m_seed, value); }
-
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
-        }
     };
     static auto build() { return std::make_unique<Builder>(); }
     static auto build(Util::Reader& reader) {
@@ -73,11 +68,6 @@ public:
             return field(object()->m_seed_par, value);
         }
         auto ket(uint32_t value) { return field(object()->m_key, value); }
-
-    protected:
-        std::unique_ptr<Builder> self() {
-            return std::unique_ptr<Builder>(this);
-        }
     };
     static auto build() { return std::make_unique<Builder>(); }
     static auto build(Util::Reader& reader) {

@@ -184,8 +184,8 @@ public:
 private:
     void update_task();
 
-    Worker* m_worker;
-    Task* m_task;
+    optional<std::shared_ptr<Worker>> m_worker;
+    optional<std::shared_ptr<Task>> m_task;
     Logger* m_logger;
 };
 
