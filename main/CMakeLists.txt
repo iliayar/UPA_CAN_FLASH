@@ -10,6 +10,9 @@ set(Main_SRCS
     flash.cpp
     qcommunicator.h
     qcommunicator.cpp
+    configure_task/task.h
+    configure_task/fields.h
+    configure_task/task.cpp
 )
 
 add_compile_definitions(APP_VERSION="${APP_VERSION}")

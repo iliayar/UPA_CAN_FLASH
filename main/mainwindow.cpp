@@ -36,6 +36,7 @@
 #include "qtask.h"
 #include "task.h"
 #include "security.h"
+#include "configure_task/task.h"
 
 #ifdef __MINGW32__
 #define CAN_PLUGINS                                         \
@@ -278,6 +279,7 @@ void MainWindow::create_layout(QWidget* root) {
 
     tasks_list->addItem("Flash");
     tasks_list->addItem("Test");
+    tasks_list->addItem("Configuration");
 
     bitrate_list->addItem("125000");
     bitrate_list->addItem("250000");
@@ -514,6 +516,10 @@ void MainWindow::start_task() {
     } else if (task_name == "Test") {
         m_logger->info("Starting task " + task_name.toStdString());
         emit set_task(std::make_shared<QTestTask>(
+            std::make_shared<QLogger>(m_logger_worker)));
+    } else if (task_name == "Configuration") {
+        m_logger->info("Starting task " + task_name.toStdString());
+        emit set_task(std::make_shared<ConfigurationTask>(
             std::make_shared<QLogger>(m_logger_worker)));
     }
 }
