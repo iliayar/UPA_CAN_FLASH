@@ -48,6 +48,8 @@ public:
     }
 
     Type get_type() { return m_type.get().value(); }
+    auto get_length_format() { return m_length_format.get().value(); }
+    auto get_max_blocks_number() { return m_max_blocks_number.get().value(); }
 
 private:
     Util::EnumField<Type, uint8_t, 8> m_type = Type::RequestDownload;

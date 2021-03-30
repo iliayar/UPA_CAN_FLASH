@@ -6,8 +6,10 @@
 
 TEST(testService, testData) {
     {
-        Can::Data* data =
-            Can::DataFactory(std::vector<uint8_t>({0x20, 0x0e, 0x03})).get();
+        Util::Reader reader({0x20, 0x0e, 0x03});
+        auto maybe_data = Can::Data::build(reader)->build();
+        EXPECT_TRUE(maybe_data);
+        auto data = maybe_data.value();
         EXPECT_EQ(data->get_type(), Can::DataIdentifier::UPASystemType);
         EXPECT_EQ(data->get_value(), std::vector<uint8_t>({0x03}));
     }
@@ -15,66 +17,108 @@ TEST(testService, testData) {
 
 TEST(testService, testServiceRequest) {
     {
-        Can::ServiceRequest_ReadDataByIdentifier request(
-            Can::DataIdentifier::VIN);
+        auto maybe_request = Can::ServiceRequest::ReadDataByIdentifier::build()
+                                 ->id(Can::DataIdentifier::VIN)
+                                 ->build();
+        EXPECT_TRUE(maybe_request);
+        auto request = maybe_request.value();
         std::vector<uint8_t> res = {0x22, 0xf1, 0x90};
-        EXPECT_EQ(res, request.dump());
+        EXPECT_EQ(res, request->dump());
     }
 
     {
-        Can::ServiceRequest_WriteDataByIdentifier request(new Can::Data(
-            Can::DataIdentifier::VIN, std::vector<uint8_t>(17, 0x41)));
+        auto maybe_data = Can::Data::build()
+                              ->type(Can::DataIdentifier::VIN)
+                              ->value(std::vector<uint8_t>(17, 0x41))
+                              ->build();
+        EXPECT_TRUE(maybe_data);
+        auto data = maybe_data.value();
+        auto maybe_request = Can::ServiceRequest::WriteDataByIdentifier::build()
+                                 ->data(data)
+                                 ->build();
+        EXPECT_TRUE(maybe_request);
+        auto request = maybe_request.value();
         std::vector<uint8_t> res = {0x2e, 0xf1, 0x90};
         res.resize(3 + 17, 0x41);
-        EXPECT_EQ(res, request.dump());
+        EXPECT_EQ(res, request->dump());
     }
     {
-        Can::ServiceRequest_SecurityAccess request(
-            Can::SecurityAccess_SubfunctionType::requestSeed, 0x42, 0);
+        auto maybe_request =
+            Can::ServiceRequest::SecurityAccess::build()
+                ->subfunction(Can::ServiceRequest::SecurityAccess::Subfunction::
+                                  requestSeed)
+                ->key(0)
+                ->seed_par(0x42)
+                ->build();
+        EXPECT_TRUE(maybe_request);
+        auto request = maybe_request.value();
         std::vector<uint8_t> res = {0x27, 0x03, 0x42};
-        EXPECT_EQ(res, request.dump());
+        EXPECT_EQ(res, request->dump());
     }
     {
-        Can::ServiceRequest_SecurityAccess request(
-            Can::SecurityAccess_SubfunctionType::sendKey, 0, 0x13370132);
+        auto maybe_request =
+            Can::ServiceRequest::SecurityAccess::build()
+                ->subfunction(
+                    Can::ServiceRequest::SecurityAccess::Subfunction::sendKey)
+                ->seed_par(0)
+                ->key(0x13370132)
+                ->build();
+        EXPECT_TRUE(maybe_request);
+        auto request = maybe_request.value();
         std::vector<uint8_t> res = {0x27, 0x04, 0x13, 0x37, 0x01, 0x32};
-        EXPECT_EQ(res, request.dump());
+        EXPECT_EQ(res, request->dump());
     }
     {
-        Can::ServiceRequest_RequestDownload request(
-            Can::DataFormatIdentifier::build()
-                ->compressionMethod(0)
-                ->encryptingMethod(0)
-                ->build(),
-            Can::DataAndLengthFormatIdentifier::build()
-                ->memory_address(0x04)
-                ->memory_size(0x04)
-                ->build(),
-            {0x08, 0x00, 0x40, 0x00}, {0x00, 0x00, 0x90, 0xE8});
+        auto format = Can::DataFormatIdentifier::build()
+                          ->compression_method(0)
+                          ->encryting_method(0)
+                          ->build();
+        EXPECT_TRUE(format);
+        auto data_len = Can::DataAndLengthFormatIdentifier::build()
+                            ->memory_address(0x04)
+                            ->memory_size(0x04)
+                            ->build();
+        EXPECT_TRUE(data_len);
+        auto maybe_request = Can::ServiceRequest::RequestDownload::build()
+                                 ->data_format(format.value())
+                                 ->address_len_format(data_len.value())
+                                 ->memory_size({0x08, 0x00, 0x40, 0x00})
+                                 ->memory_addr({0x00, 0x00, 0x90, 0xE8})
+                                 ->build();
+        EXPECT_TRUE(maybe_request);
+        auto request = maybe_request.value();
         std::vector<uint8_t> res = {0x34, 0x00, 0x44, 0x08, 0x00, 0x40,
                                     0x00, 0x00, 0x00, 0x90, 0xE8};
-        EXPECT_EQ(res, request.dump());
+        EXPECT_EQ(res, request->dump());
     }
     {
-        Can::ServiceRequest_TransferData request(
-            0x32, {0x27, 0x04, 0x13, 0x37, 0x01, 0x32});
+        auto maybe_request = Can::ServiceRequest::TransferData::build()
+                                 ->block_counter(0x32)
+                                 ->data({0x27, 0x04, 0x13, 0x37, 0x01, 0x32})
+                                 ->build();
+        EXPECT_TRUE(maybe_request);
+        auto request = maybe_request.value();
         std::vector<uint8_t> res = {0x36, 0x32, 0x27, 0x04,
                                     0x13, 0x37, 0x01, 0x32};
-        EXPECT_EQ(res, request.dump());
+        EXPECT_EQ(res, request->dump());
     }
     {
-        std::shared_ptr<Can::ServiceRequest_CommunicationControl> request =
-            Can::ServiceRequest_CommunicationControl::build()
-                ->subfunction(
-                    Can::CommunicationControl_SubfunctionType::disableRxAndTx)
-                ->communication_type(
-                    Can::CommunicationType::build()
-                        ->chanels(Can::CommunicationTypeChanels::build()
-                                      ->network_communication(1)
-                                      ->normal_communication(1)
-                                      ->build())
-                        ->build())
+        auto chanels = Can::CommunicationTypeChanels::build()
+                           ->network_communication(1)
+                           ->normal_communication(1)
+                           ->build();
+        EXPECT_TRUE(chanels);
+        auto communication =
+            Can::CommunicationType::build()->chanels(chanels.value())->build();
+        EXPECT_TRUE(communication);
+        auto maybe_request =
+            Can::ServiceRequest::CommunicationControl::build()
+                ->subfunction(Can::ServiceRequest::CommunicationControl::
+                                  Subfunction::disableRxAndTx)
+                ->communication_type(communication.value())
                 ->build();
+        EXPECT_TRUE(maybe_request);
+        auto request = maybe_request.value();
         std::vector<uint8_t> res = {0x28, 0x03, 0x03};
         EXPECT_EQ(res, request->dump());
     }
@@ -82,29 +126,26 @@ TEST(testService, testServiceRequest) {
 
 TEST(testService, testServiceResponse) {
     {
-        std::shared_ptr<Can::ServiceResponse> response =
-            Can::ServiceResponseFactory(
-                std::vector<uint8_t>({0x7f, 0x27, 0x10}))
-                .get();
-        EXPECT_EQ(response->get_type(), Can::ServiceResponseType::Negative);
-        EXPECT_EQ(static_cast<Can::ServiceResponse_Negative*>(response.get())
+        auto maybe_response = Can::ServiceResponse::Factory({0x7f, 0x27, 0x10}).get();
+        EXPECT_TRUE(maybe_response);
+        auto response = maybe_response.value();
+        EXPECT_EQ(response->get_type(), Can::ServiceResponse::Type::Negative);
+        EXPECT_EQ(std::static_pointer_cast<Can::ServiceResponse::Negative>(response)
                       ->get_service(),
-                  Can::ServiceRequestType::SecurityAccess);
+                  Can::ServiceRequest::Type::SecurityAccess);
         EXPECT_EQ(
-            static_cast<Can::ServiceResponse_Negative*>(response.get())->get_code(),
+            std::static_pointer_cast<Can::ServiceResponse::Negative>(response)->get_code(),
             0x10);
     }
 
     {
-        std::shared_ptr<Can::ServiceResponse> response =
-            Can::ServiceResponseFactory(
-                std::vector<uint8_t>(
-                    {0x62, 0x20, 0x0E, 0x03, 0x55, 0x55, 0x55}))
-                .get();
+        auto maybe_response = Can::ServiceResponse::Factory({0x62, 0x20, 0x0E, 0x03, 0x55, 0x55, 0x55}).get();
+        EXPECT_TRUE(maybe_response);
+        auto response = maybe_response.value();
         EXPECT_EQ(response->get_type(),
-                  Can::ServiceResponseType::ReadDataByIdentifier);
-        Can::Data* data =
-            static_cast<Can::ServiceResponse_ReadDataByIdentifier*>(response.get())
+                  Can::ServiceResponse::Type::ReadDataByIdentifier);
+        auto data =
+            std::static_pointer_cast<Can::ServiceResponse::ReadDataByIdentifier>(response)
                 ->get_data();
         EXPECT_NE(data, nullptr);
         EXPECT_EQ(data->get_type(), Can::DataIdentifier::UPASystemType);
@@ -112,86 +153,78 @@ TEST(testService, testServiceResponse) {
     }
 
     {
-        std::shared_ptr<Can::ServiceResponse> response =
-            Can::ServiceResponseFactory(
-                std::vector<uint8_t>(
-                    {0x6e, 0xf1, 0x90, 0x55, 0x55, 0x55, 0x55}))
-                .get();
+        auto maybe_response = Can::ServiceResponse::Factory({0x6e, 0xf1, 0x90, 0x55, 0x55, 0x55, 0x55}).get();
+        EXPECT_TRUE(maybe_response);
+        auto response = maybe_response.value();
         EXPECT_EQ(response->get_type(),
-                  Can::ServiceResponseType::WriteDataByIdentifier);
+                  Can::ServiceResponse::Type::WriteDataByIdentifier);
         Can::DataIdentifier id =
-            static_cast<Can::ServiceResponse_WriteDataByIdentifier*>(response.get())
+            std::static_pointer_cast<Can::ServiceResponse::WriteDataByIdentifier>(response)
                 ->get_id();
         EXPECT_EQ(id, Can::DataIdentifier::VIN);
     }
 
     {
-        std::shared_ptr<Can::ServiceResponse> response =
-            Can::ServiceResponseFactory(
-                std::vector<uint8_t>({0x67, 0x03, 0x13, 0x37, 0x01, 0x32}))
-                .get();
+        auto maybe_response = Can::ServiceResponse::Factory({0x67, 0x03, 0x13, 0x37, 0x01, 0x32}).get();
+        EXPECT_TRUE(maybe_response);
+        auto response = maybe_response.value();
         EXPECT_EQ(response->get_type(),
-                  Can::ServiceResponseType::SecurityAccess);
-        EXPECT_EQ(static_cast<Can::ServiceResponse_SecurityAccess*>(response.get())
+                  Can::ServiceResponse::Type::SecurityAccess);
+        EXPECT_EQ(std::static_pointer_cast<Can::ServiceResponse::SecurityAccess>(response)
                       ->get_subfunction(),
-                  Can::SecurityAccess_SubfunctionType::requestSeed);
-        EXPECT_EQ(static_cast<Can::ServiceResponse_SecurityAccess*>(response.get())
+                  Can::ServiceResponse::SecurityAccess::Subfunction::requestSeed);
+        EXPECT_EQ(std::static_pointer_cast<Can::ServiceResponse::SecurityAccess>(response)
                       ->get_seed(),
                   0x13370132);
     }
 
     {
-        std::shared_ptr<Can::ServiceResponse> response =
-            Can::ServiceResponseFactory(std::vector<uint8_t>({0x67, 0x04}))
-                .get();
+        auto maybe_response = Can::ServiceResponse::Factory({0x67, 0x04}).get();
+        EXPECT_TRUE(maybe_response);
+        auto response = maybe_response.value();
         EXPECT_EQ(response->get_type(),
-                  Can::ServiceResponseType::SecurityAccess);
-        EXPECT_EQ(static_cast<Can::ServiceResponse_SecurityAccess*>(response.get())
+                  Can::ServiceResponse::Type::SecurityAccess);
+        EXPECT_EQ(std::static_pointer_cast<Can::ServiceResponse::SecurityAccess>(response)
                       ->get_subfunction(),
-                  Can::SecurityAccess_SubfunctionType::sendKey);
+                  Can::ServiceResponse::SecurityAccess::Subfunction::sendKey);
     }
 
     {
-        std::shared_ptr<Can::ServiceResponse> response =
-            Can::ServiceResponseFactory(
-                std::vector<uint8_t>(
-                    {0x76, 0x32, 0x67, 0x03, 0x13, 0x37, 0x01, 0x32}))
-                .get();
-        EXPECT_EQ(response->get_type(), Can::ServiceResponseType::TransferData);
-        EXPECT_EQ(static_cast<Can::ServiceResponse_TransferData*>(response.get())
+        auto maybe_response = Can::ServiceResponse::Factory({0x76, 0x32, 0x67, 0x03, 0x13, 0x37, 0x01, 0x32}).get();
+        EXPECT_TRUE(maybe_response);
+        auto response = maybe_response.value();
+        EXPECT_EQ(response->get_type(), Can::ServiceResponse::Type::TransferData);
+        EXPECT_EQ(std::static_pointer_cast<Can::ServiceResponse::TransferData>(response)
                       ->get_block_counter(),
                   0x32);
-        EXPECT_EQ(static_cast<Can::ServiceResponse_TransferData*>(response.get())
+        EXPECT_EQ(std::static_pointer_cast<Can::ServiceResponse::TransferData>(response)
                       ->get_data(),
                   std::vector<uint8_t>({0x67, 0x03, 0x13, 0x37, 0x01, 0x32}));
     }
 
     {
-        std::shared_ptr<Can::ServiceResponse> response =
-            Can::ServiceResponseFactory(
-                std::vector<uint8_t>({0x74, 0x20, 0x04, 0x02}))
-                .get();
+        auto maybe_response = Can::ServiceResponse::Factory({0x74, 0x20, 0x04, 0x02}).get();
+        EXPECT_TRUE(maybe_response);
+        auto response = maybe_response.value();
         EXPECT_EQ(response->get_type(),
-                  Can::ServiceResponseType::RequestDownload);
+                  Can::ServiceResponse::Type::RequestDownload);
         std::shared_ptr<Can::LengthFormatIdentifier> format =
-            static_cast<Can::ServiceResponse_RequestDownload*>(response.get())
+            std::static_pointer_cast<Can::ServiceResponse::RequestDownload>(response)
                 ->get_length_format();
-        EXPECT_EQ(format->get_reserved(), 0);
         EXPECT_EQ(format->get_memory_size(), 0x02);
-        EXPECT_EQ(static_cast<Can::ServiceResponse_RequestDownload*>(response.get())
+        EXPECT_EQ(std::static_pointer_cast<Can::ServiceResponse::RequestDownload>(response)
                       ->get_max_blocks_number(),
                   std::vector<uint8_t>({0x04, 0x02}));
     }
 
     {
-        std::shared_ptr<Can::ServiceResponse> response =
-            Can::ServiceResponseFactory(
-                std::vector<uint8_t>({0x77, 0x01, 0x02}))
-                .get();
+        auto maybe_response = Can::ServiceResponse::Factory({0x77, 0x01, 0x02}).get();
+        EXPECT_TRUE(maybe_response);
+        auto response = maybe_response.value();
         EXPECT_EQ(response->get_type(),
-                  Can::ServiceResponseType::RequestTransferExit);
+                  Can::ServiceResponse::Type::RequestTransferExit);
         EXPECT_EQ(
-            static_cast<Can::ServiceResponse_RequestTransferExit*>(response.get())
+            std::static_pointer_cast<Can::ServiceResponse::RequestTransferExit>(response)
                 ->get_crc(),
             0x0102);
     }

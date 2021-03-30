@@ -67,7 +67,7 @@ public:
         auto seed_par(uint8_t value) {
             return field(object()->m_seed_par, value);
         }
-        auto ket(uint32_t value) { return field(object()->m_key, value); }
+        auto key(uint32_t value) { return field(object()->m_key, value); }
     };
     static auto build() { return std::make_unique<Builder>(); }
     static auto build(Util::Reader& reader) {

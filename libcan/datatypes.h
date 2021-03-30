@@ -74,11 +74,11 @@ public:
             read(reader, object()->m_normal_communication,
                  object()->m_network_communication);
         }
-        void normal_communication(int value) {
-            field(object()->m_normal_communication, value);
+        auto normal_communication(int value) {
+            return field(object()->m_normal_communication, value);
         }
-        void network_communication(int value) {
-            field(object()->m_normal_communication, value);
+        auto network_communication(int value) {
+            return field(object()->m_network_communication, value);
         }
     protected:
         std::unique_ptr<Builder> self() {
@@ -117,7 +117,7 @@ public:
         Builder(Util::Reader& reader) : B() {
             read(reader, object()->m_smth, object()->m_reserved, object()->m_chanels);
         }
-        auto chanels(std::shared_ptr<CommunicationType> chanels) {
+        auto chanels(std::shared_ptr<CommunicationTypeChanels> chanels) {
             return field(object()->m_chanels, chanels);
         }
     protected:
@@ -142,7 +142,7 @@ public:
 private:
     Util::IntField<uint8_t, 4> m_smth = 0;
     Util::IntField<uint8_t, 2> m_reserved = 0;
-    Util::DataField<CommunicationType> m_chanels;
+    Util::DataField<CommunicationTypeChanels> m_chanels;
 };
 
 class DataFormatIdentifier {
