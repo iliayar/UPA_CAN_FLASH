@@ -13,6 +13,7 @@ public:
     public:
         Builder() : B() {}
         Builder(Util::Reader& reader) : B() {
+            object()->m_data.all();
             read(reader, object()->m_block_counter, object()->m_data);
         }
         auto block_counter(uint16_t value) {
@@ -39,7 +40,7 @@ public:
 
 private:
     Util::EnumField<Type, uint8_t, 8> m_type = Type::TransferData;
-    Util::IntField<uint16_t, 16> m_block_counter;
+    Util::IntField<uint16_t, 8> m_block_counter;
     Util::VarVecField m_data;
 };
 }  // namespace ServiceResponse
@@ -79,7 +80,7 @@ public:
     
 private:
     Util::EnumField<Type, uint8_t, 8> m_type = Type::TransferData;
-    Util::IntField<uint16_t, 16> m_block_counter;
+    Util::IntField<uint16_t, 8> m_block_counter;
     Util::VarVecField m_data;
 };
 

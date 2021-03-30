@@ -19,7 +19,15 @@ public:
     public:
         Builder() : B() {}
         Builder(Util::Reader& reader) : B() {
-            read(reader, object()->m_subfunction, object()->m_seed);
+            auto& subfunction = object()->m_subfunction;
+            subfunction.read(reader);
+            if(!subfunction.valid()) {
+                fail();
+                return;
+            }
+            if(subfunction.get().value() == Subfunction::requestSeed) {
+                object()->m_seed.read(reader);
+            } 
         }
         auto subfunction(Subfunction value) {
             return field(object()->m_subfunction, value);

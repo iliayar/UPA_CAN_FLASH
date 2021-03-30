@@ -61,7 +61,7 @@ public:
     auto get_code() { return m_code.get().value(); }
 
 private:
-    Util::EnumField<Type, uint8_t, 8> m_type;
+    Util::EnumField<Type, uint8_t, 8> m_type = Type::Negative;
     Util::EnumField<Can::ServiceRequest::Type, uint8_t, 8> m_serice;
     Util::IntField<uint8_t, 8> m_code;
 };

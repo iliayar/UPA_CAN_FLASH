@@ -42,6 +42,14 @@ struct VarField {
         m_valid = true;
     }
 
+    /**
+     * Make this Field to read the rest of values in reader
+     * It reads by one byte, so the bytes count must be integer.
+     */
+    void all() {
+        m_all = true;
+    }
+
     virtual int get_size() { return m_size; }
 
     bool valid() { return m_valid; }
@@ -53,6 +61,7 @@ protected:
     int m_size = 0;
     T m_value;
     bool m_valid = false;
+    bool m_all = false;
 };
 
 template <typename T, int size>
@@ -96,6 +105,13 @@ protected:
         return writer.write(value, m_size);
     }
     optional<std::vector<uint8_t>> read_impl(Reader& reader) {
+        if(m_all) {
+            std::vector<uint8_t> res{};
+            while(!reader.is_eof()) {
+                res.push_back(reader.read_int<uint8_t>(8).value());
+            }
+            return res;
+        }
         return reader.read(m_size);
     }
 };

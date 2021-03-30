@@ -108,7 +108,15 @@ public:
     static auto build(Util::Reader& reader) {
         return std::make_unique<Builder>(reader);
     }
-    optional<std::vector<uint8_t>> dump() { return Util::dump_args(m_type); }
+    optional<std::vector<uint8_t>> dump() {
+        if(!m_address_len_format.valid()) {
+            return {};
+        }
+        m_memory_addr.resize(m_address_len_format.get().value()->get_memory_address()*8);
+        m_memory_size.resize(m_address_len_format.get().value()->get_memory_size()*8);
+        return Util::dump_args(m_type, m_data_format, m_address_len_format,
+                               m_memory_addr, m_memory_size);
+    }
     bool write(Util::Writer& writer) {
         return Util::write_args(writer, m_type);
     }
