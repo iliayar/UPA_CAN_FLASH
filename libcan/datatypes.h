@@ -23,13 +23,14 @@ public:
                 return;
             }
             auto& value = this->object()->m_value;
+
             switch(type.get().value()) {
             case Can::DataIdentifier::VIN:
-                value = Util::VarVecField(17);
+                value = Util::VarVecField(17*8);
                 value.read(reader);
                 break;
             case Can::DataIdentifier::UPASystemType:
-                value = Util::VarVecField(1);
+                value = Util::VarVecField(1*8);
                 value.read(reader);
                 break;
             }

@@ -74,7 +74,15 @@ public:
         return std::make_unique<Builder>(reader);
     }
     optional<std::vector<uint8_t>> dump() {
-        return Util::dump_args(m_type, m_subfunction, m_seed_par, m_key);
+        if(!m_subfunction.valid()) {
+            return {};
+        }
+        if (m_subfunction.get() == Subfunction::requestSeed) {
+            return Util::dump_args(m_type, m_subfunction, m_seed_par);
+        } else if (m_subfunction.get() == Subfunction::sendKey) {
+            return Util::dump_args(m_type, m_subfunction, m_key);
+        }
+        return {};
     }
     bool write(Util::Writer& writer) {
         return Util::write_args(writer, m_type, m_subfunction, m_seed_par,

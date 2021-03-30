@@ -81,6 +81,7 @@ struct VarVecField : public VarField<std::vector<uint8_t>> {
 
     VarVecField& operator=(std::vector<uint8_t> value) {
         m_value = value;
+        m_size = value.size()*8;
         m_valid = true;
         return *this;
     }

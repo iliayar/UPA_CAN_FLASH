@@ -4,6 +4,8 @@
 #include <functional>
 #include <stdexcept>
 
+#include <iostream>
+
 Util::Reader::Reader(std::vector<uint8_t> payload)
     : m_payload(payload), m_offset(0) {}
 
