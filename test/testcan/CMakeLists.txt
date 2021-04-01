@@ -4,6 +4,7 @@ set(SRCS
   testcrypto.cpp
   testframe.cpp
   testservice.cpp
+  testcommunicator.cpp
   )
 
 ADD_EXECUTABLE(testcan ${SRCS})
