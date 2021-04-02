@@ -13,13 +13,13 @@ Can::CommunicatorStatus Can::Communicator::get_status() {
     return m_worker.value()->get_type();
 }
 
-void Can::Communicator::set_task(Can::Task* task) {
+void Can::Communicator::set_task(std::shared_ptr<Can::Task> task) {
     auto request = task->fetch_request();
     if(!request) {
         DEBUG(info, "Invalid task passed to communicator");
         m_task = {};
     }
-    m_task = std::shared_ptr<Task>(task);
+    m_task = task;
     m_worker = std::make_shared<Transmitter>(request.value());
     DEBUG(info, "Transmitter created")
 }
@@ -157,11 +157,14 @@ optional<std::vector<std::shared_ptr<Can::Frame::Frame>>> Can::service_to_frames
         for (; i < 6; ++i) {
             frame_data.push_back(payload[i]);
         }
-        frames.push_back(Frame::FirstFrame::build()
-                             ->len(payload.size())
-                             ->data(payload)
-                             ->build()
-                             .value());
+        auto frame = Frame::FirstFrame::build()
+            ->len(payload.size())
+            ->data(frame_data)
+            ->build();
+        if(!frame) {
+            return {};
+        }
+        frames.push_back(frame.value());
         for (int seq = 1; i < payload.size(); ++seq) {
             frame_data.clear();
             for (int j = 0; j < 7; ++i, ++j) {
@@ -171,32 +174,37 @@ optional<std::vector<std::shared_ptr<Can::Frame::Frame>>> Can::service_to_frames
                     frame_data.push_back(payload[i]);
                 }
             }
-            frames.push_back(Frame::ConsecutiveFrame::build()
-                                 ->seq_num(seq & 0xf)
-                                 ->data(frame_data)
-                                 ->build()
-                                 .value());
+            auto frame = Frame::ConsecutiveFrame::build()
+                             ->seq_num(seq & 0xf)
+                             ->data(frame_data)
+                             ->build();
+            if (!frame) {
+                return {};
+            }
+            frames.push_back(frame.value());
         }
     } else {
         int len = payload.size();
         while (payload.size() < 7) payload.push_back(0);
-        frames.push_back(Frame::SingleFrame::build()
-                             ->len(len)
-                             ->data(payload)
-                             ->build()
-                             .value());
+        auto frame =
+            Frame::SingleFrame::build()->len(len)->data(payload)->build();
+        if (!frame) {
+            return {};
+        }
+        frames.push_back(frame.value());
     }
 
     return frames;
 }
 
-Can::Transmitter::Transmitter(std::shared_ptr<Can::ServiceRequest::ServiceRequest> request) {
+Can::Transmitter::Transmitter(
+    std::shared_ptr<Can::ServiceRequest::ServiceRequest> request) {
     if (request == nullptr) {
         m_status = Can::WorkerStatus::Done;
     }
 
     auto maybe_frames = Can::service_to_frames(request);
-    if(!maybe_frames) {
+    if (!maybe_frames) {
         m_status = Can::WorkerStatus::Error;
         return;
     }
@@ -228,18 +236,21 @@ void Can::Transmitter::push_frame(std::shared_ptr<Can::Frame::Frame> frame) {
         DEBUG(info, "transmitter pushing with m_wait_fc and flow control frame")
         m_wait_fc = false;
         Can::Frame::FlowStatus status =
-            std::static_pointer_cast<Can::Frame::FlowControl>(frame)->get_status();
+            std::static_pointer_cast<Can::Frame::FlowControl>(frame)
+                ->get_status();
         update_imp();
-        if (status ==
-            Can::Frame::FlowStatus::WaitForAnotherFlowControlMessageBeforeContinuing) {
+        if (status == Can::Frame::FlowStatus::
+                          WaitForAnotherFlowControlMessageBeforeContinuing) {
             m_wait_fc = true;
             return;
-        } else if (status == Can::Frame::FlowStatus::OverflowAbortTransmission) {
+        } else if (status ==
+                   Can::Frame::FlowStatus::OverflowAbortTransmission) {
             m_status = Can::WorkerStatus::Error;
             return;
         }
         m_fc_block_size =
-            std::static_pointer_cast<Can::Frame::FlowControl>(frame)->get_block_size();
+            std::static_pointer_cast<Can::Frame::FlowControl>(frame)
+                ->get_block_size();
         if (m_fc_block_size == 0) m_fc_block_size = m_frames.size();
         m_fc_min_time = static_cast<std::chrono::milliseconds>(
             std::static_pointer_cast<Can::Frame::FlowControl>(frame)
@@ -307,7 +318,8 @@ Can::Receiver::Receiver(std::shared_ptr<Can::Frame::Frame> frame) {
             m_frames.push_back(frame);
             m_status = Can::WorkerStatus::Work;
             m_consecutive_len =
-                std::static_pointer_cast<Can::Frame::FirstFrame>(frame)->get_len();
+                std::static_pointer_cast<Can::Frame::FirstFrame>(frame)
+                    ->get_len();
             m_consecutive_last = 0x0;
             m_was_fc = false;
             break;
@@ -319,7 +331,8 @@ Can::Receiver::Receiver(std::shared_ptr<Can::Frame::Frame> frame) {
     }
 }
 
-optional<std::shared_ptr<Can::ServiceResponse::ServiceResponse>> Can::Receiver::get_response() {
+optional<std::shared_ptr<Can::ServiceResponse::ServiceResponse>>
+Can::Receiver::get_response() {
     DEBUG(info, "receiver");
     return Can::frames_to_service(m_frames);
 }

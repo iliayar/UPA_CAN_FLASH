@@ -34,16 +34,16 @@ std::shared_ptr<Can::ServiceResponse::ServiceResponse> Can::AsyncTask::call_imp(
                     response = m_response;
                 if (response->get_type() ==
                     Can::ServiceResponse::Type::Negative) {
-                    if (static_cast<Can::ServiceResponse::Negative*>(
-                            response.get())
+                    if (std::static_pointer_cast<
+                            Can::ServiceResponse::Negative>(response)
                             ->get_service() != request->get_type()) {
                         m_response = nullptr;
                         DEBUG(info, "task response invalid error service code");
                         m_logger->warning("Invalid error service code");
                         continue;
                     }
-                    if (static_cast<Can::ServiceResponse::Negative*>(
-                            response.get())
+                    if (std::static_pointer_cast<
+                            Can::ServiceResponse::Negative>(response)
                             ->get_code() == 0x78) {
                         m_response = nullptr;
                         DEBUG(info, "task response error service code = 0x78");

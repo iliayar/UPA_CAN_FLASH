@@ -163,7 +163,7 @@ public:
      * Set task to fetch requests from.
      * It's completely broken as everything in this Communicator
      */
-    void set_task(Task*);
+    void set_task(std::shared_ptr<Task> task);
     void reset_task();
 
     /**

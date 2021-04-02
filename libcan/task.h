@@ -122,6 +122,10 @@ public:
 
     virtual void task() = 0;
 
+    virtual ~AsyncTask() {
+        m_thread.join();
+    }
+
 protected:
     std::shared_ptr<ServiceResponse::ServiceResponse> call(
         std::shared_ptr<ServiceRequest::ServiceRequest> request) {
@@ -148,6 +152,7 @@ private:
 
     static constexpr std::chrono::milliseconds DELAY =
         static_cast<std::chrono::milliseconds>(2);
+
 };
 
 /**
@@ -158,5 +163,8 @@ public:
     ReadWriteThreadedTask(Logger* logger = new NoLogger())
         : AsyncTask(logger) {}
     void task();
+
+    virtual ~ReadWriteThreadedTask() {
+    }
 };
 }  // namespace Can
