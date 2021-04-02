@@ -18,20 +18,22 @@ std::string int_to_hex(int n) {
 
 void FlashTask::task() {
     task_main();
-    std::shared_ptr<ServiceResponse> response =
-        call(ServiceRequest_ECUReset::build()
-                 ->subfunction(ECUReset_SubfunctionType::hardReset)
-                 ->build());
+    std::shared_ptr<ServiceResponse::ServiceResponse> response =
+        call(ServiceRequest::ECUReset::build()
+                 ->subfunction(ServiceRequest::ECUReset::Subfunction::hardReset)
+                 ->build()
+                 .value());
     IF_NEGATIVE(response) { m_logger->error("Failed to hardReset device"); }
 }
 void FlashTask::task_main() {
     int progress = 0;
-    std::shared_ptr<ServiceResponse> response;
+    std::shared_ptr<ServiceResponse::ServiceResponse> response;
 
-    response = call(ServiceRequest_DiagnosticSessionControl::build()
-                        ->subfunction(DiagnosticSessionControl_SubfunctionType::
-                                          extendDiagnosticSession)
-                        ->build());
+    response = call(ServiceRequest::DiagnosticSessionControl::build()
+                        ->subfunction(ServiceRequest::DiagnosticSessionControl::
+                                          Subfunction::extendDiagnosticSession)
+                        ->build()
+                        .value());
 
     IF_NEGATIVE(response) {
         LOG(error, "Failed ot enter extendDiagnosticSession");
@@ -41,9 +43,11 @@ void FlashTask::task_main() {
     progress += 1;
     m_logger->progress(progress);
 
-    response = call(ServiceRequest_ControlDTCSettings::build()
-                        ->subfunction(ControlDTCSettings_SubfunctionType::off)
-                        ->build());
+    response = call(
+        ServiceRequest::ControlDTCSettings::build()
+            ->subfunction(ServiceRequest::ControlDTCSettings::Subfunction::off)
+            ->build()
+            .value());
 
     IF_NEGATIVE(response) {
         LOG(error, "Failed ControlDTCSettings");
@@ -54,15 +58,19 @@ void FlashTask::task_main() {
     m_logger->progress(progress);
 
     response = call(
-        ServiceRequest_CommunicationControl::build()
-            ->subfunction(CommunicationControl_SubfunctionType::disableRxAndTx)
+        ServiceRequest::CommunicationControl::build()
+            ->subfunction(ServiceRequest::CommunicationControl::Subfunction::
+                              disableRxAndTx)
             ->communication_type(CommunicationType::build()
                                      ->chanels(CommunicationTypeChanels::build()
                                                    ->network_communication(1)
                                                    ->normal_communication(1)
-                                                   ->build())
-                                     ->build())
-            ->build());
+                                                   ->build()
+                                                   .value())
+                                     ->build()
+                                     .value())
+            ->build()
+            .value());
 
     IF_NEGATIVE(response) {
         LOG(error, "Failed CommunicationControl");
@@ -72,11 +80,11 @@ void FlashTask::task_main() {
     progress += 1;
     m_logger->progress(progress);
 
-    response = call(
-        ServiceRequest_DiagnosticSessionControl::build()
-            ->subfunction(
-                DiagnosticSessionControl_SubfunctionType::programmingSession)
-            ->build());
+    response = call(ServiceRequest::DiagnosticSessionControl::build()
+                        ->subfunction(ServiceRequest::DiagnosticSessionControl::
+                                          Subfunction::programmingSession)
+                        ->build()
+                        .value());
 
     IF_NEGATIVE(response) {
         LOG(error, "Failed ot enter programmingSession");
@@ -90,10 +98,12 @@ void FlashTask::task_main() {
 
     m_logger->info("Seed parameter " + int_to_hex(rnd));
     response =
-        call(ServiceRequest_SecurityAccess::build()
-                 ->subfunction(SecurityAccess_SubfunctionType::requestSeed)
+        call(ServiceRequest::SecurityAccess::build()
+                 ->subfunction(
+                     ServiceRequest::SecurityAccess::Subfunction::requestSeed)
                  ->seed_par(rnd)
-                 ->build());
+                 ->build()
+                 .value());
 
     IF_NEGATIVE(response) {
         LOG(error, "Failed ot request seed");
@@ -103,8 +113,9 @@ void FlashTask::task_main() {
     progress += 1;
     m_logger->progress(progress);
 
-    uint32_t seed = static_cast<ServiceResponse_SecurityAccess*>(response.get())
-                        ->get_seed();
+    uint32_t seed =
+        std::static_pointer_cast<ServiceResponse::SecurityAccess>(response)
+            ->get_seed();
 
     LOG(info, "Received seed " + int_to_hex(seed));
 
@@ -112,10 +123,12 @@ void FlashTask::task_main() {
 
     LOG(info, "Calculated key " + int_to_hex(key));
 
-    response = call(ServiceRequest_SecurityAccess::build()
-                        ->subfunction(SecurityAccess_SubfunctionType::sendKey)
-                        ->key(key)
-                        ->build());
+    response = call(
+        ServiceRequest::SecurityAccess::build()
+            ->subfunction(ServiceRequest::SecurityAccess::Subfunction::sendKey)
+            ->key(key)
+            ->build()
+            .value());
 
     IF_NEGATIVE(response) {
         LOG(error, "Security access failed key verification");
@@ -134,33 +147,38 @@ void FlashTask::task_main() {
         return;
     }
     Hex::HexReader reader(std::make_unique<Hex::FileSource>(fin));
-    Hex::HexInfo hex_info = Hex::read_hex_info(reader);
+    Hex::HexInfo hex_info = Hex::read_hex_info(reader).value();
     fin.close();
 
     uint32_t data_size = hex_info.size;
     uint32_t begin_address = hex_info.start_addr;
     uint16_t crc = hex_info.crc;
 
-    std::vector<uint8_t> BEGIN_ADDRESS(4, 0);
-    Util::Writer(BEGIN_ADDRESS).write_32(begin_address, 0, 32);
-    std::vector<uint8_t> DATA_SIZE(4, 0);
-    Util::Writer(DATA_SIZE).write_32(data_size, 0, 32);
+    Util::Writer writer(4);
+    writer.write_int<uint32_t>(begin_address, 32);
+    std::vector<uint8_t> BEGIN_ADDRESS = writer.get_payload();
+    writer = Util::Writer(4);
+    writer.write_int<uint32_t>(data_size, 32);
+    std::vector<uint8_t> DATA_SIZE = writer.get_payload();
 
     LOG(info, "Requesting download");
 
     response =
-        call(ServiceRequest_RequestDownload::build()
+        call(ServiceRequest::RequestDownload::build()
                  ->data_format(DataFormatIdentifier::build()
-                                   ->compressionMethod(0)
-                                   ->encryptingMethod(0)
-                                   ->build())
+                                   ->compression_method(0)
+                                   ->encryting_method(0)
+                                   ->build()
+                                   .value())
                  ->address_len_format(DataAndLengthFormatIdentifier::build()
                                           ->memory_address(4)
                                           ->memory_size(4)
-                                          ->build())
+                                          ->build()
+                                          .value())
                  ->memory_addr(BEGIN_ADDRESS)
                  ->memory_size(DATA_SIZE)
-                 ->build());
+                 ->build()
+                 .value());
 
     IF_NEGATIVE(response) {
         LOG(error, "Cannot request download");
@@ -171,7 +189,8 @@ void FlashTask::task_main() {
     m_logger->progress(progress);
 
     int block_length_fomat =
-        static_cast<Can::ServiceResponse_RequestDownload*>(response.get())
+        std::static_pointer_cast<Can::ServiceResponse::RequestDownload>(
+            response)
             ->get_length_format()
             ->get_memory_size();
     if (block_length_fomat > 8) {
@@ -181,11 +200,14 @@ void FlashTask::task_main() {
     }
     LOG(info, "Requesting download response parsed");
     std::vector<uint8_t> max_block_size_vec =
-        static_cast<Can::ServiceResponse_RequestDownload*>(response.get())
+        std::static_pointer_cast<Can::ServiceResponse::RequestDownload>(
+            response)
             ->get_max_blocks_number();
     LOG(info, "max_block_size_vec " + int_to_hex(max_block_size_vec.size()));
-    uint64_t max_block_size = Util::Reader(max_block_size_vec)
-                                  .read_64(0, max_block_size_vec.size() * 8);
+    uint64_t max_block_size =
+        Util::Reader(max_block_size_vec)
+            .read_int<uint64_t>(max_block_size_vec.size() * 8)
+            .value();
     LOG(info, "max_block_size " + int_to_hex(max_block_size));
     max_block_size -= 2;
     fin.open(m_file);
@@ -204,12 +226,13 @@ void FlashTask::task_main() {
     int block_counter = 1;
     int n_size = 0;
     while (!reader.is_eof()) {
-        std::shared_ptr<Hex::HexLine> line = reader.read_line();
-        if (line->get_type() == Hex::HexLineType::Data ||
-            line->get_type() == Hex::HexLineType::EndOfFile) {
+        std::shared_ptr<Hex::Line::Line> line = reader.read_line().value();
+        if (line->get_type() == Hex::Line::Type::Data ||
+            line->get_type() == Hex::Line::Type::EndOfFile) {
             std::vector<uint8_t> line_data;
-            if (line->get_type() == Hex::HexLineType::Data) {
-                line_data = static_cast<Hex::DataLine*>(line.get())->get_data();
+            if (line->get_type() == Hex::Line::Type::Data) {
+                line_data =
+                    std::static_pointer_cast<Hex::Line::Data>(line)->get_data();
             } else {
                 line_data = {data[i - 1]};
                 data.resize(i);
@@ -221,10 +244,11 @@ void FlashTask::task_main() {
                 if (i >= data.size()) {
                     LOG(important,
                         "Transfering block " + int_to_hex(block_counter));
-                    response = call(Can::ServiceRequest_TransferData::build()
+                    response = call(Can::ServiceRequest::TransferData::build()
                                         ->block_counter(block_counter++)
                                         ->data(data)
-                                        ->build());
+                                        ->build()
+                                        .value());
                     IF_NEGATIVE(response) {
                         LOG(error, "Failed to transfer data");
                         m_logger->progress(0, true);
@@ -232,8 +256,8 @@ void FlashTask::task_main() {
                     }
                     transfer_progress += progress_step;
                     m_logger->progress(progress + transfer_progress);
-                    if (static_cast<Can::ServiceResponse_TransferData*>(
-                            response.get())
+                    if (std::static_pointer_cast<
+                            Can::ServiceResponse::TransferData>(response)
                             ->get_block_counter() != block_counter - 1) {
                         LOG(warning, "Wrong block counter in response");
                     }
@@ -241,7 +265,7 @@ void FlashTask::task_main() {
                 }
             }
         }
-        if (line->get_type() == Hex::HexLineType::EndOfFile) {
+        if (line->get_type() == Hex::Line::Type::EndOfFile) {
             if (!reader.is_eof()) {
                 LOG(warning, "EndOfFile in the middle of file");
             }
@@ -249,8 +273,10 @@ void FlashTask::task_main() {
         }
     }
     fin.close();
-    response = call(
-        Can::ServiceRequest_RequestTransferExit::build()->crc(crc)->build());
+    response = call(Can::ServiceRequest::RequestTransferExit::build()
+                        ->crc(crc)
+                        ->build()
+                        .value());
     IF_NEGATIVE(response) {
         LOG(error, "Failed to request transfer exit. Maybe crc check failed");
         m_logger->progress(0, true);

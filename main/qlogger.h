@@ -30,10 +30,10 @@ public:
 
 public slots:
 
-    void received_frame(std::shared_ptr<Can::Frame>);
-    void transmitted_frame(std::shared_ptr<Can::Frame>);
-    void received_service_response(std::shared_ptr<Can::ServiceResponse>);
-    void transmitted_service_request(std::shared_ptr<Can::ServiceRequest>);
+    void received_frame(std::shared_ptr<Can::Frame::Frame>);
+    void transmitted_frame(std::shared_ptr<Can::Frame::Frame>);
+    void received_service_response(std::shared_ptr<Can::ServiceResponse::ServiceResponse>);
+    void transmitted_service_request(std::shared_ptr<Can::ServiceRequest::ServiceRequest>);
 
     void error(std::string);
     void info(std::string);
@@ -76,18 +76,18 @@ public:
 #undef CONNECT
 
     QLoggerWorker* get_worker() { return m_worker; }
-    void received_frame(std::shared_ptr<Can::Frame> frame) {
+    void received_frame(std::shared_ptr<Can::Frame::Frame> frame) {
         emit signal_received_frame(frame);
     }
-    void transmitted_frame(std::shared_ptr<Can::Frame> frame) {
+    void transmitted_frame(std::shared_ptr<Can::Frame::Frame> frame) {
         emit signal_transmitted_frame(frame);
     }
     void received_service_response(
-        std::shared_ptr<Can::ServiceResponse> response) {
+        std::shared_ptr<Can::ServiceResponse::ServiceResponse> response) {
         emit signal_received_service_response(response);
     }
     void transmitted_service_request(
-        std::shared_ptr<Can::ServiceRequest> request) {
+        std::shared_ptr<Can::ServiceRequest::ServiceRequest> request) {
         emit signal_transmitted_service_request(request);
     }
 
@@ -114,12 +114,12 @@ public:
 
 signals:
 
-    void signal_received_frame(std::shared_ptr<Can::Frame> frame);
-    void signal_transmitted_frame(std::shared_ptr<Can::Frame>);
+    void signal_received_frame(std::shared_ptr<Can::Frame::Frame> frame);
+    void signal_transmitted_frame(std::shared_ptr<Can::Frame::Frame>);
     void signal_received_service_response(
-        std::shared_ptr<Can::ServiceResponse>);
+        std::shared_ptr<Can::ServiceResponse::ServiceResponse>);
     void signal_transmitted_service_request(
-        std::shared_ptr<Can::ServiceRequest>);
+        std::shared_ptr<Can::ServiceRequest::ServiceRequest>);
 
     void signal_error(std::string);
     void signal_info(std::string);

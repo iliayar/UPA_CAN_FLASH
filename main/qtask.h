@@ -26,7 +26,7 @@
 #define RESPONSE_TIMEOUT 1000
 #endif
 #define IF_NEGATIVE(res) \
-    if (res->get_type() == Can::ServiceResponseType::Negative)
+    if (res->get_type() == Can::ServiceResponse::Type::Negative)
 
 /**
  * Interface of task passed into {@link QCommunicator}
@@ -51,8 +51,8 @@ protected:
     /**
      * Method to call in task(). Provides convenient way to communicate with ECU
      */
-    std::shared_ptr<Can::ServiceResponse> call(
-        std::shared_ptr<Can::ServiceRequest>);
+    std::shared_ptr<Can::ServiceResponse::ServiceResponse> call(
+        std::shared_ptr<Can::ServiceRequest::ServiceRequest>);
 
 public slots:
     /**
@@ -60,7 +60,7 @@ public slots:
      * @param response from ECU
      * @param wait for more inforamtion watch {@link QCommunicator::response}
      */
-    void response(std::shared_ptr<Can::ServiceResponse>, int wait = 0);
+    void response(std::shared_ptr<Can::ServiceResponse::ServiceResponse>, int wait = 0);
 
 signals:
 
@@ -68,11 +68,11 @@ signals:
      * Emits when new request to ECU ready
      * @param request passed to communicator
      */
-    void request(std::shared_ptr<Can::ServiceRequest>);
-    void response_imp(std::shared_ptr<Can::ServiceResponse>);
+    void request(std::shared_ptr<Can::ServiceRequest::ServiceRequest>);
+    void response_imp(std::shared_ptr<Can::ServiceResponse::ServiceResponse>);
 
 private:
-    std::shared_ptr<Can::ServiceResponse> m_response;
+    std::shared_ptr<Can::ServiceResponse::ServiceResponse> m_response;
     int m_wait;
 
 protected:

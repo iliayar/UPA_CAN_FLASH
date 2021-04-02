@@ -91,7 +91,7 @@ private:
 class Writer {
 public:
     /**
-     * @param size of resulting data
+     * @param size of resulting data in bytes
      */
     Writer(int size);
 

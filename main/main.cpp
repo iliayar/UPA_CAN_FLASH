@@ -17,13 +17,13 @@
 Q_DECLARE_METATYPE(QTextCharFormat)
 Q_DECLARE_METATYPE(QTextCursor)
 
-Q_DECLARE_METATYPE(std::shared_ptr<Can::Frame>)
+Q_DECLARE_METATYPE(std::shared_ptr<Can::Frame::Frame>)
 Q_DECLARE_METATYPE(std::shared_ptr<QTask>)
-Q_DECLARE_METATYPE(std::shared_ptr<Can::ServiceRequest>)
-Q_DECLARE_METATYPE(std::shared_ptr<Can::ServiceResponse>)
+Q_DECLARE_METATYPE(std::shared_ptr<Can::ServiceRequest::ServiceRequest>)
+Q_DECLARE_METATYPE(std::shared_ptr<Can::ServiceResponse::ServiceResponse>)
 Q_DECLARE_METATYPE(std::vector<uint8_t>)
-Q_DECLARE_METATYPE(Can::ServiceRequest*)
-Q_DECLARE_METATYPE(Can::ServiceResponse*)
+Q_DECLARE_METATYPE(Can::ServiceRequest::ServiceRequest*)
+Q_DECLARE_METATYPE(Can::ServiceResponse::ServiceResponse*)
 Q_DECLARE_METATYPE(WorkerError)
 Q_DECLARE_METATYPE(std::string)
 
@@ -53,12 +53,12 @@ int main(int argc, char* argv[]) {
     app.setStyle(QStyleFactory::create("Fusion"));
 
     qRegisterMetaType<std::vector<uint8_t>>();
-    qRegisterMetaType<std::shared_ptr<Can::Frame>>();
+    qRegisterMetaType<std::shared_ptr<Can::Frame::Frame>>();
     qRegisterMetaType<std::shared_ptr<QTask>>();
-    qRegisterMetaType<std::shared_ptr<Can::ServiceRequest>>();
-    qRegisterMetaType<std::shared_ptr<Can::ServiceResponse>>();
-    qRegisterMetaType<Can::ServiceRequest*>();
-    qRegisterMetaType<Can::ServiceRequest*>();
+    qRegisterMetaType<std::shared_ptr<Can::ServiceRequest::ServiceRequest>>();
+    qRegisterMetaType<std::shared_ptr<Can::ServiceResponse::ServiceResponse>>();
+    qRegisterMetaType<Can::ServiceRequest::ServiceRequest*>();
+    qRegisterMetaType<Can::ServiceRequest::ServiceRequest*>();
     qRegisterMetaType<std::string>();
     qRegisterMetaType<WorkerError>();
     qRegisterMetaType<QTextCharFormat>();

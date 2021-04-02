@@ -402,13 +402,14 @@ void MainWindow::choose_file() {
         return;
     }
     Hex::HexInfo info;
-    try {
-        Hex::HexReader reader(std::make_shared<Hex::FileSource>(fin));
-        DEBUG(info, "Reading file");
-        info = Hex::read_hex_info(reader);
-    } catch (std::runtime_error e) {
-        m_logger->error(e.what());
+    Hex::HexReader reader(std::make_shared<Hex::FileSource>(fin));
+    DEBUG(info, "Reading file");
+    auto maybe_info = Hex::read_hex_info(reader);
+    if(!maybe_info) {
+        m_logger->error("Failed to read HEX file info");
+        return;
     }
+    info = maybe_info.value();
     fin.close();
     DEBUG(info, "File readed and closed");
     m_logger->info("Reading file " + m_file);
@@ -530,8 +531,12 @@ void MainWindow::task_done() {
     // m_abort_task_button->setDisabled(true);
 }
 
-void MainWindow::check_frames_to_write(std::shared_ptr<Can::Frame> frame) {
-    std::vector<uint8_t> payload = frame->dump();
+void MainWindow::check_frames_to_write(std::shared_ptr<Can::Frame::Frame> frame) {
+    auto maybe_payload = frame->dump();
+    if(!maybe_payload) {
+        m_logger->error("Invalid frame passed to send. IT SHOULD NOT HAPPEN!");
+    }
+    std::vector<uint8_t> payload = maybe_payload.value();
     QCanBusFrame qframe;
     qframe.setFrameId(m_tester_id);
     qframe.setPayload(QByteArray(reinterpret_cast<const char*>(payload.data()),
@@ -547,13 +552,13 @@ void MainWindow::processReceivedFrames() {
         if (qframe.frameId() == m_ecu_id) {
             QByteArray payload = qframe.payload();
             if (payload.size() < 8) continue;
-            std::shared_ptr<Can::Frame> frame =
-                std::move(Can::FrameFactory(std::vector<uint8_t>(
-                                                payload.begin(), payload.end()))
-                              .get());
+            auto frame = Can::Frame::Factory(
+                std::vector<uint8_t>(payload.begin(), payload.end())).get();
+            if(!frame) {
+                m_logger->error("Cannot parse received frame");
+            }
             DEBUG(info, "pushing frame to cmmunicator");
-            // m_communicator->push_frame(frame);
-            emit frame_received(frame);
+            emit frame_received(frame.value());
         }
     }
 }

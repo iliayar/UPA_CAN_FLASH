@@ -11,9 +11,14 @@ QLoggerWorker::QLoggerWorker(QObject* parent, QTextEdit* frame_log,
     m_timer.start();
 }
 
-void QLoggerWorker::received_frame(std::shared_ptr<Can::Frame> frame) {
+void QLoggerWorker::received_frame(std::shared_ptr<Can::Frame::Frame> frame) {
+    auto maybe_payload = frame->dump();
+    if(!maybe_payload) {
+        error("Failed to dump frame provided to logger");
+        return;
+    }
+    std::vector<uint8_t> payload = maybe_payload.value();
     m_frame_log->setTextColor(QColor("blue"));
-    std::vector<uint8_t> payload = frame->dump();
     QString payload_str = "ECU:    ";
     payload_str.append(vec_to_qstr(payload));
     m_frame_log->append(payload_str);
@@ -34,16 +39,21 @@ QString QLoggerWorker::vec_to_qstr(std::vector<uint8_t> vec) {
     return str;
 }
 
-void QLoggerWorker::transmitted_frame(std::shared_ptr<Can::Frame> frame) {
-    std::vector<uint8_t> payload = frame->dump();
+void QLoggerWorker::transmitted_frame(std::shared_ptr<Can::Frame::Frame> frame) {
+    auto maybe_payload = frame->dump();
+    if(!maybe_payload) {
+        error("Failed to dump frame provided to logger");
+        return;
+    }
+    std::vector<uint8_t> payload = maybe_payload.value();
     QString payload_str = "Tester: ";
     payload_str.append(vec_to_qstr(payload));
     m_frame_log->append(payload_str);
 }
 void QLoggerWorker::received_service_response(
-    std::shared_ptr<Can::ServiceResponse>) {}
+    std::shared_ptr<Can::ServiceResponse::ServiceResponse>) {}
 void QLoggerWorker::transmitted_service_request(
-    std::shared_ptr<Can::ServiceRequest>) {}
+    std::shared_ptr<Can::ServiceRequest::ServiceRequest>) {}
 
 QString get_date_str() {
     return "[" +

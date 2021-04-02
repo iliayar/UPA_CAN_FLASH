@@ -60,7 +60,7 @@ public slots:
      * Handle new received frame
      * @param frame receiver from ECU
      */
-    virtual void push_frame(std::shared_ptr<Can::Frame>) = 0;
+    virtual void push_frame(std::shared_ptr<Can::Frame::Frame>) = 0;
 
     /**
      * Using by timer to notify timeout
@@ -74,7 +74,7 @@ signals:
      * @param frame Frame to send to ECU
      * Emits when new frame is ready to send
      */
-    void fetch_frame(std::shared_ptr<Can::Frame>);
+    void fetch_frame(std::shared_ptr<Can::Frame::Frame>);
 
     /**
      * signal
@@ -136,7 +136,7 @@ public:
      * @return ServiceResponse pointer to parsed response or nullptr if
      * received frame do not represent a valid reponse
      */
-    std::shared_ptr<Can::ServiceResponse> get_response();
+    std::shared_ptr<Can::ServiceResponse::ServiceResponse> get_response();
 
 public slots:
     /**
@@ -144,14 +144,14 @@ public slots:
      * after moving to worker thread
      * @param frame to initlize reciever from
      */
-    void init(std::shared_ptr<Can::Frame>);
-    void push_frame(std::shared_ptr<Can::Frame>);
+    void init(std::shared_ptr<Can::Frame::Frame>);
+    void push_frame(std::shared_ptr<Can::Frame::Frame>);
 
 signals:
-    void fetch_frame(std::shared_ptr<Can::Frame>);
+    void fetch_frame(std::shared_ptr<Can::Frame::Frame>);
 
 private:
-    std::vector<std::shared_ptr<Can::Frame>> m_frames;
+    std::vector<std::shared_ptr<Can::Frame::Frame>> m_frames;
     Can::WorkerStatus m_status;
 
     int m_consecutive_len;
@@ -175,14 +175,14 @@ public slots:
      * Must be called after moving to worker thread.
      * @param request to initlize transmitter from
      */
-    void init(std::shared_ptr<Can::ServiceRequest>);
-    void push_frame(std::shared_ptr<Can::Frame>);
+    void init(std::shared_ptr<Can::ServiceRequest::ServiceRequest>);
+    void push_frame(std::shared_ptr<Can::Frame::Frame>);
 
 signals:
-    void fetch_frame(std::shared_ptr<Can::Frame>);
+    void fetch_frame(std::shared_ptr<Can::Frame::Frame>);
 
 private:
-    std::vector<std::shared_ptr<Can::Frame>> m_frames;
+    std::vector<std::shared_ptr<Can::Frame::Frame>> m_frames;
     Can::WorkerStatus m_status;
 
     int m_fc_block_size;
@@ -223,21 +223,21 @@ public slots:
      * Triggers by main programm
      * @param frame recevied from ECU
      */
-    void push_frame(std::shared_ptr<Can::Frame>);
+    void push_frame(std::shared_ptr<Can::Frame::Frame>);
 
     /**
      * Process request received from task, sends it to ECU
      * Triggers by {@link QTask} class
      * @param request received from task
      */
-    void request(std::shared_ptr<Can::ServiceRequest>);
+    void request(std::shared_ptr<Can::ServiceRequest::ServiceRequest>);
 
     /**
      * Fetching frame frome worker ans pass it to main programm
      * Triggers by woker.
      * @param frame recevied from worker to send to ECU
      */
-    void fetch_frame_worker(std::shared_ptr<Can::Frame>);
+    void fetch_frame_worker(std::shared_ptr<Can::Frame::Frame>);
 
     /**
      * Triggers by worker when it's done
@@ -267,14 +267,14 @@ signals:
      * Emits when received frame to worker and apss it to main programm
      * @param frame received from worker
      */
-    void fetch_frame(std::shared_ptr<Can::Frame>);
+    void fetch_frame(std::shared_ptr<Can::Frame::Frame>);
 
     /**
      * Emits when receive frame from main programm.
      * Then pass it to current worker
      * @param frame received from ECU
      */
-    void push_frame_worker(std::shared_ptr<Can::Frame>);
+    void push_frame_worker(std::shared_ptr<Can::Frame::Frame>);
 
     /**
      * Emits when worker done and there is not nullptr response parsed by one
@@ -282,20 +282,20 @@ signals:
      * @param response fetched from receiver
      * @param wait flag. if not 0 then ignore {@param response} and increase task timeout by wait*1000 ms
      */
-    void response(std::shared_ptr<Can::ServiceResponse>, int wait = 0);
+    void response(std::shared_ptr<Can::ServiceResponse::ServiceResponse>, int wait = 0);
 
     /**
      * Initialize transmitter. Calls whe transmitter is already in worker thread
      * @param request to initialize trasmitter from
      */
-    void operate_transmitter(std::shared_ptr<Can::ServiceRequest>);
+    void operate_transmitter(std::shared_ptr<Can::ServiceRequest::ServiceRequest>);
 
 
     /**
      * Initialize receiver. Calls when receier is already in worker thread
      * @param frame to initialize receiver from
      */
-    void operate_receiver(std::shared_ptr<Can::Frame>);
+    void operate_receiver(std::shared_ptr<Can::Frame::Frame>);
 
     /**
      * Emits when current task called {@link task_done}.

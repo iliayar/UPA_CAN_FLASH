@@ -29,7 +29,7 @@ public:
     virtual ~MainWindow();
     void processReceivedFrames();
 signals:
-    void frame_received(std::shared_ptr<Can::Frame>);
+    void frame_received(std::shared_ptr<Can::Frame::Frame>);
     void set_task(std::shared_ptr<QTask>);
 
 public slots:
@@ -37,7 +37,7 @@ public slots:
     void start_task();
     void abort_task();
     void connect_device();
-    void check_frames_to_write(std::shared_ptr<Can::Frame>);
+    void check_frames_to_write(std::shared_ptr<Can::Frame::Frame>);
     void disconnect_device();
     void task_done();
 
