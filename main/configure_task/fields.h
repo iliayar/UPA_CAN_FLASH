@@ -1,15 +1,15 @@
 #pragma once
 
+#include <QComboBox>
+#include <QDialog>
 #include <QFrame>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
-#include <QWidget>
-#include <QTextEdit>
 #include <QSpinBox>
-#include <QDialog>
-#include <QComboBox>
+#include <QTextEdit>
+#include <QWidget>
 
 #include "service_all.h"
 #include "task.h"
@@ -18,10 +18,9 @@ class Field : public QGroupBox {
     Q_OBJECT
 public:
     Field(QWidget* parent, std::string name, Can::DataIdentifier id)
-        : QGroupBox(QString::fromStdString(name), parent), m_id(id) {
-    }
-    Field(std::string name, Can::DataIdentifier id) : Field(nullptr, name, id) {
-    }
+        : QGroupBox(QString::fromStdString(name), parent), m_id(id) {}
+    Field(std::string name, Can::DataIdentifier id)
+        : Field(nullptr, name, id) {}
 
     void init(ConfigurationTask* task) {
         m_task = task;
@@ -40,32 +39,36 @@ public:
 public slots:
     void write() {
         auto data = Can::Data::build()->type(m_id)->value(to_vec())->build();
-        auto request = Can::ServiceRequest::WriteDataByIdentifier::build()->data(data.value())->build();
-        std::shared_ptr<Can::ServiceResponse::ServiceResponse> response = m_task->call(request.value());
+        auto request = Can::ServiceRequest::WriteDataByIdentifier::build()
+                           ->data(data.value())
+                           ->build();
+        std::shared_ptr<Can::ServiceResponse::ServiceResponse> response =
+            m_task->call(request.value());
 
-        if(response->get_type() == Can::ServiceResponse::Type::Negative) {
+        if (response->get_type() == Can::ServiceResponse::Type::Negative) {
             m_task->m_logger->error("Failed to write data");
         }
     }
 
     void read() {
-        auto request = Can::ServiceRequest::ReadDataByIdentifier::build()->id(m_id)->build();
-        std::shared_ptr<Can::ServiceResponse::ServiceResponse> response = m_task->call(request.value());
-        if(response->get_type() == Can::ServiceResponse::Type::Negative) {
+        auto request = Can::ServiceRequest::ReadDataByIdentifier::build()
+                           ->id(m_id)
+                           ->build();
+        std::shared_ptr<Can::ServiceResponse::ServiceResponse> response =
+            m_task->call(request.value());
+        if (response->get_type() == Can::ServiceResponse::Type::Negative) {
             m_task->m_logger->error("Failed to read data");
             return;
         }
-        from_vec(
-            std::static_pointer_cast<Can::ServiceResponse::ReadDataByIdentifier>(
-                response)
-                ->get_data()
-                ->get_value());
+        from_vec(std::static_pointer_cast<
+                     Can::ServiceResponse::ReadDataByIdentifier>(response)
+                     ->get_data()
+                     ->get_value());
     }
 
 protected:
-
     virtual void create_fields() = 0;
-    virtual void from_vec(std::vector<uint8_t> data) =0;
+    virtual void from_vec(std::vector<uint8_t> data) = 0;
     virtual std::vector<uint8_t> to_vec() = 0;
 
     QSpinBox* create_hex_spin_box() {
@@ -83,9 +86,8 @@ protected:
 class StringField : public Field {
     Q_OBJECT
 public:
-    StringField(std::string name, Can::DataIdentifier id, int length) : Field(name, id), m_length(length) {
-        
-    }
+    StringField(std::string name, Can::DataIdentifier id, int length)
+        : Field(name, id), m_length(BYTES(length)) {}
 
 protected:
     void create_fields() override {
@@ -93,7 +95,7 @@ protected:
         m_layout->addWidget(m_text);
         connect(m_text, &QTextEdit::textChanged, [=]() {
             QString text = m_text->toPlainText();
-            if(text.length() > m_length) {
+            if (text.length() > m_length) {
                 text.truncate(m_length);
                 m_text->setPlainText(text);
             }
@@ -102,7 +104,7 @@ protected:
 
     void from_vec(std::vector<uint8_t> data) override {
         std::string s = "";
-        for(uint8_t c : data) {
+        for (uint8_t c : data) {
             s += (char)c;
         }
         m_text->setPlainText(QString::fromStdString(s));
@@ -111,7 +113,7 @@ protected:
     std::vector<uint8_t> to_vec() override {
         std::string s = m_text->toPlainText().toStdString();
         std::vector<uint8_t> res;
-        for(char c : res) {
+        for (char c : res) {
             res.push_back((uint8_t)c);
         }
         return res;
@@ -125,7 +127,8 @@ private:
 class IntField : public Field {
     Q_OBJECT
 public:
-    IntField(std::string name, Can::DataIdentifier id, int size) : Field(name, id), m_size(size) {}
+    IntField(std::string name, Can::DataIdentifier id, int size)
+        : Field(name, id), m_size(size) {}
 
 protected:
     void create_fields() override {
@@ -146,7 +149,7 @@ protected:
         writer.write_int<uint64_t>(m_number->value(), m_size);
         return writer.get_payload();
     }
-    
+
 private:
     QSpinBox* m_number;
     int m_size;
@@ -155,13 +158,14 @@ private:
 class VecField : public Field {
     Q_OBJECT
 public:
-    VecField(std::string name, Can::DataIdentifier id, int size) : Field(name, id), m_data(size, 0) {}
+    VecField(std::string name, Can::DataIdentifier id, int size)
+        : Field(name, id), m_data(BYTES(size), 0) {}
 
 protected:
     void create_fields() override {
         QFrame* frame = new QFrame();
         QHBoxLayout* layout = new QHBoxLayout(frame);
-        for(int i = 0; i < m_data.size(); ++i) {
+        for (int i = 0; i < m_data.size(); ++i) {
             QSpinBox* box = create_hex_spin_box();
             box->setMinimum(0);
             box->setMaximum(255);
@@ -172,15 +176,13 @@ protected:
     }
 
     void from_vec(std::vector<uint8_t> data) override {
-        for(int i = 0; i < m_data.size(); ++i) {
+        for (int i = 0; i < m_data.size(); ++i) {
             m_data[i] = data[i];
             m_boxes[i]->setValue(data[i]);
         }
     }
 
-    std::vector<uint8_t> to_vec() override {
-        return m_data;
-    }
+    std::vector<uint8_t> to_vec() override { return m_data; }
 
 private:
     std::vector<uint8_t> m_data;
@@ -195,10 +197,13 @@ struct MultiFieldItem {
 class MultiField : public Field {
     Q_OBJECT
 public:
-    MultiField(std::string name, Can::DataIdentifier id, std::vector<MultiFieldItem> items) : Field(name, id), m_items(items) {}
+    MultiField(std::string name, Can::DataIdentifier id,
+               std::vector<MultiFieldItem> items)
+        : Field(name, id), m_items(items) {}
+
 protected:
     void create_fields() override {
-        for(MultiFieldItem item : m_items) {
+        for (MultiFieldItem item : m_items) {
             QFrame* frame = new QFrame(this);
             QHBoxLayout* layout = new QHBoxLayout(frame);
             layout->addWidget(new QLabel(QString::fromStdString(item.name)));
@@ -213,7 +218,7 @@ protected:
 
     void from_vec(std::vector<uint8_t> data) override {
         Util::Reader reader(data);
-        for(int i = 0; i < m_items.size(); ++i) {
+        for (int i = 0; i < m_items.size(); ++i) {
             uint64_t n = reader.read_int<uint64_t>(m_items[i].size).value();
             m_values[i]->setValue(n);
         }
@@ -221,24 +226,24 @@ protected:
 
     std::vector<uint8_t> to_vec() override {
         std::vector<uint8_t> res;
-        for(int i = 0; i < m_items.size(); ++i) {
+        for (int i = 0; i < m_items.size(); ++i) {
             uint64_t n = m_values[i]->value();
             Util::Writer writer(BYTES(m_items[i].size));
             writer.write_int<uint64_t>(n, m_items[i].size);
-            for(uint8_t d : writer.get_payload()) {
+            for (uint8_t d : writer.get_payload()) {
                 res.push_back(d);
             }
         }
         return res;
     }
-    
+
 private:
     std::vector<MultiFieldItem> m_items;
     std::vector<QSpinBox*> m_values;
 };
 
 class EnumField : public Field {
-Q_OBJECT
+    Q_OBJECT
 public:
     EnumField(std::string name, Can::DataIdentifier id,
               std::vector<std::pair<std::string, uint64_t>> entries, int size)
@@ -246,7 +251,7 @@ public:
 
     void create_fields() override {
         m_box = new QComboBox();
-        for(auto [name, _] : m_entries) {
+        for (auto [name, _] : m_entries) {
             m_box->addItem(QString::fromStdString(name));
         }
         m_layout->addWidget(m_box);
@@ -255,8 +260,8 @@ public:
     void from_vec(std::vector<uint8_t> data) override {
         Util::Reader reader(data);
         int n = reader.read_int<uint64_t>(m_size).value();
-        for(auto [name, m] : m_entries) {
-            if(m == n) {
+        for (auto [name, m] : m_entries) {
+            if (m == n) {
                 m_box->setCurrentText(QString::fromStdString(name));
             }
         }

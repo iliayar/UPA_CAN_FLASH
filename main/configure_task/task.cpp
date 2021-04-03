@@ -6,6 +6,7 @@
 #include <QDialog>
 #include <QGroupBox>
 #include "fields.h"
+#include "config.h"
 
 ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
     : QTask(logger)
@@ -20,44 +21,21 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
 
     main_layout->addWidget(groups_list);
 
-    for(int i = 0; i < GROUPS.size(); ++i) {
+    DataConfig* config = new DataConfig();
+
+    for(auto& [name, fields] : config->fields) {
         QListWidgetItem* item =
-            new QListWidgetItem(QString::fromStdString(GROUPS[i]), groups_list);
+            new QListWidgetItem(QString::fromStdString(name), groups_list);
         QGroupBox* group = new QGroupBox(tr("&Parameteres"), main_dialog);
         QVBoxLayout* layout = new QVBoxLayout(group);
-        m_groups[GROUPS[i]] = group;
+        m_groups[name] = group;
         main_layout->addWidget(group);
         group->hide();
-        Field* field;
-        // if(i == 0) {
-        //     field = new StringField("String Test", 10);
-        //     field->init();
-        //     field->setParent(group);
-        //     layout->addWidget(field);
-        // } else if(i == 1) {
-        //     field = new IntField("Int Test", 16);
-        //     field->init();
-        //     field->setParent(group);
-        //     layout->addWidget(field);
-        //     field = new StringField("String Test", 10);
-        //     field->init();
-        //     field->setParent(group);
-        //     layout->addWidget(field);
-        //     field = new VecField("Vec Test", 8);
-        //     field->init();
-        //     field->setParent(group);
-        //     layout->addWidget(field);
-        // } else if(i == 2) {
-        //     field = new VecField("Vec Test", 8);
-        //     field->init();
-        //     field->setParent(group);
-        //     layout->addWidget(field);
-        // } else if(i == 3) {
-        //     field = new MultiField("Mutli Test", {{8, "Value 8"}, {16, "Value 16"}});
-        //     field->init();
-        //     field->setParent(group);
-        //     layout->addWidget(field);
-        // }
+        for(Field* field : fields) {
+            field->init(this);
+            field->setParent(group);
+            layout->addWidget(field);
+        }
     }
 
     main_dialog->setLayout(main_layout);

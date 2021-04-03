@@ -13,6 +13,8 @@ set(Main_SRCS
     configure_task/task.h
     configure_task/fields.h
     configure_task/task.cpp
+    configure_task/config.cpp
+    configure_task/config.h
 )
 
 add_compile_definitions(APP_VERSION="${APP_VERSION}")

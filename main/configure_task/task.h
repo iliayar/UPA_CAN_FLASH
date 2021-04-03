@@ -6,19 +6,9 @@
 #include <QGroupBox>
 #include <unordered_map>
 
-// #include "fields.h"
-class Field;
-
 class ConfigurationTask : public QTask {
 
 public:
-
-    const std::vector<std::string> GROUPS = {
-        "Group1",
-        "Group2",
-        "Group3",
-        "Group4"
-    };
 
     ConfigurationTask(std::shared_ptr<QLogger> logger);
 
