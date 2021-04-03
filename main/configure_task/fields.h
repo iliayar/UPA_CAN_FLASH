@@ -78,6 +78,10 @@ protected:
         return box;
     }
 
+    void log(std::string s) {
+	m_task->m_logger->info(s);
+    }
+
     QHBoxLayout* m_layout;
     Can::DataIdentifier m_id;
     ConfigurationTask* m_task;
@@ -112,9 +116,13 @@ protected:
 
     std::vector<uint8_t> to_vec() override {
         std::string s = m_text->toPlainText().toStdString();
-        std::vector<uint8_t> res;
-        for (char c : res) {
-            res.push_back((uint8_t)c);
+        std::vector<uint8_t> res(m_length, 0);
+        for (int i = 0; i < m_length; ++i) {
+            if(i < s.length()) {
+		res[i] = static_cast<uint8_t>(s[i]);
+	    } else {
+		res[i] = 0x00;
+	    }
         }
         return res;
     }

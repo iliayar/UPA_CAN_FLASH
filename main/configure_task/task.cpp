@@ -9,6 +9,7 @@
 
 #include "config.h"
 #include "fields.h"
+#include "service_all.h"
 
 ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
     : QTask(logger) {
@@ -57,6 +58,18 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
 }
 
 void ConfigurationTask::task() {
+
+    auto response = call(Can::ServiceRequest::DiagnosticSessionControl::build()
+                        ->subfunction(Can::ServiceRequest::DiagnosticSessionControl::
+                                          Subfunction::extendDiagnosticSession)
+                        ->build()
+                        .value());
+
+    IF_NEGATIVE(response) {
+        LOG(error, "Failed ot enter extendDiagnosticSession");
+        return;
+    }
+
     QEventLoop loop;
     connect(m_window, &QWidget::destroyed, &loop, &QEventLoop::quit);
     loop.exec();
