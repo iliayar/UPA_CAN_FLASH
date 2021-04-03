@@ -1,5 +1,7 @@
 #include "task.h"
 
+
+#include <QMainWindow>
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QListWidget>
@@ -8,25 +10,22 @@
 #include "fields.h"
 #include "config.h"
 
-ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
-    : QTask(logger)
+ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger, QWidget* parent)
+    : QTask(logger), m_parent(parent)
 {
-    m_logger->info("Hello World!"); 
+	QWidget* window = new QWidget(nullptr);
+    QHBoxLayout* main_layout = new QHBoxLayout(window);
 
-    QDialog* main_dialog = new QDialog();
-
-    QHBoxLayout* main_layout = new QHBoxLayout(main_dialog);
-
-    QListWidget* groups_list = new QListWidget(main_dialog);
+    QListWidget* groups_list = new QListWidget(window);
 
     main_layout->addWidget(groups_list);
 
-    DataConfig* config = new DataConfig();
+    DataConfig config{};
 
-    for(auto& [name, fields] : config->fields) {
+    for(auto& [name, fields] : config.fields) {
         QListWidgetItem* item =
             new QListWidgetItem(QString::fromStdString(name), groups_list);
-        QGroupBox* group = new QGroupBox(tr("&Parameteres"), main_dialog);
+        QGroupBox* group = new QGroupBox(tr("&Parameteres"), window);
         QVBoxLayout* layout = new QVBoxLayout(group);
         m_groups[name] = group;
         main_layout->addWidget(group);
@@ -38,10 +37,8 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
         }
     }
 
-    main_dialog->setLayout(main_layout);
-
     connect(groups_list, &QListWidget::currentItemChanged,
-            [&](QListWidgetItem* item, QListWidgetItem* prev) {
+            [this](QListWidgetItem* item, QListWidgetItem* prev) {
                 if (prev != nullptr) {
                     auto prev_group = m_groups[prev->text().toStdString()];
                     if (prev_group != nullptr && prev_group->isVisible())
@@ -54,11 +51,15 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
                 }
             });
 
-    m_main_dialog = main_dialog;
+    	window->setAttribute( Qt::WA_DeleteOnClose );
+	window->show();
+	window->setFocus();
+	m_window = window;
+
 }
 
 void ConfigurationTask::task() {
-
-    m_main_dialog->exec();
-
+	QEventLoop loop;
+	connect(m_window, &QWidget::destroyed, &loop, &QEventLoop::quit);
+	loop.exec();
 }

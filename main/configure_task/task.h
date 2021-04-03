@@ -2,7 +2,7 @@
 
 #include "../qtask.h"
 
-#include <QDialog>
+#include <QLayout>
 #include <QGroupBox>
 #include <unordered_map>
 
@@ -10,7 +10,7 @@ class ConfigurationTask : public QTask {
 
 public:
 
-    ConfigurationTask(std::shared_ptr<QLogger> logger);
+    ConfigurationTask(std::shared_ptr<QLogger> logger, QWidget* parent);
 
     void task() override;
 
@@ -18,6 +18,7 @@ public:
 
 private:
 
-    QDialog* m_main_dialog;
     std::unordered_map<std::string, QGroupBox*> m_groups;
+    QWidget* m_parent;
+    QWidget* m_window;
 };

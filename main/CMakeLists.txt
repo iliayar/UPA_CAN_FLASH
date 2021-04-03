@@ -60,11 +60,11 @@ if(WIN32)
             ${MINGW_DLL_DIR}/libbrotlicommon.dll
             ${MINGW_DLL_DIR}/libiconv-2.dll
             ${MINGW_DLL_DIR}/libpcre2-16-0.dll)
-    if ($ENV{MSYSTEM} STREQUAL "MINGW32") 
+    if ($ENV{MSYSTEM} STREQUAL "MINGW32")
         set(MINGW_DLLS ${MINGW_DLLS} ${MINGW_DLL_DIR}/libgcc_s_dw2-1.dll)
-    else ($ENV{MSYSTEM} STREQUAL "MINGW32") 
+    else ($ENV{MSYSTEM} STREQUAL "MINGW32")
         set(MINGW_DLLS ${MINGW_DLLS} ${MINGW_DLL_DIR}/libgcc_s_seh-1.dll)
-    endif ($ENV{MSYSTEM} STREQUAL "MINGW32") 
+    endif ($ENV{MSYSTEM} STREQUAL "MINGW32")
     add_custom_command(
         TARGET UPA_CAN_FLASH POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
