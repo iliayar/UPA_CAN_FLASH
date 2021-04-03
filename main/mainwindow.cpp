@@ -521,7 +521,7 @@ void MainWindow::start_task() {
     } else if (task_name == "Configuration") {
         m_logger->info("Starting task " + task_name.toStdString());
         emit set_task(std::make_shared<ConfigurationTask>(
-            std::make_shared<QLogger>(m_logger_worker), this));
+            std::make_shared<QLogger>(m_logger_worker)));
     }
 }
 

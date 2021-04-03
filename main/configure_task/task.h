@@ -10,7 +10,7 @@ class ConfigurationTask : public QTask {
 
 public:
 
-    ConfigurationTask(std::shared_ptr<QLogger> logger, QWidget* parent);
+    ConfigurationTask(std::shared_ptr<QLogger> logger);
 
     void task() override;
 
@@ -19,6 +19,5 @@ public:
 private:
 
     std::unordered_map<std::string, QGroupBox*> m_groups;
-    QWidget* m_parent;
     QWidget* m_window;
 };

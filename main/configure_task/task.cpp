@@ -1,19 +1,18 @@
 #include "task.h"
 
-
-#include <QMainWindow>
-#include <QVBoxLayout>
-#include <QLabel>
-#include <QListWidget>
 #include <QDialog>
 #include <QGroupBox>
-#include "fields.h"
-#include "config.h"
+#include <QLabel>
+#include <QListWidget>
+#include <QMainWindow>
+#include <QVBoxLayout>
 
-ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger, QWidget* parent)
-    : QTask(logger), m_parent(parent)
-{
-	QWidget* window = new QWidget(nullptr);
+#include "config.h"
+#include "fields.h"
+
+ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
+    : QTask(logger) {
+    QWidget* window = new QWidget(nullptr);
     QHBoxLayout* main_layout = new QHBoxLayout(window);
 
     QListWidget* groups_list = new QListWidget(window);
@@ -22,7 +21,7 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger, QWidget* p
 
     DataConfig config{};
 
-    for(auto& [name, fields] : config.fields) {
+    for (auto& [name, fields] : config.fields) {
         QListWidgetItem* item =
             new QListWidgetItem(QString::fromStdString(name), groups_list);
         QGroupBox* group = new QGroupBox(tr("&Parameteres"), window);
@@ -30,7 +29,7 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger, QWidget* p
         m_groups[name] = group;
         main_layout->addWidget(group);
         group->hide();
-        for(Field* field : fields) {
+        for (Field* field : fields) {
             field->init(this);
             field->setParent(group);
             layout->addWidget(field);
@@ -51,15 +50,14 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger, QWidget* p
                 }
             });
 
-    	window->setAttribute( Qt::WA_DeleteOnClose );
-	window->show();
-	window->setFocus();
-	m_window = window;
-
+    window->setAttribute(Qt::WA_DeleteOnClose);
+    window->show();
+    window->setFocus();
+    m_window = window;
 }
 
 void ConfigurationTask::task() {
-	QEventLoop loop;
-	connect(m_window, &QWidget::destroyed, &loop, &QEventLoop::quit);
-	loop.exec();
+    QEventLoop loop;
+    connect(m_window, &QWidget::destroyed, &loop, &QEventLoop::quit);
+    loop.exec();
 }
