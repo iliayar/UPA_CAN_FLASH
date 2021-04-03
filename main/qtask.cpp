@@ -62,7 +62,7 @@ std::shared_ptr<Can::ServiceResponse::ServiceResponse> QTask::call(
                         m_response)
                     ->get_code() == 0x78) {
                     DEBUG(info, "task response error service code = 0x78");
-                    m_logger->warning("Waiting for positive resposnse");
+                    m_logger->warning("Waiting for positive response");
                     m_wait += 4;
                     continue;
                 }

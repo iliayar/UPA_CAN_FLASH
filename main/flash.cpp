@@ -87,7 +87,7 @@ void FlashTask::task_main() {
                         .value());
 
     IF_NEGATIVE(response) {
-        LOG(error, "Failed ot enter programmingSession");
+        LOG(error, "Failed on enter programmingSession");
         m_logger->progress(0, true);
         return;
     }
@@ -138,7 +138,7 @@ void FlashTask::task_main() {
     progress += 1;
     m_logger->progress(progress);
 
-    LOG(info, "Successfully pased security access");
+    LOG(info, "Successfully passed security access");
 
     std::ifstream fin(m_file);
     if (!fin) {

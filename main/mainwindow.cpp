@@ -557,7 +557,7 @@ void MainWindow::processReceivedFrames() {
             if(!frame) {
                 m_logger->error("Cannot parse received frame");
             }
-            DEBUG(info, "pushing frame to cmmunicator");
+            DEBUG(info, "pushing frame to communicator");
             emit frame_received(frame.value());
         }
     }

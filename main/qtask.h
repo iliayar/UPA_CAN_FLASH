@@ -39,7 +39,7 @@ public:
     void run() override {
         try {
             task();
-        } catch (std::runtime_error e) {
+        } catch (std::experimental::bad_optional_access& e) {
             m_logger->error(std::string("Task failed: ") + e.what());
         }
         DEBUG(info, "Exiting task");

@@ -36,7 +36,7 @@ public:
         try {
             QApplication::notify(receiver, e);
             return true;
-        } catch (std::exception e) {
+        } catch (std::experimental::bad_optional_access e) {
             m_box.critical(nullptr, "Error", e.what());
             std::cout << e.what() << std::endl;
             return true;
