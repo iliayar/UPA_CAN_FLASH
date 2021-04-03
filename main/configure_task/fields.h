@@ -39,23 +39,24 @@ public:
     }
 public slots:
     void write() {
-        std::shared_ptr<Can::ServiceResponse> response = m_task->call(
-            std::make_shared<Can::ServiceRequest_WriteDataByIdentifier>(
-                new Can::Data(m_id, to_vec())));
-        if(response->get_type() == Can::ServiceResponseType::Negative) {
+        auto data = Can::Data::build()->type(m_id)->value(to_vec())->build();
+        auto request = Can::ServiceRequest::WriteDataByIdentifier::build()->data(data.value())->build();
+        std::shared_ptr<Can::ServiceResponse::ServiceResponse> response = m_task->call(request.value());
+
+        if(response->get_type() == Can::ServiceResponse::Type::Negative) {
             m_task->m_logger->error("Failed to write data");
         }
     }
 
     void read() {
-        std::shared_ptr<Can::ServiceResponse> response = m_task->call(
-            std::make_shared<Can::ServiceRequest_ReadDataByIdentifier>(m_id));
-        if(response->get_type() == Can::ServiceResponseType::Negative) {
+        auto request = Can::ServiceRequest::ReadDataByIdentifier::build()->id(m_id)->build();
+        std::shared_ptr<Can::ServiceResponse::ServiceResponse> response = m_task->call(request.value());
+        if(response->get_type() == Can::ServiceResponse::Type::Negative) {
             m_task->m_logger->error("Failed to read data");
             return;
         }
         from_vec(
-            std::static_pointer_cast<Can::ServiceResponse_ReadDataByIdentifier>(
+            std::static_pointer_cast<Can::ServiceResponse::ReadDataByIdentifier>(
                 response)
                 ->get_data()
                 ->get_value());
@@ -136,15 +137,14 @@ protected:
 
     void from_vec(std::vector<uint8_t> data) override {
         Util::Reader reader(data);
-        uint64_t n = reader.read_64(0, m_size);
+        uint64_t n = reader.read_int<uint64_t>(m_size).value();
         m_number->setValue(n);
     }
 
     std::vector<uint8_t> to_vec() override {
-        std::vector<uint8_t> res(BYTES(m_size), 0);
-        Util::Writer writer(res);
-        writer.write_64(m_number->value(), 0, m_size);
-        return res;
+        Util::Writer writer(BYTES(m_size));
+        writer.write_int<uint64_t>(m_number->value(), m_size);
+        return writer.get_payload();
     }
     
 private:
@@ -213,9 +213,8 @@ protected:
 
     void from_vec(std::vector<uint8_t> data) override {
         Util::Reader reader(data);
-        int offset = 0;
         for(int i = 0; i < m_items.size(); ++i) {
-            uint64_t n = reader.read_64(offset, m_items[i].size);
+            uint64_t n = reader.read_int<uint64_t>(m_items[i].size).value();
             m_values[i]->setValue(n);
         }
     }
@@ -224,10 +223,9 @@ protected:
         std::vector<uint8_t> res;
         for(int i = 0; i < m_items.size(); ++i) {
             uint64_t n = m_values[i]->value();
-            std::vector<uint8_t> vec(BYTES(m_items[i].size), 0);
-            Util::Writer writer(vec);
-            writer.write_64(n, 0, m_items[i].size);
-            for(uint8_t d : vec) {
+            Util::Writer writer(BYTES(m_items[i].size));
+            writer.write_int<uint64_t>(n, m_items[i].size);
+            for(uint8_t d : writer.get_payload()) {
                 res.push_back(d);
             }
         }
@@ -256,7 +254,7 @@ public:
 
     void from_vec(std::vector<uint8_t> data) override {
         Util::Reader reader(data);
-        int n = reader.read_64(0, m_size);
+        int n = reader.read_int<uint64_t>(m_size).value();
         for(auto [name, m] : m_entries) {
             if(m == n) {
                 m_box->setCurrentText(QString::fromStdString(name));
@@ -265,12 +263,11 @@ public:
     }
 
     std::vector<uint8_t> to_vec() override {
-        std::vector<uint8_t> res(BYTES(m_size));
-        Util::Writer writer(res);
+        Util::Writer writer(BYTES(m_size));
         for (auto [name, n] : m_entries) {
             if (name == m_box->currentText().toStdString()) {
-                writer.write_64(n, 0, m_size);
-                return res;
+                writer.write_int<uint64_t>(n, m_size);
+                return writer.get_payload();
             }
         }
     }
