@@ -72,7 +72,7 @@ void QCommunicator::push_frame(std::shared_ptr<Can::Frame::Frame> frame) {
     connect(this, &QCommunicator::operate_receiver, worker.get(),
             &QReceiver::init);
     m_worker = std::move(worker);
-    m_worker->moveToThread(&m_worker_thread);
+    // m_worker->moveToThread(&m_worker_thread);
 
     emit operate_receiver(frame);
     DEBUG(info, "QReceiver created");
@@ -108,7 +108,7 @@ void QCommunicator::request(std::shared_ptr<Can::ServiceRequest::ServiceRequest>
     connect(this, &QCommunicator::operate_transmitter, worker.get(),
             &QTransmitter::init);
     m_worker = std::move(worker);
-    m_worker->moveToThread(&m_worker_thread);
+    // m_worker->moveToThread(&m_worker_thread);
 
     emit operate_transmitter(r);
     DEBUG(info, "QTransmitter created");
@@ -186,12 +186,13 @@ void QTransmitter::init(std::shared_ptr<Can::ServiceRequest::ServiceRequest> req
     init_timer();
     auto maybe_frames = Can::service_to_frames(request);
     if(!maybe_frames) {
-        m_status = Can::WorkerStatus::Error;
+        emit worker_error(WorkerError::Other);
         return;
     }
     m_frames = maybe_frames.value();
     if (m_frames.size() == 0) {
         emit worker_error(WorkerError::Other);
+	return;
     }
     switch (m_frames[0]->get_type()) {
         case Can::Frame::Type::SingleFrame: {
