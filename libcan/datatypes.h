@@ -3,7 +3,7 @@
 #include "objects.h"
 
 namespace Can {
-enum class DataIdentifier { VIN = 0xf190, UPASystemType = 0x200e };
+    enum class DataIdentifier { VIN = 0xf190, UPASystemType = 0x200e, Conf = 0x2044, THRFOUPA = 0xb001 };
 
 class Data {
 public:
@@ -31,6 +31,14 @@ public:
                 break;
             case Can::DataIdentifier::UPASystemType:
                 value = Util::VarVecField(1*8);
+                value.read(reader);
+                break;
+            case Can::DataIdentifier::Conf:
+                value = Util::VarVecField(16 + 24 + 16);
+                value.read(reader);
+                break;
+            case Can::DataIdentifier::THRFOUPA:
+                value = Util::VarVecField(120);
                 value.read(reader);
                 break;
             }
