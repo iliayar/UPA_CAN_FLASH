@@ -6,6 +6,7 @@
 #include <QListWidget>
 #include <QMainWindow>
 #include <QVBoxLayout>
+#include <QScrollArea>
 
 #include "config.h"
 #include "fields.h"
@@ -25,29 +26,37 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
     for (auto& [name, fields] : config.fields) {
         QListWidgetItem* item =
             new QListWidgetItem(QString::fromStdString(name), groups_list);
-        QGroupBox* group = new QGroupBox(tr("&Parameteres"), window);
+        QScrollArea* scroll = new QScrollArea(window);
+        QGroupBox* group = new QGroupBox(tr("&Parameteres"), scroll);
+        scroll->setWidget(group);
         QVBoxLayout* layout = new QVBoxLayout(group);
-        m_groups[name] = group;
-        main_layout->addWidget(group);
-        group->hide();
+        m_groups[name] = {scroll, group};
+        main_layout->addWidget(scroll);
+        scroll->hide();
         for (Field* field : fields) {
             field->init(this);
             field->setParent(group);
+            field->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+            field->setMinimumSize(50, 200);
             layout->addWidget(field);
         }
+        group->adjustSize();
     }
 
     connect(groups_list, &QListWidget::currentItemChanged,
             [this](QListWidgetItem* item, QListWidgetItem* prev) {
                 if (prev != nullptr) {
                     auto prev_group = m_groups[prev->text().toStdString()];
-                    if (prev_group != nullptr && prev_group->isVisible())
-                        prev_group->hide();
+                    if (prev_group.first != nullptr && prev_group.first->isVisible())
+                        prev_group.first->hide();
                 }
                 if (item != nullptr) {
                     auto cur_group = m_groups[item->text().toStdString()];
-                    if (cur_group != nullptr && !cur_group->isVisible())
-                        cur_group->show();
+                    if (cur_group.first != nullptr && !cur_group.first->isVisible()) {
+                        cur_group.first->show();
+                        cur_group.first->adjustSize();
+                        cur_group.second->adjustSize();
+                    }
                 }
             });
 

@@ -51,6 +51,9 @@ public:
             read(reader, object()->m_id);
         }
         auto id(DataIdentifier value) {
+            return field(object()->m_id, static_cast<uint16_t>(value));
+        }
+        auto raw_id(uint16_t value) {
             return field(object()->m_id, value);
         }
     };
@@ -70,7 +73,7 @@ public:
 
 private:
     Util::EnumField<Type, uint8_t, 8> m_type = Type::ReadDataByIdentifier;
-    Util::EnumField<DataIdentifier, uint16_t, 16> m_id;
+    Util::IntField<uint16_t, 16> m_id;
 };
 
 }  // namespace ServiceRequest

@@ -18,6 +18,6 @@ public:
 
 private:
 
-    std::unordered_map<std::string, QGroupBox*> m_groups;
+    std::unordered_map<std::string, std::pair<QWidget*, QWidget*>> m_groups;
     QWidget* m_window;
 };

@@ -15,6 +15,7 @@ set(libcan_SRCS
     logger.h
     logger.cpp
     datatypes.h
+    datatypes.cpp
     ${SERVICES}
 )
 

@@ -17,9 +17,9 @@
 class Field : public QGroupBox {
     Q_OBJECT
 public:
-    Field(QWidget* parent, std::string name, Can::DataIdentifier id)
+    Field(QWidget* parent, std::string name, uint16_t id)
         : QGroupBox(QString::fromStdString(name), parent), m_id(id) {}
-    Field(std::string name, Can::DataIdentifier id)
+    Field(std::string name, uint16_t id)
         : Field(nullptr, name, id) {}
 
     void init(ConfigurationTask* task) {
@@ -38,7 +38,7 @@ public:
     }
 public slots:
     void write() {
-        auto data = Can::Data::build()->type(m_id)->value(to_vec())->build();
+        auto data = Can::Data::build()->raw_type(m_id)->value(to_vec())->build();
         auto request = Can::ServiceRequest::WriteDataByIdentifier::build()
                            ->data(data.value())
                            ->build();
@@ -52,7 +52,7 @@ public slots:
 
     void read() {
         auto request = Can::ServiceRequest::ReadDataByIdentifier::build()
-                           ->id(m_id)
+                           ->raw_id(m_id)
                            ->build();
         std::shared_ptr<Can::ServiceResponse::ServiceResponse> response =
             m_task->call(request.value());
@@ -83,14 +83,14 @@ protected:
     }
 
     QHBoxLayout* m_layout;
-    Can::DataIdentifier m_id;
+    uint16_t m_id;
     ConfigurationTask* m_task;
 };
 
 class StringField : public Field {
     Q_OBJECT
 public:
-    StringField(std::string name, Can::DataIdentifier id, int length)
+    StringField(std::string name, uint16_t id, int length)
         : Field(name, id), m_length(BYTES(length)) {}
 
 protected:
@@ -135,7 +135,7 @@ private:
 class IntField : public Field {
     Q_OBJECT
 public:
-    IntField(std::string name, Can::DataIdentifier id, int size)
+    IntField(std::string name, uint16_t id, int size)
         : Field(name, id), m_size(size) {}
 
 protected:
@@ -166,7 +166,7 @@ private:
 class VecField : public Field {
     Q_OBJECT
 public:
-    VecField(std::string name, Can::DataIdentifier id, int size)
+    VecField(std::string name, uint16_t id, int size)
         : Field(name, id), m_data(BYTES(size), 0) {}
 
 protected:
@@ -205,7 +205,7 @@ struct MultiFieldItem {
 class MultiField : public Field {
     Q_OBJECT
 public:
-    MultiField(std::string name, Can::DataIdentifier id,
+    MultiField(std::string name, uint16_t id,
                std::vector<MultiFieldItem> items)
         : Field(name, id), m_items(items) {}
 
@@ -253,7 +253,7 @@ private:
 class EnumField : public Field {
     Q_OBJECT
 public:
-    EnumField(std::string name, Can::DataIdentifier id,
+    EnumField(std::string name, uint16_t id,
               std::vector<std::pair<std::string, uint64_t>> entries, int size)
         : Field(name, id), m_entries(entries), m_size(size) {}
 

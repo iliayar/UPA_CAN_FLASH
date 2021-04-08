@@ -1,12 +1,16 @@
 #pragma once
 
 #include "objects.h"
+#include <map>
 
 namespace Can {
     enum class DataIdentifier { VIN = 0xf190, UPASystemType = 0x200e, Conf = 0x2044, THRFOUPA = 0xb001 };
 
 class Data {
 public:
+
+    static std::map<uint16_t, int> m_sizes;
+    
     class Builder : public Util::Builder<Data, Builder> {
     protected:
         std::unique_ptr<Builder> self() {
@@ -24,24 +28,13 @@ public:
             }
             auto& value = this->object()->m_value;
 
-            switch(type.get().value()) {
-            case Can::DataIdentifier::VIN:
-                value = Util::VarVecField(17*8);
-                value.read(reader);
-                break;
-            case Can::DataIdentifier::UPASystemType:
-                value = Util::VarVecField(1*8);
-                value.read(reader);
-                break;
-            case Can::DataIdentifier::Conf:
-                value = Util::VarVecField(16 + 24 + 16);
-                value.read(reader);
-                break;
-            case Can::DataIdentifier::THRFOUPA:
-                value = Util::VarVecField(120);
-                value.read(reader);
-                break;
+            auto i = m_sizes.find(static_cast<uint16_t>(type.get().value()));
+            if(i == m_sizes.end()) {
+                fail();
+                return;
             }
+            value = Util::VarVecField(i->second);
+            value.read(reader);
             if(!value.valid()) {
                 fail();
             }
@@ -50,11 +43,15 @@ public:
             return this->field(object()->m_value, value);
         }
         auto type(DataIdentifier value) {
+            return this->field(object()->m_type, static_cast<uint16_t>(value));
+        }
+        auto raw_type(uint16_t value) {
             return this->field(object()->m_type, value);
         }
     };
-    DataIdentifier get_type() { return m_type.get().value(); }
+    DataIdentifier get_type() { return static_cast<DataIdentifier>(m_type.get().value()); }
     auto get_value() { return m_value.get().value(); }
+    uint16_t get_raw_type() { return m_type.get().value(); }
 
     optional<std::vector<uint8_t>> dump() { return Util::dump_args(m_type, m_value); }
     bool write(Util::Writer& writer) {
@@ -68,8 +65,14 @@ public:
         return std::make_unique<Builder>(reader);
     }
 
+    static void register_did(uint16_t did, int size) {
+        if(m_sizes.find(did) != m_sizes.end()) {
+            m_sizes[did] = size;
+        }
+    }
+
 private:
-    Util::EnumField<DataIdentifier, uint16_t, 16> m_type;
+    Util::IntField<uint16_t, 16> m_type;
     Util::VarVecField m_value;
 };
 
