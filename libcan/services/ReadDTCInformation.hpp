@@ -37,6 +37,7 @@ public:
                     field.read(reader);
                     if(!field.valid()) {
                         records.pop_back();
+                        break;
                     }
                 }
             }
