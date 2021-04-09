@@ -173,7 +173,7 @@ class VecField : public Field {
     Q_OBJECT
 public:
     VecField(std::string name, uint16_t id, int size)
-        : Field(name, id), m_data(BYTES(size), 0) {}
+        : Field(name, id), m_size(size) {}
 
 protected:
     void create_fields() override {
@@ -183,7 +183,7 @@ protected:
         QPushButton* copy_btn = new QPushButton("Copy", frame);
         layout->addWidget(copy_btn);
         layout->addWidget(checkbox);
-        for (int i = 0; i < m_data.size(); ++i) {
+        for (int i = 0; i < m_size; ++i) {
             QSpinBox* box = create_hex_spin_box();
             box->setMinimum(0);
             box->setMaximum(255);
@@ -229,16 +229,21 @@ protected:
     }
 
     void from_vec(std::vector<uint8_t> data) override {
-        for (int i = 0; i < m_data.size(); ++i) {
-            m_data[i] = data[i];
+        for (int i = 0; i < m_size; ++i) {
             m_boxes[i]->setValue(data[i]);
         }
     }
 
-    std::vector<uint8_t> to_vec() override { return m_data; }
+    std::vector<uint8_t> to_vec() override {
+        std::vector<uint8_t> res{};
+        for(int i = 0; i < m_size; ++i){
+            res.push_back(static_cast<uint8_t>(m_boxes[i]->value()));
+        }
+        return res;
+    }
 
 private:
-    std::vector<uint8_t> m_data;
+    int m_size;
     std::vector<QSpinBox*> m_boxes;
 };
 
