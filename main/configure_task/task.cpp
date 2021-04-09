@@ -37,6 +37,7 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
             new QListWidgetItem(QString::fromStdString(name), groups_list);
         QScrollArea* scroll = new QScrollArea(window);
         QGroupBox* group = new QGroupBox(tr("&Parameteres"), scroll);
+        scroll->horizontalScrollBar()->setDisabled(true);
         scroll->setWidget(group);
         scroll->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
         QVBoxLayout* layout = new QVBoxLayout(group);
@@ -79,6 +80,7 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
     window->show();
     window->setFocus();
     m_window = window;
+    groups_list->setCurrentRow(0);
 }
 
 void ConfigurationTask::task() {
@@ -93,7 +95,6 @@ void ConfigurationTask::task() {
         LOG(error, "Failed ot enter extendDiagnosticSession");
         return;
     }
-
     QEventLoop loop;
     connect(m_window, &QWidget::destroyed, &loop, &QEventLoop::quit);
     loop.exec();
