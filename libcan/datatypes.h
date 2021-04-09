@@ -12,10 +12,13 @@ public:
     public:
         Builder() : B() {}
         Builder(Util::Reader& reader) : B() {
-            read(reader, object()->m_type, object()->m_status);
+            read(reader, object()->m_type, object()->m_status, object()->m_low);
         }
-        auto type(uint32_t value) {
+        auto type(uint16_t value) {
             return field(object()->m_type, value);
+        }
+        auto low(uint8_t value) {
+            return field(object()->m_low, value);
         }
 
         auto status(uint8_t value) {
@@ -38,8 +41,10 @@ public:
 
     auto get_type() { return m_type.get().value(); }
     auto get_status() { return m_status.get().value(); }
+    auto get_low() { return m_low.get().value(); }
 private:
-    Util::IntField<uint32_t, 24> m_type;
+    Util::IntField<uint16_t, 16> m_type;
+    Util::IntField<uint8_t, 8> m_low;
     Util::IntField<uint8_t, 8> m_status;
 };
     
