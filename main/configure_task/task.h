@@ -17,6 +17,7 @@ public:
     friend class Field;
 
 private:
+    void read_errors();
 
     std::unordered_map<std::string, std::pair<QWidget*, QWidget*>> m_groups;
     QWidget* m_window;

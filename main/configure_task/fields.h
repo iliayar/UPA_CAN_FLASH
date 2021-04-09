@@ -10,6 +10,11 @@
 #include <QSpinBox>
 #include <QTextEdit>
 #include <QWidget>
+#include <QLineEdit>
+#include <QCheckBox>
+#include <QDebug>
+#include <QApplication>
+#include <QClipboard>
 
 #include "service_all.h"
 #include "task.h"
@@ -95,15 +100,16 @@ public:
 
 protected:
     void create_fields() override {
-        m_text = new QTextEdit(this);
+        m_text = new QLineEdit(this);
         m_layout->addWidget(m_text);
-        connect(m_text, &QTextEdit::textChanged, [=]() {
-            QString text = m_text->toPlainText();
-            if (text.length() > m_length) {
-                text.truncate(m_length);
-                m_text->setPlainText(text);
-            }
-        });
+        m_text->setMaxLength(m_length);
+        // connect(m_text, &QTextEdit::textChanged, [=]() {
+        //     QString text = m_text->toPlainText();
+        //     if (text.length() > m_length) {
+        //         text.truncate(m_length);
+        //         m_text->setPlainText(text);
+        //     }
+        // });
     }
 
     void from_vec(std::vector<uint8_t> data) override {
@@ -111,11 +117,11 @@ protected:
         for (uint8_t c : data) {
             s += (char)c;
         }
-        m_text->setPlainText(QString::fromStdString(s));
+        m_text->setText(QString::fromStdString(s));
     }
 
     std::vector<uint8_t> to_vec() override {
-        std::string s = m_text->toPlainText().toStdString();
+        std::string s = m_text->text().toStdString();
         std::vector<uint8_t> res(m_length, 0);
         for (int i = 0; i < m_length; ++i) {
             if(i < s.length()) {
@@ -128,7 +134,7 @@ protected:
     }
 
 private:
-    QTextEdit* m_text;
+    QLineEdit* m_text;
     int m_length;
 };
 
@@ -173,6 +179,10 @@ protected:
     void create_fields() override {
         QFrame* frame = new QFrame();
         QHBoxLayout* layout = new QHBoxLayout(frame);
+        QCheckBox* checkbox = new QCheckBox("decimal", frame);
+        QPushButton* copy_btn = new QPushButton("Copy", frame);
+        layout->addWidget(copy_btn);
+        layout->addWidget(checkbox);
         for (int i = 0; i < m_data.size(); ++i) {
             QSpinBox* box = create_hex_spin_box();
             box->setMinimum(0);
@@ -181,6 +191,41 @@ protected:
             layout->addWidget(box);
         }
         m_layout->addWidget(frame);
+        connect(checkbox, &QCheckBox::stateChanged, [=](int state) {
+            for (auto box : this->m_boxes) {
+                if (state != 0) {
+                    box->setDisplayIntegerBase(10);
+                    box->setPrefix("");
+                } else {
+                    box->setDisplayIntegerBase(16);
+                    box->setPrefix("0x");
+                }
+            }
+        });
+        connect(copy_btn, &QPushButton::clicked, [=]() {
+            QString res;
+            int i = 0;
+            bool dec = checkbox->isChecked();
+            for(auto box : this->m_boxes) {
+                if(dec) {
+                    if(i > 0) {
+                        res += ",";
+                    }
+                    res += QString("%1").arg(box->value(), 0, 10);
+                } else {
+                    res += QString("%1").arg(box->value(), 2, 16,
+                                             QLatin1Char('0'));
+                }
+                i++;
+            }
+            // res = QString("0x") + res;
+            QClipboard* cb = QApplication::clipboard();
+            cb->setText(res, QClipboard::Clipboard);
+            if(cb->supportsSelection()) {
+                cb->setText(res, QClipboard::Selection);
+            }
+            // qDebug() << res;
+        });
     }
 
     void from_vec(std::vector<uint8_t> data) override {

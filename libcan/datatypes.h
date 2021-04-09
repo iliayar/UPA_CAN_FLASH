@@ -6,6 +6,43 @@
 namespace Can {
     enum class DataIdentifier { VIN = 0xf190, UPASystemType = 0x200e, Conf = 0x2044, THRFOUPA = 0xb001 };
 
+class DTC {
+public:
+    class Builder : public Util::Builder<DTC, Builder> {
+    public:
+        Builder() : B() {}
+        Builder(Util::Reader& reader) : B() {
+            read(reader, object()->m_type, object()->m_status);
+        }
+        auto type(uint32_t value) {
+            return field(object()->m_type, value);
+        }
+
+        auto status(uint8_t value) {
+            return field(object()->m_status, value);
+        }
+    protected:
+        std::unique_ptr<Builder> self() {
+            return std::unique_ptr<Builder>(this);
+        }
+    };
+    bool write(Util::Writer& writer) {
+        return Util::write_args(writer, m_type, m_status);
+    }
+    static std::unique_ptr<Builder> build() {
+        return std::make_unique<Builder>();
+    }
+    static std::unique_ptr<Builder> build(Util::Reader& reader) {
+        return std::make_unique<Builder>(reader);
+    }
+
+    auto get_type() { return m_type.get().value(); }
+    auto get_status() { return m_status.get().value(); }
+private:
+    Util::IntField<uint32_t, 24> m_type;
+    Util::IntField<uint8_t, 8> m_status;
+};
+    
 class Data {
 public:
 

@@ -25,6 +25,7 @@
 #include "services/RequestDownload.hpp"
 #include "services/TransferData.hpp"
 #include "services/RequestTransferExit.hpp"
+#include "services/ReadDTCInformation.hpp"
 
 namespace Can {
 namespace ServiceResponse {

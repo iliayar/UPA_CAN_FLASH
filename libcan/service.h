@@ -27,6 +27,7 @@ enum class Type {
     RequestTransferExit = 0x77,
     ECUReset = 0x51,
     Negative = 0x7f,
+    ReadDTCInformation = 0x59,
 };
 /**
  * Service response class
@@ -70,6 +71,7 @@ enum class Type {
     TransferData = 0x36,
     RequestTransferExit = 0x37,
     ECUReset = 0x11,
+    ReadDTCInformation = 0x19,
 };
 /**
  * Service request class

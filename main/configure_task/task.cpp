@@ -17,9 +17,18 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
     QWidget* window = new QWidget(nullptr);
     QHBoxLayout* main_layout = new QHBoxLayout(window);
 
-    QListWidget* groups_list = new QListWidget(window);
 
-    main_layout->addWidget(groups_list);
+    QFrame* left_frame = new QFrame(window);
+    left_frame->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Minimum);
+    QVBoxLayout* left_layout = new QVBoxLayout(left_frame);
+    QListWidget* groups_list = new QListWidget(left_frame);
+
+    QPushButton* err_btn = new QPushButton("Read errors", window);
+
+    groups_list->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Minimum);
+    main_layout->addWidget(left_frame);
+    left_layout->addWidget(groups_list);
+    left_layout->addWidget(err_btn);
 
     DataConfig config{};
 
@@ -29,17 +38,22 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
         QScrollArea* scroll = new QScrollArea(window);
         QGroupBox* group = new QGroupBox(tr("&Parameteres"), scroll);
         scroll->setWidget(group);
+        scroll->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
         QVBoxLayout* layout = new QVBoxLayout(group);
         m_groups[name] = {scroll, group};
+        group->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
         main_layout->addWidget(scroll);
         scroll->hide();
         for (Field* field : fields) {
             field->init(this);
             field->setParent(group);
-            field->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-            field->setMinimumSize(50, 200);
+            field->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Maximum);
+            // field->setMinimumSize(50, 200);
+            // field->adjustSize();
             layout->addWidget(field);
         }
+        // scroll->adjustSize();
+        // groups_list->adjustSize();
         group->adjustSize();
     }
 
@@ -54,12 +68,13 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
                     auto cur_group = m_groups[item->text().toStdString()];
                     if (cur_group.first != nullptr && !cur_group.first->isVisible()) {
                         cur_group.first->show();
-                        cur_group.first->adjustSize();
-                        cur_group.second->adjustSize();
+                        // cur_group.first->adjustSize();
+                        // cur_group.second->adjustSize();
                     }
                 }
             });
 
+    connect(err_btn, &QPushButton::clicked, this, &ConfigurationTask::read_errors);
     window->setAttribute(Qt::WA_DeleteOnClose);
     window->show();
     window->setFocus();
@@ -82,4 +97,18 @@ void ConfigurationTask::task() {
     QEventLoop loop;
     connect(m_window, &QWidget::destroyed, &loop, &QEventLoop::quit);
     loop.exec();
+}
+
+void ConfigurationTask::read_errors() {
+    auto response =
+        call(Can::ServiceRequest::ReadDTCInformation::build()
+                 ->subfunction(Can::ServiceRequest::ReadDTCInformation::
+                                   Subfunction::reportDTCByStatusMask)
+                 ->mask(Can::confirmedDTC | Can::testFailedDTC)
+                 ->build()
+                 .value());
+    IF_NEGATIVE(response) {
+        m_logger->error("Failed to read errors");
+        return;
+    }
 }
