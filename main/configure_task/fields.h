@@ -80,6 +80,7 @@ protected:
         QSpinBox* box = new QSpinBox(this);
         box->setPrefix("0x");
         box->setDisplayIntegerBase(16);
+        box->setButtonSymbols(QAbstractSpinBox::NoButtons);
         return box;
     }
 
@@ -173,7 +174,7 @@ class VecField : public Field {
     Q_OBJECT
 public:
     VecField(std::string name, uint16_t id, int size)
-        : Field(name, id), m_size(size) {}
+        : Field(name, id), m_size(BYTES(size)) {}
 
 protected:
     void create_fields() override {
