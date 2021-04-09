@@ -48,6 +48,9 @@ Can::ServiceResponse::Factory::get() {
         case Can::ServiceResponse::Type::WriteDataByIdentifier:
             return Can::ServiceResponse::WriteDataByIdentifier::build(m_reader)
                 ->build();
+        case Can::ServiceResponse::Type::ReadDTCInformation:
+            return Can::ServiceResponse::ReadDTCInformation::build(m_reader)
+                ->build();
         default:
             return {};
     }
@@ -77,6 +80,8 @@ Can::ServiceResponse::Type Can::request_to_response_type(
             return Can::ServiceResponse::Type::TransferData;
         case Can::ServiceRequest::Type::WriteDataByIdentifier:
             return Can::ServiceResponse::Type::WriteDataByIdentifier;
+        case Can::ServiceRequest::Type::ReadDTCInformation:
+            return Can::ServiceResponse::Type::ReadDTCInformation;
         default:
             return Can::ServiceResponse::Type::Negative;
     }

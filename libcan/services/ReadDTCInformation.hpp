@@ -28,6 +28,12 @@ public:
                 fail();
                 return;
             }
+            auto& status_mask = object()->m_status_mask;
+            status_mask.read(reader);
+            if(!status_mask.valid()) {
+                fail();
+                return;
+            }
             switch(subfunction.get().value()) {
             case ReadDTCInformationSubfunction::reportDTCByStatusMask: {
                 auto& records = object()->m_records;
@@ -42,7 +48,7 @@ public:
                 }
             }
             case ReadDTCInformationSubfunction::reportNumberOfDTCByStatusMask: {
-                read(reader, object()->m_status_mask, object()->m_format_identifier, object()->m_count);
+                read(reader, object()->m_format_identifier, object()->m_count);
             }
             default: {
                 fail();
