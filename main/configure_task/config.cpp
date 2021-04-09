@@ -40,7 +40,7 @@ DataConfig::DataConfig() {
                 size = json_field["size"].toInt();
                 group_list.push_back(new IntField(name, did, size));
             } else if(type == "enum") {
-                int size = json_field["size"].toInt();
+                size = json_field["size"].toInt();
                 std::vector<std::pair<std::string, uint64_t>> variants;
                 for(const QJsonValue& variant : json_field["variants"].toArray()) {
                     const QJsonObject json_variant = variant.toObject();

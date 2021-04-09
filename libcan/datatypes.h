@@ -65,12 +65,12 @@ public:
             }
             auto& value = this->object()->m_value;
 
-            auto i = m_sizes.find(static_cast<uint16_t>(type.get().value()));
+            auto i = m_sizes.find(type.get().value());
             if(i == m_sizes.end()) {
                 fail();
                 return;
             }
-            value = Util::VarVecField(i->second);
+            value.resize(i->second);
             value.read(reader);
             if(!value.valid()) {
                 fail();
