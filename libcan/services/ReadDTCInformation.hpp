@@ -7,7 +7,7 @@
 namespace Can {
 
 const uint8_t testFailedDTC = 0x01;
-const uint8_t confirmedDTC = 0x02;
+const uint8_t confirmedDTC = 0x08;
 
 enum class ReadDTCInformationSubfunction {
     reportNumberOfDTCByStatusMask = 0x01,
@@ -46,9 +46,11 @@ public:
                         break;
                     }
                 }
+                break;
             }
             case ReadDTCInformationSubfunction::reportNumberOfDTCByStatusMask: {
                 read(reader, object()->m_format_identifier, object()->m_count);
+                break;
             }
             default: {
                 fail();
