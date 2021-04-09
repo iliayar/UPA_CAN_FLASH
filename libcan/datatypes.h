@@ -103,7 +103,7 @@ public:
     }
 
     static void register_did(uint16_t did, int size) {
-        if(m_sizes.find(did) != m_sizes.end()) {
+        if(m_sizes.find(did) == m_sizes.end()) {
             m_sizes[did] = size;
         }
     }
