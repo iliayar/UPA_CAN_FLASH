@@ -111,4 +111,9 @@ void ConfigurationTask::read_errors() {
         m_logger->error("Failed to read errors");
         return;
     }
+    for(auto err : std::static_pointer_cast<Can::ServiceResponse::ReadDTCInformation>(response)->get_records()) {
+        std::stringstream ss;
+        ss << std::hex << (int)err->get_type() << " " << (int)err->get_status();
+        m_logger->error(ss.str());
+    }
 }
