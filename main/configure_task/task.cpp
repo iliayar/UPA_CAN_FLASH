@@ -75,6 +75,7 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
 
     connect(err_btn, &QPushButton::clicked, this, &ConfigurationTask::read_errors);
     window->setAttribute(Qt::WA_DeleteOnClose);
+    window->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     window->show();
     window->setFocus();
     m_window = window;
@@ -110,6 +111,7 @@ void ConfigurationTask::read_errors() {
         m_logger->error("Failed to read errors");
         return;
     }
+    m_logger->info("Reading errors");
     for(auto err : std::static_pointer_cast<Can::ServiceResponse::ReadDTCInformation>(response)->get_records()) {
         auto it1 = m_config.errors.find(err->get_type());
         if(it1 == m_config.errors.end()) {
