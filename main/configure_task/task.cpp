@@ -35,7 +35,7 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
             new QListWidgetItem(QString::fromStdString(name), groups_list);
         QScrollArea* scroll = new QScrollArea(window);
         QGroupBox* group = new QGroupBox(tr("&Parameteres"), scroll);
-        scroll->horizontalScrollBar()->setDisabled(true);
+        scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
         scroll->setWidget(group);
         scroll->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
         QVBoxLayout* layout = new QVBoxLayout(group);
