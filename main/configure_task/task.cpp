@@ -30,9 +30,7 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
     left_layout->addWidget(groups_list);
     left_layout->addWidget(err_btn);
 
-    DataConfig config{};
-
-    for (auto& [name, fields] : config.fields) {
+    for (auto& [name, fields] : m_config.fields) {
         QListWidgetItem* item =
             new QListWidgetItem(QString::fromStdString(name), groups_list);
         QScrollArea* scroll = new QScrollArea(window);
@@ -113,8 +111,16 @@ void ConfigurationTask::read_errors() {
         return;
     }
     for(auto err : std::static_pointer_cast<Can::ServiceResponse::ReadDTCInformation>(response)->get_records()) {
-        std::stringstream ss;
-        ss << std::hex << (int)err->get_type() << " " << (int)err->get_status();
-        m_logger->error(ss.str());
+        auto it1 = m_config.errors.find(err->get_type());
+        if(it1 == m_config.errors.end()) {
+            continue;
+        }
+        auto& [name, var_map] = it1->second;
+        auto it2 = var_map.find(err->get_status());
+        if(it2 == var_map.end()) {
+            continue;
+        }
+        auto& [mnemonic, description] = it2->second;
+        m_logger->error(name + " " + mnemonic + " " + description);
     }
 }

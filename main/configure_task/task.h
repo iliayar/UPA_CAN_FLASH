@@ -5,6 +5,7 @@
 #include <QLayout>
 #include <QGroupBox>
 #include <unordered_map>
+#include "config.h"
 
 class ConfigurationTask : public QTask {
 
@@ -21,4 +22,5 @@ private:
 
     std::unordered_map<std::string, std::pair<QWidget*, QWidget*>> m_groups;
     QWidget* m_window;
+    DataConfig m_config{};
 };
