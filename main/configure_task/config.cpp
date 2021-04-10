@@ -4,13 +4,15 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QFile>
+#include <QCoreApplication>
 
 #include "fields.h"
 
 DataConfig::DataConfig() {
+    QString app_path = QCoreApplication::applicationDirPath();
     {
         QFile json_file;
-        json_file.setFileName("configuration.json"); // FIXME
+        json_file.setFileName(app_path + "/configuration.json"); // FIXME
         json_file.open(QIODevice::ReadOnly | QIODevice::Text);
         QString json_data = json_file.readAll();
         json_file.close();
@@ -75,7 +77,7 @@ DataConfig::DataConfig() {
     
     {
         QFile json_file;
-        json_file.setFileName("configuration_err.json"); // FIXME
+        json_file.setFileName(app_path + "/configuration_err.json"); // FIXME
         json_file.open(QIODevice::ReadOnly | QIODevice::Text);
         QString json_data = json_file.readAll();
         json_file.close();

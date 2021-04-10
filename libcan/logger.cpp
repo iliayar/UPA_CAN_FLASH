@@ -7,8 +7,8 @@ Can::Logger* Can::GlobalLogger::instance() {
 // std::string appdata = getenv("APPDATA");
 // Can::Logger* Can::GlobalLogger::m_logger = new Can::FileLogger(appdata +
 // "\\UPA_CAN_FLASH\\canFlash.log");
-Can::Logger* Can::GlobalLogger::m_logger = new Can::FileLogger("./UPA_CAN_FLASH.log");
-// Can::Logger* Can::GlobalLogger::m_logger = new Can::NoLogger();
+// Can::Logger* Can::GlobalLogger::m_logger = new Can::FileLogger("./UPA_CAN_FLASH.log");
+Can::Logger* Can::GlobalLogger::m_logger = new Can::NoLogger();
 #else
 Can::Logger* Can::GlobalLogger::m_logger =
     new Can::FileLogger("/tmp/canFlash.log");
