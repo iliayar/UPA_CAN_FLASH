@@ -37,6 +37,7 @@ public:
         QPushButton* read_btn = new QPushButton(tr("&Read"));
         layout->addWidget(write_btn);
         layout->addWidget(read_btn);
+        frame->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
         m_layout->addWidget(frame);
         connect(read_btn, &QPushButton::pressed, this, &Field::read);
         connect(write_btn, &QPushButton::pressed, this, &Field::write);
@@ -334,6 +335,7 @@ public:
                 return writer.get_payload();
             }
         }
+        return writer.get_payload();
     }
 
 private:
