@@ -15,9 +15,16 @@
 #include <QDebug>
 #include <QApplication>
 #include <QClipboard>
+#include <QFontDatabase>
 
 #include "service_all.h"
 #include "task.h"
+
+struct SpinBox {
+    QFrame* frame;
+    QSpinBox* box;
+    QLabel* prefix;
+};
 
 class Field : public QGroupBox {
     Q_OBJECT
@@ -29,8 +36,13 @@ public:
 
     void init(ConfigurationTask* task) {
         m_task = task;
-        m_layout = new QHBoxLayout(this);
+        QHBoxLayout* main_layout = new QHBoxLayout(this);
+        QFrame* inner_frame = new QFrame();
+        m_layout = new QHBoxLayout(inner_frame);
         create_fields();
+        main_layout->addWidget(inner_frame);
+        main_layout->setMargin(0);
+        m_layout->setMargin(0);
         QFrame* frame = new QFrame(this);
         QHBoxLayout* layout = new QHBoxLayout(frame);
         QPushButton* write_btn = new QPushButton(tr("&Write"));
@@ -38,7 +50,7 @@ public:
         layout->addWidget(write_btn);
         layout->addWidget(read_btn);
         frame->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
-        m_layout->addWidget(frame);
+        main_layout->addWidget(frame);
         connect(read_btn, &QPushButton::pressed, this, &Field::read);
         connect(write_btn, &QPushButton::pressed, this, &Field::write);
     }
@@ -77,19 +89,42 @@ protected:
     virtual void from_vec(std::vector<uint8_t> data) = 0;
     virtual std::vector<uint8_t> to_vec() = 0;
 
-    QSpinBox* create_hex_spin_box() {
-        QSpinBox* box = new QSpinBox(this);
+    SpinBox create_hex_spin_box() {
+        QFrame* frame = new QFrame(this);
+        frame->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+        frame->setContentsMargins(0, 0, 0, 0);
+        QHBoxLayout* layout = new QHBoxLayout(frame);
+        layout->setSpacing(0);
+        layout->setMargin(0);
+        QLabel* label = new QLabel("0x");
+        label->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+        label->setFixedWidth(20);
+        QSpinBox* box = new QSpinBox(frame);
+        box->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+        layout->addWidget(label);
+        layout->addWidget(box);
         QFont font = box->font();
-        box->setPrefix("0x");
         font.setCapitalization(QFont::AllUppercase);
         box->setFont(font);
         box->setDisplayIntegerBase(16);
         box->setButtonSymbols(QAbstractSpinBox::NoButtons);
-        return box;
+        return {frame, box, label};
+    }
+
+    void toggle_hex_dec(std::vector<SpinBox> boxes, int state) {
+        for (auto box : boxes) {
+            if (state != 0) {
+                box.box->setDisplayIntegerBase(10);
+                box.prefix->setText("");
+            } else {
+                box.box->setDisplayIntegerBase(16);
+                box.prefix->setText("0x");
+            }
+        }
     }
 
     void log(std::string s) {
-	m_task->m_logger->info(s);
+    m_task->m_logger->info(s);
     }
 
     QHBoxLayout* m_layout;
@@ -108,13 +143,6 @@ protected:
         m_text = new QLineEdit(this);
         m_layout->addWidget(m_text);
         m_text->setMaxLength(m_length);
-        // connect(m_text, &QTextEdit::textChanged, [=]() {
-        //     QString text = m_text->toPlainText();
-        //     if (text.length() > m_length) {
-        //         text.truncate(m_length);
-        //         m_text->setPlainText(text);
-        //     }
-        // });
     }
 
     void from_vec(std::vector<uint8_t> data) override {
@@ -152,25 +180,26 @@ public:
 protected:
     void create_fields() override {
         m_number = create_hex_spin_box();
-        m_number->setMinimum(0);
-        m_number->setMaximum((1 << m_size) - 1);
-        m_layout->addWidget(m_number);
+        m_number.box->setMinimum(0);
+        m_number.box->setMaximum((1 << m_size) - 1);
+        m_layout->addWidget(m_number.frame);
+
     }
 
     void from_vec(std::vector<uint8_t> data) override {
         Util::Reader reader(data);
         uint64_t n = reader.read_int<uint64_t>(m_size).value();
-        m_number->setValue(n);
+        m_number.box->setValue(n);
     }
 
     std::vector<uint8_t> to_vec() override {
         Util::Writer writer(BYTES(m_size));
-        writer.write_int<uint64_t>(m_number->value(), m_size);
+        writer.write_int<uint64_t>(m_number.box->value(), m_size);
         return writer.get_payload();
     }
 
 private:
-    QSpinBox* m_number;
+    SpinBox m_number;
     int m_size;
 };
 
@@ -182,7 +211,8 @@ public:
 
 protected:
     void create_fields() override {
-        QFrame* frame = new QFrame();
+        QFrame* frame = new QFrame(this);
+        frame->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
         QHBoxLayout* layout = new QHBoxLayout(frame);
         QCheckBox* checkbox = new QCheckBox("decimal", frame);
         QPushButton* copy_btn = new QPushButton("Copy", frame);
@@ -192,35 +222,38 @@ protected:
         std::vector<std::string> bot_labels = {"", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"};
         for (int i = 0; i < m_size; ++i) {
             QFrame* box_frame = new QFrame(frame);
+            box_frame->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
             QVBoxLayout* box_layout = new QVBoxLayout(box_frame);
-            QSpinBox* box = create_hex_spin_box();
-            box->setMinimum(0);
-            box->setMaximum(255);
+            box_layout->setSpacing(0);
+            box_layout->setMargin(0);
+            SpinBox box = create_hex_spin_box();
+            box.box->setMinimum(0);
+            box.box->setMaximum(255);
             m_boxes.push_back(box);
+            QLabel* top_label;
+            QLabel* bot_label;
             if(i < top_labels.size()) {
-                box_layout->addWidget(new QLabel(QString::fromStdString(top_labels[i])));
+                top_label = new QLabel(QString::fromStdString(top_labels[i]));
             } else {
-                box_layout->addWidget(new QLabel(""));
+                top_label = new QLabel("");
             }
-            box_layout->addWidget(box);
             if(i < bot_labels.size()) {
-                box_layout->addWidget(new QLabel(QString::fromStdString(bot_labels[i])));
+                bot_label = new QLabel(QString::fromStdString(bot_labels[i]));
             } else {
-                box_layout->addWidget(new QLabel(""));
+                bot_label = new QLabel("");
             }
+            top_label->setStyleSheet("color: red");
+            bot_label->setStyleSheet("color: red");
+            top_label->setAlignment(Qt::AlignRight);
+            bot_label->setAlignment(Qt::AlignRight);
+            box_layout->addWidget(top_label);
+            box_layout->addWidget(box.frame);
+            box_layout->addWidget(bot_label);
             layout->addWidget(box_frame);
         }
         m_layout->addWidget(frame);
         connect(checkbox, &QCheckBox::stateChanged, [=](int state) {
-            for (auto box : this->m_boxes) {
-                if (state != 0) {
-                    box->setDisplayIntegerBase(10);
-                    box->setPrefix("");
-                } else {
-                    box->setDisplayIntegerBase(16);
-                    box->setPrefix("0x");
-                }
-            }
+            this->toggle_hex_dec(this->m_boxes, state);
         });
         connect(copy_btn, &QPushButton::clicked, [=]() {
             QString res;
@@ -231,9 +264,9 @@ protected:
                     if(i > 0) {
                         res += ",";
                     }
-                    res += QString("%1").arg(box->value(), 0, 10);
+                    res += QString("%1").arg(box.box->value(), 0, 10);
                 } else {
-                    res += QString("%1").arg(box->value(), 2, 16,
+                    res += QString("%1").arg(box.box->value(), 2, 16,
                                              QLatin1Char('0'));
                 }
                 i++;
@@ -250,21 +283,21 @@ protected:
 
     void from_vec(std::vector<uint8_t> data) override {
         for (int i = 0; i < m_size; ++i) {
-            m_boxes[i]->setValue(data[i]);
+            m_boxes[i].box->setValue(data[i]);
         }
     }
 
     std::vector<uint8_t> to_vec() override {
         std::vector<uint8_t> res{};
         for(int i = 0; i < m_size; ++i){
-            res.push_back(static_cast<uint8_t>(m_boxes[i]->value()));
+            res.push_back(static_cast<uint8_t>(m_boxes[i].box->value()));
         }
         return res;
     }
 
 private:
     int m_size;
-    std::vector<QSpinBox*> m_boxes;
+    std::vector<SpinBox> m_boxes;
 };
 
 struct MultiFieldItem {
@@ -281,31 +314,38 @@ public:
 
 protected:
     void create_fields() override {
+        QCheckBox* checkbox = new QCheckBox("decimal", this);
+        m_layout->addWidget(checkbox);
+        m_layout->setAlignment(Qt::AlignLeft);
         for (MultiFieldItem item : m_items) {
             QFrame* frame = new QFrame(this);
+            frame->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
             QHBoxLayout* layout = new QHBoxLayout(frame);
-            layout->addWidget(new QLabel(QString::fromStdString(item.name)));
-            QSpinBox* box = create_hex_spin_box();
-            box->setMinimum(0);
-            box->setMaximum((1 << item.size) - 1);
+            layout->addWidget(new QLabel(QString::fromStdString(item.name) + ": "));
+            SpinBox box = create_hex_spin_box();
+            box.box->setMinimum(0);
+            box.box->setMaximum((1 << item.size) - 1);
             m_values.push_back(box);
-            layout->addWidget(box);
+            layout->addWidget(box.frame);
             m_layout->addWidget(frame);
         }
+        connect(checkbox, &QCheckBox::stateChanged, [=](int state) {
+            this->toggle_hex_dec(this->m_values, state);
+        });
     }
 
     void from_vec(std::vector<uint8_t> data) override {
         Util::Reader reader(data);
         for (int i = 0; i < m_items.size(); ++i) {
             uint64_t n = reader.read_int<uint64_t>(m_items[i].size).value();
-            m_values[i]->setValue(n);
+            m_values[i].box->setValue(n);
         }
     }
 
     std::vector<uint8_t> to_vec() override {
         std::vector<uint8_t> res;
         for (int i = 0; i < m_items.size(); ++i) {
-            uint64_t n = m_values[i]->value();
+            uint64_t n = m_values[i].box->value();
             Util::Writer writer(BYTES(m_items[i].size));
             writer.write_int<uint64_t>(n, m_items[i].size);
             for (uint8_t d : writer.get_payload()) {
@@ -317,7 +357,7 @@ protected:
 
 private:
     std::vector<MultiFieldItem> m_items;
-    std::vector<QSpinBox*> m_values;
+    std::vector<SpinBox> m_values;
 };
 
 class EnumField : public Field {

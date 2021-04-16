@@ -7,6 +7,10 @@
 #include <QMainWindow>
 #include <QVBoxLayout>
 #include <QScrollArea>
+#include <QTabWidget>
+#include <QMainWindow>
+#include <QApplication>
+#include <QScreen>
 
 #include "config.h"
 #include "fields.h"
@@ -14,79 +18,70 @@
 
 ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
     : QTask(logger) {
-    QWidget* window = new QWidget(nullptr);
+    QWidget* window = new QWidget();
     QHBoxLayout* main_layout = new QHBoxLayout(window);
 
-
-    QFrame* left_frame = new QFrame(window);
-    left_frame->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Minimum);
-    QVBoxLayout* left_layout = new QVBoxLayout(left_frame);
-    QListWidget* groups_list = new QListWidget(left_frame);
-    QFrame* left_btns_frame = new QFrame(left_frame);
-    QHBoxLayout* left_btns_layout = new QHBoxLayout(left_btns_frame);
-    left_btns_frame->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
-    
-    QPushButton* err_btn = new QPushButton("Read errors", left_btns_frame);
-    QPushButton* clear_err_btn = new QPushButton("Clear errors", left_btns_frame);
-    left_btns_layout->addWidget(err_btn);
-    left_btns_layout->addWidget(clear_err_btn);
-
-
-    groups_list->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Minimum);
-    main_layout->addWidget(left_frame);
-    left_layout->addWidget(groups_list);
-    left_layout->addWidget(left_btns_frame);
-
+    QTabWidget* tabs = new QTabWidget(window);
+    main_layout->addWidget(tabs);
     for (auto& [name, fields] : m_config.fields) {
-        QListWidgetItem* item =
-            new QListWidgetItem(QString::fromStdString(name), groups_list);
-        QScrollArea* scroll = new QScrollArea(window);
+        QScrollArea* scroll = new QScrollArea(tabs);
         QGroupBox* group = new QGroupBox(tr("&Parameteres"), scroll);
         scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
         scroll->setWidget(group);
-        scroll->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
         QVBoxLayout* layout = new QVBoxLayout(group);
-        m_groups[name] = {scroll, group};
+        QPushButton* read_all_btn = new QPushButton(tr("&Read all fields"));
+        layout->addWidget(read_all_btn);
         group->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-        main_layout->addWidget(scroll);
         scroll->hide();
         for (Field* field : fields) {
             field->init(this);
             field->setParent(group);
             field->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Maximum);
-            // field->setMinimumSize(50, 200);
-            // field->adjustSize();
+            connect(read_all_btn, &QPushButton::released, field, &Field::read);
             layout->addWidget(field);
         }
-        // scroll->adjustSize();
-        // groups_list->adjustSize();
+        tabs->addTab(scroll, QString::fromStdString(name));
         group->adjustSize();
     }
 
-    connect(groups_list, &QListWidget::currentItemChanged,
-            [this](QListWidgetItem* item, QListWidgetItem* prev) {
-                if (prev != nullptr) {
-                    auto prev_group = m_groups[prev->text().toStdString()];
-                    if (prev_group.first != nullptr && prev_group.first->isVisible())
-                        prev_group.first->hide();
-                }
-                if (item != nullptr) {
-                    auto cur_group = m_groups[item->text().toStdString()];
-                    if (cur_group.first != nullptr && !cur_group.first->isVisible()) {
-                        cur_group.first->show();
-                        // cur_group.first->adjustSize();
-                        // cur_group.second->adjustSize();
-                    }
-                }
-            });
+    QFrame* err_tab = new QFrame(tabs);
+    QVBoxLayout* err_layouts = new QVBoxLayout(err_tab);
+    QTextEdit* err_log = new QTextEdit(err_tab);
+    QFrame* btns_frame = new QFrame(err_tab);
+    QHBoxLayout* btns_layout = new QHBoxLayout(btns_frame);
+    QPushButton* err1_btn = new QPushButton(tr("&Read TestFail (0x01)"));
+    QPushButton* err2_btn = new QPushButton(tr("&Read Confirmed (0x08)"));
+    QPushButton* err_clear_btn = new QPushButton(tr("&Clear errors"));
 
-    connect(err_btn, &QPushButton::clicked, this, &ConfigurationTask::read_errors);
+    err_log->setReadOnly(true);
+    
+    btns_layout->addWidget(err1_btn);
+    btns_layout->addWidget(err2_btn);
+    btns_layout->addWidget(err_clear_btn);
+    err_layouts->setAlignment(Qt::AlignTop);
+    err_layouts->addWidget(btns_frame);
+    err_layouts->addWidget(err_log);
+
+    tabs->addTab(err_tab, "Errors (DTC Controls)");
+
+    connect(err1_btn, &QPushButton::released, [this]() {
+        this->read_errors(Can::testFailedDTC);
+    });
+    connect(err2_btn, &QPushButton::released, [this]() {
+        this->read_errors(Can::confirmedDTC);
+    });
+    connect(err_clear_btn, &QPushButton::released, this, &ConfigurationTask::clear_errors);
+
+    tabs->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    tabs->adjustSize();
     window->setAttribute(Qt::WA_DeleteOnClose);
-    window->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    window->adjustSize();
+    window->resize(QGuiApplication::primaryScreen()->size());
     window->show();
     window->setFocus();
+    qDebug() << tabs->size();
     m_window = window;
-    groups_list->setCurrentRow(0);
+    m_err_log = err_log;
 }
 
 void ConfigurationTask::task() {
@@ -106,19 +101,29 @@ void ConfigurationTask::task() {
     loop.exec();
 }
 
-void ConfigurationTask::read_errors() {
+void ConfigurationTask::clear_errors() {
+    auto response = call(Can::ServiceRequest::ClearDiagnosticInformation::build()
+                            ->group(0xFFFFFF)
+                            ->build()
+                            .value());
+    IF_NEGATIVE(response) {
+        m_logger->error("Failed to clear errors");
+    }
+}
+
+void ConfigurationTask::read_errors(uint8_t mask) {
     auto response =
         call(Can::ServiceRequest::ReadDTCInformation::build()
                  ->subfunction(Can::ServiceRequest::ReadDTCInformation::
                                    Subfunction::reportDTCByStatusMask)
-                 ->mask(Can::confirmedDTC | Can::testFailedDTC)
+                 ->mask(mask)
                  ->build()
                  .value());
     IF_NEGATIVE(response) {
         m_logger->error("Failed to read errors");
         return;
     }
-    m_logger->info("Reading errors");
+    m_err_log->clear();
     for(auto err : std::static_pointer_cast<Can::ServiceResponse::ReadDTCInformation>(response)->get_records()) {
         auto it1 = m_config.errors.find(err->get_type());
         if(it1 == m_config.errors.end()) {
@@ -130,6 +135,6 @@ void ConfigurationTask::read_errors() {
             continue;
         }
         auto& [mnemonic, description] = it2->second;
-        m_logger->error(name + " " + mnemonic + " " + description);
+        m_err_log->append(QString::fromStdString(name + " " + mnemonic + " " + description));
     }
 }

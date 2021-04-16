@@ -106,7 +106,6 @@ void MainWindow::create_layout(QWidget* root) {
     QGroupBox* devices_group = new QGroupBox(tr("Devices"));
     QGroupBox* devices_buttons_group = new QGroupBox();
     QGroupBox* tasks_group = new QGroupBox(tr("Tasks"));
-    QGroupBox* tasks_buttons_group = new QGroupBox();
     QFrame* tester_id_frame = new QFrame();
     QFrame* ecu_id_frame = new QFrame();
 
@@ -120,7 +119,6 @@ void MainWindow::create_layout(QWidget* root) {
     QHBoxLayout* devices_buttons_layout =
         new QHBoxLayout(devices_buttons_group);
     QVBoxLayout* tasks_group_layout = new QVBoxLayout(tasks_group);
-    QHBoxLayout* tasks_buttons_layout = new QHBoxLayout(tasks_buttons_group);
     QHBoxLayout* tester_id_layout = new QHBoxLayout(tester_id_frame);
     QHBoxLayout* ecu_id_layout = new QHBoxLayout(ecu_id_frame);
 
@@ -132,11 +130,10 @@ void MainWindow::create_layout(QWidget* root) {
     QComboBox* plugins_list = new QComboBox();
     QComboBox* devices_list = new QComboBox(devices_group);
     QComboBox* bitrate_list = new QComboBox(devices_group);
-    QComboBox* tasks_list = new QComboBox(tasks_group);
+    std::vector<QPushButton*> tasks_btns;
 
     QPushButton* device_connect_btn = new QPushButton("Connect");
     QPushButton* device_disconnect_btn = new QPushButton("Disconnect");
-    QPushButton* task_start_btn = new QPushButton("Start");
 
     QSpinBox* tester_id_box = new QSpinBox();
     QSpinBox* ecu_id_box = new QSpinBox();
@@ -201,10 +198,6 @@ void MainWindow::create_layout(QWidget* root) {
 
     tasks_group_layout->addWidget(tester_id_frame);
     tasks_group_layout->addWidget(ecu_id_frame);
-    tasks_group_layout->addWidget(tasks_list);
-    tasks_group_layout->addWidget(tasks_buttons_group);
-
-    tasks_buttons_layout->addWidget(task_start_btn);
 
     settings_window_layout->addWidget(settings_mask02_frame);
     settings_window_layout->addWidget(settings_mask03_frame);
@@ -215,6 +208,12 @@ void MainWindow::create_layout(QWidget* root) {
     settings_mask03_layout->addWidget(mask03_box);
 
     // Setting up widgets
+
+    for(QString task : {"Flash", "Test", "Configuration"}) {
+        QPushButton* btn = new QPushButton(task, tasks_group);
+        tasks_btns.push_back(btn);
+        tasks_group_layout->addWidget(btn);
+    }
 
     log_group->setSizePolicy(log_policy);
     options_group->setSizePolicy(options_policy);
@@ -253,8 +252,7 @@ void MainWindow::create_layout(QWidget* root) {
     m_disconnect_device_button = device_disconnect_btn;
     m_connect_device_button = device_connect_btn;
     m_device_list = devices_list;
-    m_start_task_button = task_start_btn;
-    m_task_list = tasks_list;
+    m_start_task_buttons = tasks_btns;
     m_tester_id_box = tester_id_box;
     m_ecu_id_box = ecu_id_box;
     m_plugin_list = plugins_list;
@@ -276,10 +274,6 @@ void MainWindow::create_layout(QWidget* root) {
 
     tester_id_box->setValue(tester_id);
     ecu_id_box->setValue(ecu_id);
-
-    tasks_list->addItem("Flash");
-    tasks_list->addItem("Test");
-    tasks_list->addItem("Configuration");
 
     bitrate_list->addItem("125000");
     bitrate_list->addItem("250000");
@@ -330,6 +324,12 @@ void MainWindow::create_layout(QWidget* root) {
 
     // Setting up events
 
+    for(auto btn : tasks_btns) {
+        connect(btn, &QPushButton::released, [this, btn]() {
+            this->start_task(btn->text());
+        });
+    }
+    
     connect(bitrate_list, &QComboBox::currentTextChanged, [this]() {
         m_settings.setValue("device/bitrate", m_bitrate_list->currentText());
     });
@@ -378,8 +378,6 @@ void MainWindow::create_layout(QWidget* root) {
             [&](int v) { m_settings.setValue("task/testerId", v); });
     connect(ecu_id_box, QOverload<int>::of(&QSpinBox::valueChanged),
             [&](int v) { m_settings.setValue("task/ecuId", v); });
-    connect(task_start_btn, &QPushButton::released, this,
-            &MainWindow::start_task);
 
     DEBUG(info, "Layout created");
 }
@@ -497,18 +495,18 @@ void MainWindow::connect_device() {
 
 void MainWindow::abort_task() { emit set_task(nullptr); }
 
-void MainWindow::start_task() {
+void MainWindow::start_task(QString task_name) {
     if (m_device == nullptr) {
         m_logger->warning("Choose device first");
         return;
     }
     m_log_frames->clear();
     m_log_messages->clear();
-    QString task_name = m_task_list->currentText();
-    m_start_task_button->setDisabled(true);
+    for(auto btn : m_start_task_buttons) {
+        btn->setEnabled(false);
+    }
     m_disconnect_device_button->setDisabled(true);
     m_logger->progress(0);
-    // m_abort_task_button->setEnabled(true);
     if (task_name == "Flash") {
         DEBUG(info, "Starting Flash task");
         m_logger->info("Starting task " + task_name.toStdString());
@@ -526,9 +524,10 @@ void MainWindow::start_task() {
 }
 
 void MainWindow::task_done() {
-    m_start_task_button->setEnabled(true);
+    for(auto btn : m_start_task_buttons) {
+        btn->setEnabled(true);
+    }
     m_disconnect_device_button->setEnabled(true);
-    // m_abort_task_button->setDisabled(true);
 }
 
 void MainWindow::check_frames_to_write(std::shared_ptr<Can::Frame::Frame> frame) {

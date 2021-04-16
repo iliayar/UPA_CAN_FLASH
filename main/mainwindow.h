@@ -34,7 +34,7 @@ signals:
 
 public slots:
     void choose_file();
-    void start_task();
+    void start_task(QString);
     void abort_task();
     void connect_device();
     void check_frames_to_write(std::shared_ptr<Can::Frame::Frame>);
@@ -57,7 +57,7 @@ private:
     QTextEdit* m_log_frames;
     QTextEdit* m_log_messages;
 
-    QPushButton* m_start_task_button;
+    std::vector<QPushButton*> m_start_task_buttons;
     QPushButton* m_connect_device_button;
     QPushButton* m_disconnect_device_button;
 

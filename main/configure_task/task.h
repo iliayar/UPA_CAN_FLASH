@@ -4,6 +4,7 @@
 
 #include <QLayout>
 #include <QGroupBox>
+#include <QTextEdit>
 #include <unordered_map>
 #include "config.h"
 
@@ -18,9 +19,11 @@ public:
     friend class Field;
 
 private:
-    void read_errors();
+    void read_errors(uint8_t);
+    void clear_errors();
 
-    std::unordered_map<std::string, std::pair<QWidget*, QWidget*>> m_groups;
+    // std::unordered_map<std::string, std::pair<QWidget*, QWidget*>> m_groups;
     QWidget* m_window;
+    QTextEdit* m_err_log;
     DataConfig m_config{};
 };
