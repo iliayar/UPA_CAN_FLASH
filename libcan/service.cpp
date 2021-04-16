@@ -51,6 +51,9 @@ Can::ServiceResponse::Factory::get() {
         case Can::ServiceResponse::Type::ReadDTCInformation:
             return Can::ServiceResponse::ReadDTCInformation::build(m_reader)
                 ->build();
+        case Can::ServiceResponse::Type::ClearDiagnosticInformation:
+            return Can::ServiceResponse::ClearDiagnostricInformation::build(m_reader)
+                ->build();
         default:
             return {};
     }
@@ -82,6 +85,8 @@ Can::ServiceResponse::Type Can::request_to_response_type(
             return Can::ServiceResponse::Type::WriteDataByIdentifier;
         case Can::ServiceRequest::Type::ReadDTCInformation:
             return Can::ServiceResponse::Type::ReadDTCInformation;
+        case Can::ServiceRequest::Type::ClearDiagnosticInformation:
+            return Can::ServiceResponse::Type::ClearDiagnosticInformation;
         default:
             return Can::ServiceResponse::Type::Negative;
     }

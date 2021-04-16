@@ -22,13 +22,20 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
     left_frame->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Minimum);
     QVBoxLayout* left_layout = new QVBoxLayout(left_frame);
     QListWidget* groups_list = new QListWidget(left_frame);
+    QFrame* left_btns_frame = new QFrame(left_frame);
+    QHBoxLayout* left_btns_layout = new QHBoxLayout(left_btns_frame);
+    left_btns_frame->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+    
+    QPushButton* err_btn = new QPushButton("Read errors", left_btns_frame);
+    QPushButton* clear_err_btn = new QPushButton("Clear errors", left_btns_frame);
+    left_btns_layout->addWidget(err_btn);
+    left_btns_layout->addWidget(clear_err_btn);
 
-    QPushButton* err_btn = new QPushButton("Read errors", window);
 
     groups_list->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Minimum);
     main_layout->addWidget(left_frame);
     left_layout->addWidget(groups_list);
-    left_layout->addWidget(err_btn);
+    left_layout->addWidget(left_btns_frame);
 
     for (auto& [name, fields] : m_config.fields) {
         QListWidgetItem* item =

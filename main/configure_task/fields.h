@@ -79,7 +79,10 @@ protected:
 
     QSpinBox* create_hex_spin_box() {
         QSpinBox* box = new QSpinBox(this);
+        QFont font = box->font();
         box->setPrefix("0x");
+        font.setCapitalization(QFont::AllUppercase);
+        box->setFont(font);
         box->setDisplayIntegerBase(16);
         box->setButtonSymbols(QAbstractSpinBox::NoButtons);
         return box;
@@ -185,12 +188,27 @@ protected:
         QPushButton* copy_btn = new QPushButton("Copy", frame);
         layout->addWidget(copy_btn);
         layout->addWidget(checkbox);
+        std::vector<std::string> top_labels = {"G", "0", "21", "25", "42", "60", "76", "115", "145", "180", "213", "250", "280", "350", "420"};
+        std::vector<std::string> bot_labels = {"", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"};
         for (int i = 0; i < m_size; ++i) {
+            QFrame* box_frame = new QFrame(frame);
+            QVBoxLayout* box_layout = new QVBoxLayout(box_frame);
             QSpinBox* box = create_hex_spin_box();
             box->setMinimum(0);
             box->setMaximum(255);
             m_boxes.push_back(box);
-            layout->addWidget(box);
+            if(i < top_labels.size()) {
+                box_layout->addWidget(new QLabel(QString::fromStdString(top_labels[i])));
+            } else {
+                box_layout->addWidget(new QLabel(""));
+            }
+            box_layout->addWidget(box);
+            if(i < bot_labels.size()) {
+                box_layout->addWidget(new QLabel(QString::fromStdString(bot_labels[i])));
+            } else {
+                box_layout->addWidget(new QLabel(""));
+            }
+            layout->addWidget(box_frame);
         }
         m_layout->addWidget(frame);
         connect(checkbox, &QCheckBox::stateChanged, [=](int state) {
