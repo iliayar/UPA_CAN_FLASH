@@ -131,12 +131,11 @@ void QCommunicator::worker_done() {
     switch (m_worker->get_type()) {
         case Can::CommunicatorStatus::Receive: {
             QReceiver* worker = std::static_pointer_cast<QReceiver>(m_worker).get();
-            std::shared_ptr<Can::ServiceResponse::ServiceResponse> resp = nullptr;
-            try {
-                resp = worker->get_response();
-            } catch (std::runtime_error e) {
+            auto maybe_resp = worker->get_response();
+            if (!maybe_resp) {
                 m_logger->error("Frame worker can't parse response");
             }
+            auto resp = maybe_resp.value();
             disconnect(worker, &QReceiver::fetch_frame, this,
                        &QCommunicator::fetch_frame_worker);
             disconnect(this, &QCommunicator::push_frame_worker, worker,
@@ -147,14 +146,12 @@ void QCommunicator::worker_done() {
                        &QCommunicator::worker_error);
             disconnect(this, &QCommunicator::operate_receiver, worker,
                        &QReceiver::init);
-            if (resp != nullptr) emit response(resp);
+            emit response(resp);
             m_worker = nullptr;
             break;
         }
         case Can::CommunicatorStatus::Transmit: {
             QTransmitter* worker = std::static_pointer_cast<QTransmitter>(m_worker).get();
-            // m_worker_thread.quit();
-            // m_worker_thread.wait();
             disconnect(worker, &QTransmitter::fetch_frame, this,
                        &QCommunicator::fetch_frame_worker);
             disconnect(this, &QCommunicator::push_frame_worker, worker,
@@ -192,7 +189,7 @@ void QTransmitter::init(std::shared_ptr<Can::ServiceRequest::ServiceRequest> req
     m_frames = maybe_frames.value();
     if (m_frames.size() == 0) {
         emit worker_error(WorkerError::Other);
-	return;
+        return;
     }
     switch (m_frames[0]->get_type()) {
         case Can::Frame::Type::SingleFrame: {
@@ -276,15 +273,15 @@ void QReceiver::init(std::shared_ptr<Can::Frame::Frame> frame) {
     }
 }
 
-std::shared_ptr<Can::ServiceResponse::ServiceResponse> QReceiver::get_response() {
+optional<std::shared_ptr<Can::ServiceResponse::ServiceResponse>> QReceiver::get_response() {
     DEBUG(info, "receiver");
     auto maybe_response =
         Can::frames_to_service(m_frames);
     if(!maybe_response) {
-        // should not happed
         DEBUG(error, "Invalid frames passed");
+        return {};
     }
-    return maybe_response.value();;
+    return maybe_response.value();
 }
 
 void QReceiver::push_frame(std::shared_ptr<Can::Frame::Frame> frame) {

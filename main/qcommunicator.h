@@ -136,7 +136,7 @@ public:
      * @return ServiceResponse pointer to parsed response or nullptr if
      * received frame do not represent a valid reponse
      */
-    std::shared_ptr<Can::ServiceResponse::ServiceResponse> get_response();
+    optional<std::shared_ptr<Can::ServiceResponse::ServiceResponse>> get_response();
 
 public slots:
     /**
