@@ -8,6 +8,7 @@
 
 #include "frame_all.h"
 #include "service_all.h"
+#include "security.h"
 
 void QTask::response(std::shared_ptr<Can::ServiceResponse::ServiceResponse> r, int wait) {
     if (wait == 1) {
@@ -79,46 +80,98 @@ std::shared_ptr<Can::ServiceResponse::ServiceResponse> QTask::call(
 
 using namespace Can;
 
-void QTestTask::task() {
-    std::shared_ptr<ServiceResponse::ServiceResponse> response;
-    m_logger->info("Reading UPASystemType");
-    response = call(ServiceRequest::ReadDataByIdentifier::build()
-                    ->id(DataIdentifier::UPASystemType)
-                    ->build().value());
-    IF_NEGATIVE(response) {
-        m_logger->error("Negative ReadDataByIdentifier response");
-        return;
-    }
-    uint8_t type =
-        std::static_pointer_cast<ServiceResponse::ReadDataByIdentifier>(response)
-        ->get_data()
-        ->get_value()[0];
-    std::stringstream ss;
-    ss << "UPASystemType = " << std::hex << (int)type;
-    m_logger->info(ss.str());
-
-    m_logger->info("Writing VIN");
-    call(ServiceRequest::WriteDataByIdentifier::build()
-             ->data(Data::build()
-                        ->type(DataIdentifier::VIN)
-                        ->value(Util::str_to_vec("12345678901234567"))
-                        ->build()
-                        .value())
-             ->build()
-             .value());
-
-    m_logger->info("Reading VIN");
-    response = call(ServiceRequest::ReadDataByIdentifier::build()
-                        ->id(DataIdentifier::VIN)
+bool QTask::security_access(uint32_t mask) {
+    auto response = call(ServiceRequest::DiagnosticSessionControl::build()
+                        ->subfunction(ServiceRequest::DiagnosticSessionControl::
+                                          Subfunction::extendDiagnosticSession)
                         ->build()
                         .value());
+
     IF_NEGATIVE(response) {
-        m_logger->error("Negative ReadDataByIdentifier response");
-        return;
+        LOG(error, "Failed ot enter extendDiagnosticSession");
+        return false;
     }
-    std::string VIN = ::Util::vec_to_str(
-        std::static_pointer_cast<ServiceResponse::ReadDataByIdentifier>(response)
-        ->get_data()
-        ->get_value());
-    m_logger->info("VIN = " + VIN);
+
+    response = call(
+        ServiceRequest::ControlDTCSettings::build()
+            ->subfunction(ServiceRequest::ControlDTCSettings::Subfunction::off)
+            ->build()
+            .value());
+
+    IF_NEGATIVE(response) {
+        LOG(error, "Failed ControlDTCSettings");
+        return false;
+    }
+
+    response = call(
+        ServiceRequest::CommunicationControl::build()
+            ->subfunction(ServiceRequest::CommunicationControl::Subfunction::
+                              disableRxAndTx)
+            ->communication_type(CommunicationType::build()
+                                     ->chanels(CommunicationTypeChanels::build()
+                                                   ->network_communication(1)
+                                                   ->normal_communication(1)
+                                                   ->build()
+                                                   .value())
+                                     ->build()
+                                     .value())
+            ->build()
+            .value());
+
+    IF_NEGATIVE(response) {
+        LOG(error, "Failed CommunicationControl");
+        return false;
+    }
+
+    response = call(ServiceRequest::DiagnosticSessionControl::build()
+                        ->subfunction(ServiceRequest::DiagnosticSessionControl::
+                                          Subfunction::programmingSession)
+                        ->build()
+                        .value());
+
+    IF_NEGATIVE(response) {
+        LOG(error, "Failed on enter programmingSession");
+        return false;
+    }
+
+    uint8_t rnd = Crypto::get_RND();
+
+    m_logger->info("Seed parameter " + Util::int_to_hex(rnd));
+    response =
+        call(ServiceRequest::SecurityAccess::build()
+                 ->subfunction(
+                     ServiceRequest::SecurityAccess::Subfunction::requestSeed)
+                 ->seed_par(rnd)
+                 ->build()
+                 .value());
+
+    IF_NEGATIVE(response) {
+        LOG(error, "Failed ot request seed");
+        return false;
+    }
+
+    uint32_t seed =
+        std::static_pointer_cast<ServiceResponse::SecurityAccess>(response)
+            ->get_seed();
+
+    LOG(info, "Received seed " + Util::int_to_hex(seed));
+
+    uint32_t key = Crypto::seed_to_key(seed, rnd, mask);
+
+    LOG(info, "Calculated key " + Util::int_to_hex(key));
+
+    response = call(
+        ServiceRequest::SecurityAccess::build()
+            ->subfunction(ServiceRequest::SecurityAccess::Subfunction::sendKey)
+            ->key(key)
+            ->build()
+            .value());
+
+    IF_NEGATIVE(response) {
+        LOG(error, "Security access failed key verification");
+        return false;
+    }
+
+    LOG(info, "Successfully passed security access");
+    return true;
 }

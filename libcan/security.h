@@ -74,13 +74,13 @@ static uint32_t seed_to_key(uint32_t seed, uint8_t rnd, uint32_t mask) {
 
 /**
  * Uses MASK03 in seed_to_key function to
- * enter programming mode
+ * enter diagnostic mode
  */
     uint32_t seed_to_key_03(uint32_t seed, uint8_t rnd);
 
 /**
  * Uses MASK02 in seed_to_key function to
- * enter diagnostic? mode
+ * enter programming mode
  */
 uint32_t seed_to_key_02(uint32_t seed, uint8_t rnd);
 }  // namespace Crypto

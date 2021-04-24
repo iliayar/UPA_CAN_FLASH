@@ -10,12 +10,6 @@
 
 using namespace Can;
 
-std::string int_to_hex(int n) {
-    std::stringstream s;
-    s << std::hex << n;
-    return s.str();
-}
-
 void FlashTask::task() {
     task_main();
     std::shared_ptr<ServiceResponse::ServiceResponse> response =
@@ -29,118 +23,15 @@ void FlashTask::task_main() {
     int progress = 0;
     std::shared_ptr<ServiceResponse::ServiceResponse> response;
 
-    response = call(ServiceRequest::DiagnosticSessionControl::build()
-                        ->subfunction(ServiceRequest::DiagnosticSessionControl::
-                                          Subfunction::extendDiagnosticSession)
-                        ->build()
-                        .value());
-
-    IF_NEGATIVE(response) {
-        LOG(error, "Failed ot enter extendDiagnosticSession");
+    if(!security_access(Crypto::SecuritySettings::get_mask02())) {
         m_logger->progress(0, true);
         return;
     }
-    progress += 1;
+
+    progress += 6;
     m_logger->progress(progress);
 
-    response = call(
-        ServiceRequest::ControlDTCSettings::build()
-            ->subfunction(ServiceRequest::ControlDTCSettings::Subfunction::off)
-            ->build()
-            .value());
-
-    IF_NEGATIVE(response) {
-        LOG(error, "Failed ControlDTCSettings");
-        m_logger->progress(0, true);
-        return;
-    }
-    progress += 1;
-    m_logger->progress(progress);
-
-    response = call(
-        ServiceRequest::CommunicationControl::build()
-            ->subfunction(ServiceRequest::CommunicationControl::Subfunction::
-                              disableRxAndTx)
-            ->communication_type(CommunicationType::build()
-                                     ->chanels(CommunicationTypeChanels::build()
-                                                   ->network_communication(1)
-                                                   ->normal_communication(1)
-                                                   ->build()
-                                                   .value())
-                                     ->build()
-                                     .value())
-            ->build()
-            .value());
-
-    IF_NEGATIVE(response) {
-        LOG(error, "Failed CommunicationControl");
-        m_logger->progress(0, true);
-        return;
-    }
-    progress += 1;
-    m_logger->progress(progress);
-
-    response = call(ServiceRequest::DiagnosticSessionControl::build()
-                        ->subfunction(ServiceRequest::DiagnosticSessionControl::
-                                          Subfunction::programmingSession)
-                        ->build()
-                        .value());
-
-    IF_NEGATIVE(response) {
-        LOG(error, "Failed on enter programmingSession");
-        m_logger->progress(0, true);
-        return;
-    }
-    progress += 1;
-    m_logger->progress(progress);
-
-    uint8_t rnd = Crypto::get_RND();
-
-    m_logger->info("Seed parameter " + int_to_hex(rnd));
-    response =
-        call(ServiceRequest::SecurityAccess::build()
-                 ->subfunction(
-                     ServiceRequest::SecurityAccess::Subfunction::requestSeed)
-                 ->seed_par(rnd)
-                 ->build()
-                 .value());
-
-    IF_NEGATIVE(response) {
-        LOG(error, "Failed ot request seed");
-        m_logger->progress(0, true);
-        return;
-    }
-    progress += 1;
-    m_logger->progress(progress);
-
-    uint32_t seed =
-        std::static_pointer_cast<ServiceResponse::SecurityAccess>(response)
-            ->get_seed();
-
-    LOG(info, "Received seed " + int_to_hex(seed));
-
-    uint32_t key = Crypto::seed_to_key_02(seed, rnd);
-
-    LOG(info, "Calculated key " + int_to_hex(key));
-
-    response = call(
-        ServiceRequest::SecurityAccess::build()
-            ->subfunction(ServiceRequest::SecurityAccess::Subfunction::sendKey)
-            ->key(key)
-            ->build()
-            .value());
-
-    IF_NEGATIVE(response) {
-        LOG(error, "Security access failed key verification");
-        m_logger->progress(0, true);
-        return;
-    }
-    progress += 1;
-    m_logger->progress(progress);
-
-    LOG(info, "Successfully passed security access");
-
-    std::ifstream fin(m_file);
+    std::ifstream fin(FILEPATH(m_file));
     if (!fin) {
         m_logger->error("Cannot open file");
         m_logger->progress(0, true);
@@ -203,12 +94,12 @@ void FlashTask::task_main() {
         std::static_pointer_cast<Can::ServiceResponse::RequestDownload>(
             response)
             ->get_max_blocks_number();
-    LOG(info, "max_block_size_vec " + int_to_hex(max_block_size_vec.size()));
+    LOG(info, "max_block_size_vec " + Util::int_to_hex(max_block_size_vec.size()));
     uint64_t max_block_size =
         Util::Reader(max_block_size_vec)
             .read_int<uint64_t>(max_block_size_vec.size() * 8)
             .value();
-    LOG(info, "max_block_size " + int_to_hex(max_block_size));
+    LOG(info, "max_block_size " + Util::int_to_hex(max_block_size));
     max_block_size -= 2;
     fin.open(m_file);
     if (!fin) {
@@ -243,7 +134,7 @@ void FlashTask::task_main() {
                 n_size++;
                 if (i >= data.size()) {
                     LOG(important,
-                        "Transfering block " + int_to_hex(block_counter));
+                        "Transfering block " + Util::int_to_hex(block_counter));
                     response = call(Can::ServiceRequest::TransferData::build()
                                         ->block_counter(block_counter++)
                                         ->data(data)

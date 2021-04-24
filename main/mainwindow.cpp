@@ -21,11 +21,11 @@
 #include <QTextEdit>
 #include <QThread>
 #include <QVBoxLayout>
+#include <QCheckBox>
 #include <iostream>
 #include <memory>
 #include <sstream>
 #include <vector>
-#include <experimental/filesystem>
 
 #include "communicator.h"
 #include "flash.h"
@@ -37,6 +37,7 @@
 #include "task.h"
 #include "security.h"
 #include "configure_task/task.h"
+#include "util.h"
 
 #ifdef __MINGW32__
 #define CAN_PLUGINS                                         \
@@ -51,8 +52,6 @@
         { "SocketCAN", "socketcan" } \
     }
 #endif
-
-namespace fs = std::experimental::filesystem;
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent),
@@ -150,13 +149,16 @@ void MainWindow::create_layout(QWidget* root) {
 
     QFrame* settings_mask02_frame = new QFrame();
     QFrame* settings_mask03_frame = new QFrame();
+    QFrame* config_security_frame = new QFrame();
 
     QVBoxLayout* settings_window_layout = new QVBoxLayout(settings_window);
     QHBoxLayout* settings_mask02_layout = new QHBoxLayout(settings_mask02_frame);
     QHBoxLayout* settings_mask03_layout = new QHBoxLayout(settings_mask03_frame);
+    QHBoxLayout* config_securiry_layout = new QHBoxLayout(config_security_frame);
 
     QLineEdit* mask02_box = new QLineEdit();
     QLineEdit* mask03_box = new QLineEdit();
+    QCheckBox* config_security_checkbox = new QCheckBox(config_security_frame);
 
     // Creating layout
     
@@ -201,16 +203,20 @@ void MainWindow::create_layout(QWidget* root) {
 
     settings_window_layout->addWidget(settings_mask02_frame);
     settings_window_layout->addWidget(settings_mask03_frame);
+    settings_window_layout->addWidget(config_security_frame);
 
     settings_mask02_layout->addWidget(new QLabel("MASK02"));
     settings_mask02_layout->addWidget(mask02_box);
     settings_mask03_layout->addWidget(new QLabel("MASK03"));
     settings_mask03_layout->addWidget(mask03_box);
+    config_securiry_layout->addWidget(new QLabel("Security in Configuration"));
+    config_securiry_layout->addWidget(config_security_checkbox);
 
     // Setting up widgets
 
-    for(QString task : {"Flash", "Test", "Configuration"}) {
+    for(QString task : {"Flash" /*, "Test"*/, "Configuration"}) {
         QPushButton* btn = new QPushButton(task, tasks_group);
+        btn->setDisabled(true);
         tasks_btns.push_back(btn);
         tasks_group_layout->addWidget(btn);
     }
@@ -263,8 +269,11 @@ void MainWindow::create_layout(QWidget* root) {
     m_settings_window = settings_window;
     m_mask02 = mask02_box;
     m_mask03 = mask03_box;
+    m_config_security_checkbox = config_security_checkbox;
 
     // Filling widgets
+
+    m_config_security_checkbox->setChecked(m_settings.value("settings/security").toInt());
 
     int tester_id = m_settings.value("task/testerId").toInt();
     int ecu_id = m_settings.value("task/ecuId").toInt();
@@ -284,43 +293,6 @@ void MainWindow::create_layout(QWidget* root) {
     QString bitrate_last = m_settings.value("device/bitrate").toString();
     int bitrate_id = bitrate_list->findText(bitrate_last);
     if (bitrate_id != -1) bitrate_list->setCurrentIndex(bitrate_id);
-
-    auto update_device_list = [this](const QString& str) {
-        m_device_list->clear();
-        QString errorString;
-        QList<QCanBusDeviceInfo> devices =
-            QCanBus::instance()->availableDevices(
-                m_plugin_list->currentData().toString(), &errorString);
-        if (!errorString.isEmpty()) {
-            m_logger->error(errorString.toStdString());
-        } else {
-            for (auto device : devices) {
-                m_device_list->addItem(
-                    device.name() + " (" + device.description() + ")",
-                    device.name());
-            }
-        }
-    };
-
-
-    for (std::pair<std::string, std::string> plugin :
-         std::vector<std::pair<std::string, std::string>>(CAN_PLUGINS)) {
-        if(!QCanBus::instance()->plugins().contains(QString::fromStdString(plugin.second)))
-            continue;
-        QString errorString;
-        QList<QCanBusDeviceInfo> devices =
-            QCanBus::instance()->availableDevices(
-                QString::fromStdString(plugin.second), &errorString);
-        if (!errorString.isEmpty()) {
-            m_logger->error("Error while loading " + plugin.first + ": " + errorString.toStdString());
-        } else {
-            m_plugin_list->addItem(QString::fromStdString(plugin.first),
-                                   QString::fromStdString(plugin.second));
-            m_plugin_list->setCurrentText(QString::fromStdString(plugin.first));
-            if (devices.size() == 0) continue;
-            update_device_list(QString::fromStdString(plugin.first));
-        }
-    }
 
     // Setting up events
 
@@ -369,7 +341,7 @@ void MainWindow::create_layout(QWidget* root) {
         m_settings_window->show();
         m_settings_window->setFocus();
     });
-    connect(plugins_list, QOverload<const QString&>::of(&QComboBox::activated), update_device_list);
+    connect(plugins_list, QOverload<const QString&>::of(&QComboBox::activated), this, &MainWindow::update_device_list);
     connect(device_connect_btn, &QPushButton::released, this,
             &MainWindow::connect_device);
     connect(device_disconnect_btn, &QPushButton::released, this,
@@ -378,8 +350,54 @@ void MainWindow::create_layout(QWidget* root) {
             [&](int v) { m_settings.setValue("task/testerId", v); });
     connect(ecu_id_box, QOverload<int>::of(&QSpinBox::valueChanged),
             [&](int v) { m_settings.setValue("task/ecuId", v); });
+    connect(config_security_checkbox, &QCheckBox::stateChanged, [this](int s) {
+        m_settings.setValue("settings/security", s);
+    });
+
+    // Updating plugins and devices list
+
+    for (std::pair<std::string, std::string> plugin :
+         std::vector<std::pair<std::string, std::string>>(CAN_PLUGINS)) {
+        if(!QCanBus::instance()->plugins().contains(QString::fromStdString(plugin.second)))
+            continue;
+        QString errorString;
+        QList<QCanBusDeviceInfo> devices =
+            QCanBus::instance()->availableDevices(
+                QString::fromStdString(plugin.second), &errorString);
+        if (!errorString.isEmpty()) {
+            // m_logger->error("Error while loading " + plugin.first + ": " + errorString.toStdString());
+            m_connect_device_button->setDisabled(true);
+        } else {
+            m_plugin_list->addItem(QString::fromStdString(plugin.first),
+                                   QString::fromStdString(plugin.second));
+            m_plugin_list->setCurrentText(QString::fromStdString(plugin.first));
+            update_device_list(QString::fromStdString(plugin.first));
+        }
+    }
 
     DEBUG(info, "Layout created");
+}
+
+void MainWindow::update_device_list(const QString& str) {
+    m_device_list->clear();
+    QString errorString;
+    QList<QCanBusDeviceInfo> devices = QCanBus::instance()->availableDevices(
+        m_plugin_list->currentData().toString(), &errorString);
+    if (!errorString.isEmpty()) {
+        m_logger->error(errorString.toStdString());
+        m_connect_device_button->setDisabled(true);
+    } else {
+        for (auto device : devices) {
+            m_device_list->addItem(
+                device.name() + " (" + device.description() + ")",
+                device.name());
+        }
+        if (devices.size() > 0) {
+            m_connect_device_button->setEnabled(true);
+        } else {
+            m_connect_device_button->setDisabled(true);
+        }
+    }
 }
 
 void MainWindow::choose_file() {
@@ -389,11 +407,7 @@ void MainWindow::choose_file() {
                                           tr("Intel HEX file (*.hex)"))
                  .toUtf8()
                  .toStdString();
-#ifdef __MINGW32__
-    std::ifstream fin(fs::u8path(m_file).wstring().c_str());
-#else
-    std::ifstream fin(m_file);
-#endif
+    std::ifstream fin(FILEPATH(m_file));
     
     if (!fin) {
         m_logger->error("Cannot read file. Check if you have permissions.");
@@ -442,10 +456,6 @@ void MainWindow::disconnect_device() {
         disconnect(m_device, &QCanBusDevice::framesReceived, this,
                    &MainWindow::processReceivedFrames);
         m_device->disconnectDevice();
-        delete m_device;
-        m_logger->info("Device disconnected");
-        m_disconnect_device_button->setDisabled(true);
-        m_connect_device_button->setEnabled(true);
     }
 }
 
@@ -466,7 +476,6 @@ void MainWindow::connect_device() {
         m_plugin_list->currentData().toString(), device_name, &errorString);
     if (!m_device) {
         m_logger->error(errorString.toStdString());
-        delete m_device;
         m_device = nullptr;
         m_logger->error("Cannot connect device");
         return;
@@ -477,20 +486,52 @@ void MainWindow::connect_device() {
             QCanBusDevice::ConfigurationKey::BitRateKey, bitrate);
         m_device->setConfigurationParameter(QCanBusDevice::RawFilterKey,
                                             QVariant::fromValue(filters));
+        connect(m_device, &QCanBusDevice::stateChanged, this,
+                &MainWindow::device_state_changes);
+        connect(m_device, &QCanBusDevice::errorOccurred, this, &MainWindow::device_error);
         if (m_device->connectDevice()) {
             connect(m_device, &QCanBusDevice::framesReceived, this,
                     &MainWindow::processReceivedFrames);
-            m_logger->info(device_name.toStdString() +
-                           " successfuly connected");
-            DEBUG(info, "Device connected");
-            m_disconnect_device_button->setEnabled(true);
-            m_connect_device_button->setDisabled(true);
         } else {
             m_logger->error("Cannot connect device");
-            delete m_device;
+            disconnect(m_device, &QCanBusDevice::stateChanged, this, &MainWindow::device_state_changes);
+            disconnect(m_device, &QCanBusDevice::errorOccurred, this, &MainWindow::device_error);
             m_device = nullptr;
         }
     }
+}
+
+void MainWindow::device_state_changes(QCanBusDevice::CanBusDeviceState state) {
+    if (state == QCanBusDevice::CanBusDeviceState::ConnectedState) {
+        m_disconnect_device_button->setEnabled(true);
+        m_connect_device_button->setDisabled(true);
+        for (auto btn : m_start_task_buttons) {
+            btn->setEnabled(true);
+        }
+        m_logger->info("Device successfuly connected");
+    } else if (state == QCanBusDevice::CanBusDeviceState::UnconnectedState) {
+        m_logger->info("Device disconnected");
+        m_disconnect_device_button->setDisabled(true);
+        m_connect_device_button->setEnabled(true);
+        for (auto btn : m_start_task_buttons) {
+            btn->setDisabled(true);
+        }
+        disconnect(m_device, &QCanBusDevice::stateChanged, this, &MainWindow::device_state_changes);
+        disconnect(m_device, &QCanBusDevice::errorOccurred, this, &MainWindow::device_error);
+        m_device = nullptr;
+        update_device_list("");
+    }
+}
+
+void MainWindow::device_error(QCanBusDevice::CanBusError err) {
+    // disconnect(m_device, &QCanBusDevice::framesReceived, this,
+    //            &MainWindow::processReceivedFrames);
+    // disconnect(m_device, &QCanBusDevice::stateChanged, this,
+    //            &MainWindow::device_state_changes);
+    // disconnect(m_device, &QCanBusDevice::errorOccurred, this,
+    //            &MainWindow::device_error);
+    // m_device = nullptr;
+    disconnect_device();
 }
 
 void MainWindow::abort_task() { emit set_task(nullptr); }
@@ -512,14 +553,11 @@ void MainWindow::start_task(QString task_name) {
         m_logger->info("Starting task " + task_name.toStdString());
         emit set_task(std::make_shared<FlashTask>(
             m_file, std::make_shared<QLogger>(m_logger_worker)));
-    } else if (task_name == "Test") {
-        m_logger->info("Starting task " + task_name.toStdString());
-        emit set_task(std::make_shared<QTestTask>(
-            std::make_shared<QLogger>(m_logger_worker)));
     } else if (task_name == "Configuration") {
         m_logger->info("Starting task " + task_name.toStdString());
         emit set_task(std::make_shared<ConfigurationTask>(
-            std::make_shared<QLogger>(m_logger_worker)));
+            std::make_shared<QLogger>(m_logger_worker),
+            m_config_security_checkbox->isChecked()));
     }
 }
 
@@ -527,10 +565,18 @@ void MainWindow::task_done() {
     for(auto btn : m_start_task_buttons) {
         btn->setEnabled(true);
     }
-    m_disconnect_device_button->setEnabled(true);
+    if(m_device == nullptr) {
+        update_device_list("");
+    } else {
+        m_disconnect_device_button->setEnabled(true);
+    }
 }
 
 void MainWindow::check_frames_to_write(std::shared_ptr<Can::Frame::Frame> frame) {
+    if(m_device == nullptr) {
+        m_logger->error("No device connected. Cannot send frames");
+        return;
+    }
     auto maybe_payload = frame->dump();
     if(!maybe_payload) {
         m_logger->error("Invalid frame passed to send. IT SHOULD NOT HAPPEN!");
@@ -544,6 +590,10 @@ void MainWindow::check_frames_to_write(std::shared_ptr<Can::Frame::Frame> frame)
 }
 
 void MainWindow::processReceivedFrames() {
+    if(m_device == nullptr) {
+        m_logger->error("No devices connected. Cannot receive frames");
+        return;
+    }
     std::unique_lock<std::mutex> lock(m_communicator_mutex);
     while (m_device->framesAvailable()) {
         QCanBusFrame qframe = m_device->readFrame();

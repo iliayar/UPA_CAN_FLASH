@@ -11,6 +11,7 @@
 #include <QSpinBox>
 #include <QThread>
 #include <QLineEdit>
+#include <QCheckBox>
 #include <mutex>
 
 #include "communicator.h"
@@ -43,6 +44,9 @@ public slots:
 
 private:
     void create_layout(QWidget*);
+    void update_device_list(const QString& str);
+    void device_state_changes(QCanBusDevice::CanBusDeviceState state);
+    void device_error(QCanBusDevice::CanBusError error);
 
     QCanBusDevice* m_device;
     QCommunicator* m_communicator;
@@ -78,6 +82,8 @@ private:
     QLabel* m_crc_label;
     QLabel* m_size_label;
     QLabel* m_addr_label;
+
+    QCheckBox* m_config_security_checkbox;
 
     int m_tester_id;
     int m_ecu_id;

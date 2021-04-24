@@ -36,6 +36,9 @@ class QTask : public QThread {
 public:
     QTask(std::shared_ptr<QLogger> logger) : m_logger(logger), m_wait(0) {}
 
+    /**
+     * Run this task.
+     */
     void run() override {
         try {
             task();
@@ -45,6 +48,10 @@ public:
         DEBUG(info, "Exiting task");
     }
 
+    /**
+     * The function called by {@link QThread::run} method to start
+     * task. This is the entry point for non abstact tasks.
+     */
     virtual void task() = 0;
 
 protected:
@@ -53,6 +60,13 @@ protected:
      */
     std::shared_ptr<Can::ServiceResponse::ServiceResponse> call(
         std::shared_ptr<Can::ServiceRequest::ServiceRequest>);
+
+    /**
+     * Shorthand to gain the the access using provided mask
+     * @param mask appropriate mask
+     * @return true if security access was gained, false otherwise
+     */
+    bool security_access(uint32_t mask);
 
 public slots:
     /**
@@ -77,11 +91,4 @@ private:
 
 protected:
     std::shared_ptr<QLogger> m_logger;
-};
-
-class QTestTask : public QTask {
-    Q_OBJECT
-public:
-    QTestTask(std::shared_ptr<QLogger> logger) : QTask(logger) {}
-    void task();
 };

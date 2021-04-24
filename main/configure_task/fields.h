@@ -55,7 +55,23 @@ public:
         connect(write_btn, &QPushButton::pressed, this, &Field::write);
     }
 public slots:
+
+    void diagnostic_session() {
+        auto response = m_task->call(
+            Can::ServiceRequest::DiagnosticSessionControl::build()
+                ->subfunction(Can::ServiceRequest::DiagnosticSessionControl::
+                                  Subfunction::extendDiagnosticSession)
+                ->build()
+                .value());
+
+        IF_NEGATIVE(response) {
+            m_task->m_logger->error("Failed ot enter extendDiagnosticSession");
+            return;
+        }
+    }
+
     void write() {
+        diagnostic_session();
         auto data = Can::Data::build()->raw_type(m_id)->value(to_vec())->build();
         auto request = Can::ServiceRequest::WriteDataByIdentifier::build()
                            ->data(data.value())
@@ -69,6 +85,7 @@ public slots:
     }
 
     void read() {
+        diagnostic_session();
         auto request = Can::ServiceRequest::ReadDataByIdentifier::build()
                            ->raw_id(m_id)
                            ->build();

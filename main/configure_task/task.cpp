@@ -15,9 +15,10 @@
 #include "config.h"
 #include "fields.h"
 #include "service_all.h"
+#include "security.h"
 
-ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
-    : QTask(logger) {
+ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger, bool security)
+    : QTask(logger), m_security(security) {
     QWidget* window = new QWidget();
     QHBoxLayout* main_layout = new QHBoxLayout(window);
 
@@ -29,8 +30,13 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
         scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
         scroll->setWidget(group);
         QVBoxLayout* layout = new QVBoxLayout(group);
+        QFrame* btns_frame = new QFrame(group);
+        QHBoxLayout* btns_layout = new QHBoxLayout(btns_frame);
         QPushButton* read_all_btn = new QPushButton(tr("&Read all fields"));
-        layout->addWidget(read_all_btn);
+        QPushButton* write_all_btn = new QPushButton(tr("&Write all fields"));
+        btns_layout->addWidget(read_all_btn);
+        btns_layout->QLayout::addWidget(write_all_btn);
+        layout->addWidget(btns_frame);
         group->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
         scroll->hide();
         for (Field* field : fields) {
@@ -38,6 +44,7 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
             field->setParent(group);
             field->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Maximum);
             connect(read_all_btn, &QPushButton::released, field, &Field::read);
+            connect(write_all_btn, &QPushButton::released, field, &Field::write);
             layout->addWidget(field);
         }
         tabs->addTab(scroll, QString::fromStdString(name));
@@ -86,16 +93,12 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger)
 
 void ConfigurationTask::task() {
 
-    auto response = call(Can::ServiceRequest::DiagnosticSessionControl::build()
-                        ->subfunction(Can::ServiceRequest::DiagnosticSessionControl::
-                                          Subfunction::extendDiagnosticSession)
-                        ->build()
-                        .value());
-
-    IF_NEGATIVE(response) {
-        LOG(error, "Failed ot enter extendDiagnosticSession");
-        return;
+    if(m_security) {
+        if(!security_access(Crypto::SecuritySettings::get_mask03())) {
+            return;
+        }
     }
+
     QEventLoop loop;
     connect(m_window, &QWidget::destroyed, &loop, &QEventLoop::quit);
     loop.exec();
@@ -106,9 +109,12 @@ void ConfigurationTask::clear_errors() {
                             ->group(0xFFFFFF)
                             ->build()
                             .value());
+    m_err_log->clear();
     IF_NEGATIVE(response) {
+        m_err_log->append("FAIL");
         m_logger->error("Failed to clear errors");
     }
+    m_err_log->append("OK");
 }
 
 void ConfigurationTask::read_errors(uint8_t mask) {

@@ -12,7 +12,7 @@ class ConfigurationTask : public QTask {
 
 public:
 
-    ConfigurationTask(std::shared_ptr<QLogger> logger);
+    ConfigurationTask(std::shared_ptr<QLogger> logger, bool security);
 
     void task() override;
 
@@ -26,4 +26,6 @@ private:
     QWidget* m_window;
     QTextEdit* m_err_log;
     DataConfig m_config{};
+
+    bool m_security;
 };

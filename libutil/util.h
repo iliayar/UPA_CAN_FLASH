@@ -6,6 +6,7 @@
 
 #include <string>
 #include <vector>
+#include <experimental/filesystem>
 
 namespace Util {
 
@@ -22,4 +23,17 @@ std::string vec_to_str(std::vector<uint8_t> vec);
  * @return appropriate vector of bytes
  */
 std::vector<uint8_t> str_to_vec(std::string str);
+
+/**
+ * Converts int value to hex string
+ * @param n integer valuea
+ * @return string hex representation of {@code value}
+ */
+std::string int_to_hex(int n);
 }  // namespace Util
+
+#ifdef __MINGW32__
+#define FILEPATH(file) std::experimental::filesystem::u8path(file).wstring().c_str()
+#elif __linux__
+#define FILEPATH(file) file
+#endif
