@@ -38,6 +38,7 @@
 #include "security.h"
 #include "configure_task/task.h"
 #include "util.h"
+#include "configure_task/configuration_window.h"
 
 #ifdef __MINGW32__
 #define CAN_PLUGINS                                         \
@@ -555,9 +556,11 @@ void MainWindow::start_task(QString task_name) {
             m_file, std::make_shared<QLogger>(m_logger_worker)));
     } else if (task_name == "Configuration") {
         m_logger->info("Starting task " + task_name.toStdString());
+        ConfigurationWindow* window =  new ConfigurationWindow(this);
         emit set_task(std::make_shared<ConfigurationTask>(
             std::make_shared<QLogger>(m_logger_worker),
-            m_config_security_checkbox->isChecked()));
+            m_config_security_checkbox->isChecked(), window));
+        window->show();
     }
 }
 

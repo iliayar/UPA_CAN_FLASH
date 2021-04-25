@@ -18,7 +18,8 @@
 #include <QFontDatabase>
 #include <QJsonObject>
 
-#include "task.h"
+#include "util.h"
+#include "bytes.h"
 
 struct SpinBox {
     QFrame* frame;
@@ -34,8 +35,7 @@ public:
     Field(std::string name, uint16_t id)
         : Field(nullptr, name, id) {}
 
-    void init(ConfigurationTask* task) {
-        m_task = task;
+    void init() {
         QHBoxLayout* main_layout = new QHBoxLayout(this);
         QFrame* inner_frame = new QFrame();
         m_layout = new QHBoxLayout(inner_frame);
@@ -71,18 +71,23 @@ public:
 
     QString get_name() { return QString::fromStdString(m_name); }
 
-
 public slots:
     void read() {
-        auto vec = m_task->read(m_id);
-        if(vec) {
-            from_vec(vec.value());
-        }
+        emit read_sig(m_id);
     }
 
     void write() {
-        m_task->write(m_id, to_vec());
+        emit write_sig(m_id, to_vec());
     }
+
+    void read_done(uint16_t id, std::vector<uint8_t> data) {
+        if(m_id == id) {
+            from_vec(data);
+        }
+    }
+signals:
+    void read_sig(uint16_t);
+    void write_sig(uint16_t, std::vector<uint8_t>);
 
 protected:
     virtual void create_fields() = 0;
@@ -125,7 +130,6 @@ protected:
 
     QHBoxLayout* m_layout;
     uint16_t m_id;
-    ConfigurationTask* m_task;
     std::string m_name;
 };
 

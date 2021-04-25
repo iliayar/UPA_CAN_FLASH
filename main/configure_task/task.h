@@ -10,21 +10,30 @@
 #include <QSettings>
 #include <QEventLoop>
 #include <unordered_map>
+#include "configuration_window.h"
 
 class ConfigurationTask : public QTask {
-
+Q_OBJECT
 public:
 
-    ConfigurationTask(std::shared_ptr<QLogger> logger, bool security);
+    ConfigurationTask(std::shared_ptr<QLogger> logger, bool security, ConfigurationWindow* window);
     virtual ~ConfigurationTask();
 
     void task() override;
 
-    optional<std::vector<uint8_t>> read(uint16_t id);
-    void write(uint16_t id, std::vector<uint8_t> vec);
-    optional<std::vector<std::shared_ptr<Can::DTC>>> read_errors(uint8_t);
-    bool clear_errors();
-    bool factory_reset();
+public slots:
+    void read(uint16_t);
+    void write(uint16_t, std::vector<uint8_t>);
+    void read_errors(uint8_t);
+    void clear_errors();
+    void factory_reset();
+
+signals:
+    void read_errors_done(uint8_t, std::vector<std::shared_ptr<Can::DTC>>);
+    void read_done(uint16_t, std::vector<uint8_t>);
+    void clear_errors_done(bool);
+
+    void windows_closed();
 
 private:
     void diagnostic_session();

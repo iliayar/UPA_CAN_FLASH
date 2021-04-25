@@ -7,6 +7,7 @@
 #include <QCoreApplication>
 
 #include "fields.h"
+#include "datatypes.h"
 
 DataConfig::DataConfig() {
     QString app_path = QCoreApplication::applicationDirPath();

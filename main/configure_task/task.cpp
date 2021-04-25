@@ -7,15 +7,30 @@
 
 #include "configuration_window.h"
 
-ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger, bool security)
+ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger, bool security, ConfigurationWindow* window)
     : QTask(logger), m_security(security) {
+
+    connect(this, &ConfigurationTask::clear_errors_done, window, &ConfigurationWindow::clear_errors_done);
+    connect(this, &ConfigurationTask::read_done, window, &ConfigurationWindow::read_done);
+    connect(this, &ConfigurationTask::read_errors_done, window, &ConfigurationWindow::read_errors_done);
+    connect(window, &ConfigurationWindow::factory_reset, this, &ConfigurationTask::factory_reset);
+    connect(window, &ConfigurationWindow::read, this, &ConfigurationTask::read);
+    connect(window, &ConfigurationWindow::write, this, &ConfigurationTask::write);
+    connect(window, &ConfigurationWindow::read_errors, this, &ConfigurationTask::read_errors);
+    connect(window, &ConfigurationWindow::clear_errors, this, &ConfigurationTask::clear_errors);
+    connect(window, &ConfigurationWindow::closed, [this]() {
+        emit windows_closed();
+    });
+    // connect(window, &ConfigurationWindow::closed, []() {
+    //     qDebug() << "Window closed";
+    // });
 }
 
 ConfigurationTask::~ConfigurationTask() {
 
 }
 
-bool ConfigurationTask::factory_reset() {
+void ConfigurationTask::factory_reset() {
     auto response = call(
         Can::ServiceRequest::RoutineControl::build()
         ->subfunction(
@@ -29,10 +44,9 @@ bool ConfigurationTask::factory_reset() {
         .value());
     IF_NEGATIVE(response) {
         m_logger->error("Failed to perform Factory reset");
-        return false;
+        return;
     }
     m_logger->info("Factory reset done");
-    return true;
 }
 
 void ConfigurationTask::task() {
@@ -42,29 +56,32 @@ void ConfigurationTask::task() {
         }
     }
 
-    ConfigurationWindow window(nullptr, this);
+    // ConfigurationWindow window(nullptr, this);
     // window.setWindowModality(Qt::WindowModal);
-    // QEventLoop loop;
-    // connect(&window, &ConfigurationWindow::closed, &loop, &QEventLoop::quit);
+    // loop.moveToThread(this);
     // window.show();
-    window.exec();
-    // loop.exec();
+    // while(1);
+    // m_window->show();
+    QEventLoop loop;
+    connect(this, &ConfigurationTask::windows_closed, &loop, &QEventLoop::quit);
+    loop.exec();
     // m_window->setFocus();
 }
 
-bool ConfigurationTask::clear_errors() {
+void ConfigurationTask::clear_errors() {
     auto response = call(Can::ServiceRequest::ClearDiagnosticInformation::build()
                          ->group(0xFFFFFF)
                          ->build()
                          .value());
     IF_NEGATIVE(response) {
         m_logger->error("Failed to clear errors");
-        return false;
+        emit clear_errors_done(false);
+        return;
     }
-    return true;
+    emit clear_errors_done(true);
 }
 
-optional<std::vector<std::shared_ptr<Can::DTC>>> ConfigurationTask::read_errors(uint8_t mask) {
+void ConfigurationTask::read_errors(uint8_t mask) {
     auto response =
         call(Can::ServiceRequest::ReadDTCInformation::build()
              ->subfunction(Can::ServiceRequest::ReadDTCInformation::
@@ -74,9 +91,9 @@ optional<std::vector<std::shared_ptr<Can::DTC>>> ConfigurationTask::read_errors(
              .value());
     IF_NEGATIVE(response) {
         m_logger->error("Failed to read errors");
-        return {};
+        return;
     }
-    return std::static_pointer_cast<Can::ServiceResponse::ReadDTCInformation>(response)->get_records();
+    emit read_errors_done(mask, std::static_pointer_cast<Can::ServiceResponse::ReadDTCInformation>(response)->get_records());
 }
 
 void ConfigurationTask::diagnostic_session() {
@@ -107,7 +124,7 @@ void ConfigurationTask::write(uint16_t id, std::vector<uint8_t> vec) {
     }
 }
 
-optional<std::vector<uint8_t>> ConfigurationTask::read(uint16_t id) {
+void ConfigurationTask::read(uint16_t id) {
     diagnostic_session();
     auto request =
         Can::ServiceRequest::ReadDataByIdentifier::build()->raw_id(id)->build();
@@ -115,10 +132,12 @@ optional<std::vector<uint8_t>> ConfigurationTask::read(uint16_t id) {
         call(request.value());
     if (response->get_type() == Can::ServiceResponse::Type::Negative) {
         m_logger->error("Failed to read data");
-        return {};
+        return;
     }
-    return std::static_pointer_cast<Can::ServiceResponse::ReadDataByIdentifier>(
-        response)
-        ->get_data()
-        ->get_value();
+    emit read_done(
+        id,
+        std::static_pointer_cast<Can::ServiceResponse::ReadDataByIdentifier>(
+            response)
+            ->get_data()
+            ->get_value());
 }

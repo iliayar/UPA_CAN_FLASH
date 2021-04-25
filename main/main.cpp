@@ -22,6 +22,7 @@ Q_DECLARE_METATYPE(std::shared_ptr<QTask>)
 Q_DECLARE_METATYPE(std::shared_ptr<Can::ServiceRequest::ServiceRequest>)
 Q_DECLARE_METATYPE(std::shared_ptr<Can::ServiceResponse::ServiceResponse>)
 Q_DECLARE_METATYPE(std::vector<uint8_t>)
+Q_DECLARE_METATYPE(std::vector<std::shared_ptr<Can::DTC>>)
 Q_DECLARE_METATYPE(Can::ServiceRequest::ServiceRequest*)
 Q_DECLARE_METATYPE(Can::ServiceResponse::ServiceResponse*)
 Q_DECLARE_METATYPE(WorkerError)
@@ -63,6 +64,7 @@ int main(int argc, char* argv[]) {
     qRegisterMetaType<WorkerError>();
     qRegisterMetaType<QTextCharFormat>();
     qRegisterMetaType<QTextCursor>();
+    qRegisterMetaType<std::vector<std::shared_ptr<Can::DTC>>>();
 
     QDesktopWidget dw;
     MainWindow main_window{};

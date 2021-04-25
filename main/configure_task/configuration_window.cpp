@@ -17,28 +17,28 @@
 #include <QMenuBar>
 
 #include "fields.h"
+#include "service_all.h"
 
-ConfigurationWindow::ConfigurationWindow(QWidget* parent,
-                                         ConfigurationTask* task)
-    : m_task(task),
-      QDialog(parent),
-      m_settings("canFlash", "Some cool organization name") {
-    QHBoxLayout* layout = new QHBoxLayout(this);
-    QTabWidget* tabs = new QTabWidget();
+ConfigurationWindow::ConfigurationWindow(QWidget* parent)
+    : QMainWindow(parent),
+      m_settings("canFlash", "Some cool organization name"),
+      m_config() {
+    QTabWidget* tabs = new QTabWidget(this);
 
     create_layout(tabs);
 
-    layout->addWidget(tabs);
-    QMenuBar* menu_bar = new QMenuBar(this);
+    // layout->addWidget(tabs);
+    // QMenuBar* menu_bar = new QMenuBar(this);
     QMenu* tools_menu = new QMenu(tr("Tools"));
     QAction* reset_action = new QAction(tr("Factory reset"), this);
 
     tools_menu->addAction(reset_action);
-    menu_bar->addMenu(tools_menu);
+    menuBar()->addMenu(tools_menu);
 
-    layout->setMenuBar(menu_bar);
+    // layout->setMenuBar(menu_bar);
     connect(reset_action, &QAction::triggered, this,
             &ConfigurationWindow::factory_reset);
+    setCentralWidget(tabs);
 
     // setCentralWidget(tabs);
 }
@@ -67,36 +67,40 @@ void ConfigurationWindow::create_layout(QTabWidget* tabs) {
         group->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
         scroll->hide();
         for (Field* field : fields) {
+            field->init();
             field->setParent(group);
             field->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Maximum);
-            connect(read_all_btn, &QPushButton::released, field, &Field::read);
-            connect(write_all_btn, &QPushButton::released, field,
-                    &Field::write);
             layout->addWidget(field);
+
+            connect(read_all_btn, &QPushButton::released, field, &Field::read);
+            connect(write_all_btn, &QPushButton::released, field, &Field::write);
+            connect(this, &ConfigurationWindow::read_done_field, field, &Field::read_done);
+            connect(field, &Field::read_sig, this, &ConfigurationWindow::read_field);
+            connect(field, &Field::write_sig, this, &ConfigurationWindow::write_field);
         }
         std::string groupname = name;
-        // connect(load_btn, &QPushButton::released,
-        //         [this, groupname]() {
-        //             QString path =
-        //             m_settings.value("configuration/data").toString();
-        //             QString filename = QFileDialog::getOpenFileName(
-        //                 this->m_window, tr("Open configuration data"), path);
-        //             this->m_config.json_to_group(filename, groupname);
-        //             if(filename != "") {
-        //                 m_settings.setValue("configuration/data", filename);
-        //             }
-        //         });
-        // connect(dump_btn, &QPushButton::released,
-        //         [this, groupname]() {
-        //             QString path =
-        //             m_settings.value("configuration/data").toString();
-        //             QString filename = QFileDialog::getSaveFileName(
-        //                 this->m_window, tr("Save configuration data"), path);
-        //             this->m_config.group_to_json(filename, groupname);
-        //             if(filename != "") {
-        //                 m_settings.setValue("configuration/data", filename);
-        //             }
-        //         });
+        connect(load_btn, &QPushButton::released,
+                [this, groupname]() {
+                    QString path =
+                    m_settings.value("configuration/data").toString();
+                    QString filename = QFileDialog::getOpenFileName(
+                        this, tr("Open configuration data"), path);
+                    this->m_config.json_to_group(filename, groupname);
+                    if(filename != "") {
+                        m_settings.setValue("configuration/data", filename);
+                    }
+                });
+        connect(dump_btn, &QPushButton::released,
+                [this, groupname]() {
+                    QString path =
+                    m_settings.value("configuration/data").toString();
+                    QString filename = QFileDialog::getSaveFileName(
+                        this, tr("Save configuration data"), path);
+                    this->m_config.group_to_json(filename, groupname);
+                    if(filename != "") {
+                        m_settings.setValue("configuration/data", filename);
+                    }
+                });
         tabs->addTab(scroll, QString::fromStdString(name));
         group->adjustSize();
     }
@@ -122,39 +126,31 @@ void ConfigurationWindow::create_layout(QTabWidget* tabs) {
     tabs->addTab(err_tab, "Errors (DTC Controls)");
 
     connect(err1_btn, &QPushButton::released,
-            [this]() { this->read_errors(Can::testFailedDTC); });
-    connect(err2_btn, &QPushButton::released,
-            [this]() { this->read_errors(Can::confirmedDTC); });
+            this, &ConfigurationWindow::read_errors_sig_failed);
+    connect(err2_btn, &QPushButton::released, this,
+            &ConfigurationWindow::read_errors_sig_confirmed);
     connect(err_clear_btn, &QPushButton::released, this,
             &ConfigurationWindow::clear_errors);
 
     tabs->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     tabs->adjustSize();
     adjustSize();
-    // resize(QGuiApplication::primaryScreen()->size());
+    resize(QGuiApplication::primaryScreen()->size() * 0.8);
     m_err_log = err_log;
 }
 
-void ConfigurationWindow::clear_errors() {
+void ConfigurationWindow::clear_errors_done(bool res) {
     m_err_log->clear();
-    if(m_task->clear_errors()) {
+    if(res) {
         m_err_log->append("OK");
     } else {
         m_err_log->append("FAIL");
     }
 }
 
-void ConfigurationWindow::factory_reset() {
-    m_task->factory_reset();
-}
-
-void ConfigurationWindow::read_errors(uint8_t dtc) {
-    auto errors = m_task->read_errors(dtc);
+void ConfigurationWindow::read_errors_done(uint8_t dtc, std::vector<std::shared_ptr<Can::DTC>> errors) {
     m_err_log->clear();
-    if(!errors) {
-        m_err_log->append("Failed to read errors");
-    }
-    for (auto err : errors.value()) {
+    for (auto err : errors) {
         auto it1 = m_config.errors.find(err->get_type());
         if (it1 == m_config.errors.end()) {
             continue;
@@ -168,4 +164,27 @@ void ConfigurationWindow::read_errors(uint8_t dtc) {
         m_err_log->append(
             QString::fromStdString(name + " " + mnemonic + " " + description));
     }
+}
+void ConfigurationWindow::read_done(uint16_t did, std::vector<uint8_t> data) {
+    emit read_done_field(did, data);
+}
+
+void ConfigurationWindow::read_field(uint16_t did) {
+    emit read(did);
+}
+void ConfigurationWindow::write_field(uint16_t did, std::vector<uint8_t> data) {
+    emit write(did, data);
+}
+
+void ConfigurationWindow::clear_errors_sig() {
+    emit clear_errors();
+}
+void ConfigurationWindow::factory_reset_sig() {
+    emit factory_reset();
+}
+void ConfigurationWindow::read_errors_sig_failed() {
+    emit read_errors(Can::testFailedDTC);
+}
+void ConfigurationWindow::read_errors_sig_confirmed() {
+    emit read_errors(Can::confirmedDTC);
 }
