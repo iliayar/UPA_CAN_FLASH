@@ -31,6 +31,7 @@ ConfigurationTask::~ConfigurationTask() {
 }
 
 void ConfigurationTask::factory_reset() {
+    diagnostic_session();
     auto response = call(
         Can::ServiceRequest::RoutineControl::build()
         ->subfunction(

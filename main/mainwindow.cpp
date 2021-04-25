@@ -371,10 +371,12 @@ void MainWindow::create_layout(QWidget* root) {
         } else {
             m_plugin_list->addItem(QString::fromStdString(plugin.first),
                                    QString::fromStdString(plugin.second));
-            m_plugin_list->setCurrentText(QString::fromStdString(plugin.first));
-            update_device_list(QString::fromStdString(plugin.first));
+	    if(devices.size() > 0) {
+	        m_plugin_list->setCurrentText(QString::fromStdString(plugin.first));
+	    }
         }
     }
+    update_device_list("");
 
     DEBUG(info, "Layout created");
 }
