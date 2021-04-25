@@ -18,7 +18,6 @@
 #include <QFontDatabase>
 #include <QJsonObject>
 
-#include "service_all.h"
 #include "task.h"
 
 struct SpinBox {
@@ -74,50 +73,15 @@ public:
 
 
 public slots:
-
-    void diagnostic_session() {
-        auto response = m_task->call(
-            Can::ServiceRequest::DiagnosticSessionControl::build()
-                ->subfunction(Can::ServiceRequest::DiagnosticSessionControl::
-                                  Subfunction::extendDiagnosticSession)
-                ->build()
-                .value());
-
-        IF_NEGATIVE(response) {
-            m_task->m_logger->error("Failed ot enter extendDiagnosticSession");
-            return;
+    void read() {
+        auto vec = m_task->read(m_id);
+        if(vec) {
+            from_vec(vec.value());
         }
     }
 
     void write() {
-        diagnostic_session();
-        auto data = Can::Data::build()->raw_type(m_id)->value(to_vec())->build();
-        auto request = Can::ServiceRequest::WriteDataByIdentifier::build()
-                           ->data(data.value())
-                           ->build();
-        std::shared_ptr<Can::ServiceResponse::ServiceResponse> response =
-            m_task->call(request.value());
-
-        if (response->get_type() == Can::ServiceResponse::Type::Negative) {
-            m_task->m_logger->error("Failed to write data");
-        }
-    }
-
-    void read() {
-        diagnostic_session();
-        auto request = Can::ServiceRequest::ReadDataByIdentifier::build()
-                           ->raw_id(m_id)
-                           ->build();
-        std::shared_ptr<Can::ServiceResponse::ServiceResponse> response =
-            m_task->call(request.value());
-        if (response->get_type() == Can::ServiceResponse::Type::Negative) {
-            m_task->m_logger->error("Failed to read data");
-            return;
-        }
-        from_vec(std::static_pointer_cast<
-                     Can::ServiceResponse::ReadDataByIdentifier>(response)
-                     ->get_data()
-                     ->get_value());
+        m_task->write(m_id, to_vec());
     }
 
 protected:
@@ -158,12 +122,6 @@ protected:
             }
         }
     }
-
-    void log(std::string s) {
-    m_task->m_logger->info(s);
-    }
-
-    
 
     QHBoxLayout* m_layout;
     uint16_t m_id;

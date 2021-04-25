@@ -10,40 +10,24 @@
 #include <QSettings>
 #include <QEventLoop>
 #include <unordered_map>
-#include "config.h"
-
-class ConfigurationWindow : public QMainWindow {
-Q_OBJECT
-signals:
-    void closed();
-private:
-    void closeEvent(QCloseEvent* e) {
-        emit closed();
-        e->accept();
-    }
-};
 
 class ConfigurationTask : public QTask {
 
 public:
 
     ConfigurationTask(std::shared_ptr<QLogger> logger, bool security);
+    virtual ~ConfigurationTask();
 
     void task() override;
 
-    friend class Field;
+    optional<std::vector<uint8_t>> read(uint16_t id);
+    void write(uint16_t id, std::vector<uint8_t> vec);
+    optional<std::vector<std::shared_ptr<Can::DTC>>> read_errors(uint8_t);
+    bool clear_errors();
+    bool factory_reset();
 
 private:
-    void read_errors(uint8_t);
-    void clear_errors();
-    void factory_reset();
-
-    // std::unordered_map<std::string, std::pair<QWidget*, QWidget*>> m_groups;
-    ConfigurationWindow* m_window;
-    QTextEdit* m_err_log;
-    DataConfig m_config{};
-    QSettings m_settings;
-    QWidget* m_main_widget;
+    void diagnostic_session();
 
     bool m_security;
 };
