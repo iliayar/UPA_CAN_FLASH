@@ -17,8 +17,6 @@ DataConfig::DataConfig() {
         QString json_data = json_file.readAll();
         json_file.close();
 
-        // qDebug() << json_data;
-
         QJsonDocument json = QJsonDocument::fromJson(json_data.toUtf8());
 
         if(!json.isArray()) {
@@ -82,8 +80,6 @@ DataConfig::DataConfig() {
         QString json_data = json_file.readAll();
         json_file.close();
 
-        // qDebug() << json_data;
-
         QJsonDocument json = QJsonDocument::fromJson(json_data.toUtf8());
 
         if(!json.isArray()) {
@@ -108,4 +104,47 @@ DataConfig::DataConfig() {
         }
     }
     
+}
+
+void DataConfig::group_to_json(QString filename, std::string group) {
+    QJsonObject obj;
+    for (auto& [name, fields] : this->fields) {
+        if (name == group) {
+            for (Field* field : fields) {
+                obj.insert(field->get_name(), field->to_string());
+            }
+        }
+    }
+    QFile json_file;
+    json_file.setFileName(filename);
+    json_file.open(QIODevice::Text | QIODevice::WriteOnly);
+    if(!json_file.isOpen()) {
+        return; // FIXME
+    }
+    json_file.write(QJsonDocument(obj).toJson());
+    json_file.close();
+}
+
+void DataConfig::json_to_group(QString filename, std::string group) {
+    QFile json_file;
+    json_file.setFileName(filename);
+    json_file.open(QIODevice::ReadOnly | QIODevice::Text);
+    if(!json_file.isOpen()) {
+        return; // FIXME
+    }
+    QString json_data = json_file.readAll();
+    json_file.close();
+
+    QJsonDocument json = QJsonDocument::fromJson(json_data.toUtf8());
+    QJsonObject obj = json.object();
+    for (auto& [name, fields] : this->fields) {
+        if (name == group) {
+            for (Field* field : fields) {
+                if(!obj.contains(field->get_name())) {
+                    continue;
+                }
+                field->from_string(obj[field->get_name()].toString());
+            }
+        }
+    }
 }

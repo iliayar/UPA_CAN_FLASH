@@ -101,7 +101,7 @@ void FlashTask::task_main() {
             .value();
     LOG(info, "max_block_size " + Util::int_to_hex(max_block_size));
     max_block_size -= 2;
-    fin.open(m_file);
+    fin.open(FILEPATH(m_file));
     if (!fin) {
         m_logger->error("Cannot open file");
         m_logger->progress(0, true);

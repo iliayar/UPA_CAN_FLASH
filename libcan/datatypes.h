@@ -308,4 +308,43 @@ private:
     Util::IntField<uint8_t, 4> m_memory_size;
     Util::IntField<uint8_t, 4> m_reserved;
 };
+
+class Routine {
+public:
+    class Builder;
+    class Builder : public Util::Builder<Routine, Builder> {
+    public:
+        Builder() : B() {}
+        Builder(Util::Reader& reader) : B() {
+            object()->m_data.all();
+            read(reader, object()->m_id, object()->m_data);
+        }
+        auto id(uint16_t value) {
+            return field(object()->m_id, value);
+        }
+        auto data(std::vector<uint8_t> value) {
+            return field(object()->m_data, value);
+        }
+    protected:
+        std::unique_ptr<Builder> self() {
+            return std::unique_ptr<Builder>(this);
+        }
+    };
+    bool write(Util::Writer& writer) {
+        return Util::write_args(writer, m_id, m_data);
+    }
+    static std::unique_ptr<Builder> build() {
+        return std::make_unique<Builder>();
+    }
+    static std::unique_ptr<Builder> build(Util::Reader& reader) {
+        return std::make_unique<Builder>(reader);
+    }
+
+    auto get_id() { return m_id.get().value(); }
+    auto get_data() { return m_data.get().value(); }
+
+private:
+    Util::IntField<uint16_t, 16> m_id;
+    Util::VarVecField m_data;
+};
 }  // namespace Can

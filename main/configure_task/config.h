@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
+#include <QString>
 class Field;
 
 struct DataConfig {
@@ -17,6 +18,9 @@ public:
                             std::unordered_map<
                                 uint8_t, std::pair<std::string, std::string>>>>
         errors;
+
+    void group_to_json(QString filename, std::string group);
+    void json_to_group(QString filename, std::string group);
 
 };
 

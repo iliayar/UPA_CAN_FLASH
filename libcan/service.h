@@ -29,6 +29,7 @@ enum class Type {
     Negative = 0x7f,
     ReadDTCInformation = 0x59,
     ClearDiagnosticInformation = 0x54,
+    RoutineControl = 0x71,
 };
 /**
  * Service response class
@@ -74,6 +75,7 @@ enum class Type {
     ECUReset = 0x11,
     ReadDTCInformation = 0x19,
     ClearDiagnosticInformation = 0x14,
+    RoutineControl = 0x31,
 };
 /**
  * Service request class

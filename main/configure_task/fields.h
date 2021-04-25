@@ -16,6 +16,7 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QFontDatabase>
+#include <QJsonObject>
 
 #include "service_all.h"
 #include "task.h"
@@ -30,7 +31,7 @@ class Field : public QGroupBox {
     Q_OBJECT
 public:
     Field(QWidget* parent, std::string name, uint16_t id)
-        : QGroupBox(QString::fromStdString(name), parent), m_id(id) {}
+        : QGroupBox(QString::fromStdString(name), parent), m_id(id), m_name(name) {}
     Field(std::string name, uint16_t id)
         : Field(nullptr, name, id) {}
 
@@ -54,6 +55,24 @@ public:
         connect(read_btn, &QPushButton::pressed, this, &Field::read);
         connect(write_btn, &QPushButton::pressed, this, &Field::write);
     }
+
+    QString to_string() {
+        std::vector<uint8_t> data = to_vec();
+        QString data_str;
+        for(uint8_t v : data) {
+            data_str += QString("%1").arg(v, 2, 16, QLatin1Char('0'));
+        }
+        return data_str;
+    }
+
+    void from_string(QString data_str) {
+        QByteArray data = QByteArray::fromHex(data_str.toUtf8());
+        from_vec(std::vector<uint8_t>(data.begin(), data.end()));
+    }
+
+    QString get_name() { return QString::fromStdString(m_name); }
+
+
 public slots:
 
     void diagnostic_session() {
@@ -144,9 +163,12 @@ protected:
     m_task->m_logger->info(s);
     }
 
+    
+
     QHBoxLayout* m_layout;
     uint16_t m_id;
     ConfigurationTask* m_task;
+    std::string m_name;
 };
 
 class StringField : public Field {
