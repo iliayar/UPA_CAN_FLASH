@@ -81,63 +81,10 @@ std::shared_ptr<Can::ServiceResponse::ServiceResponse> QTask::call(
 using namespace Can;
 
 bool QTask::security_access(uint32_t mask) {
-    auto response = call(ServiceRequest::DiagnosticSessionControl::build()
-                        ->subfunction(ServiceRequest::DiagnosticSessionControl::
-                                          Subfunction::extendDiagnosticSession)
-                        ->build()
-                        .value());
-
-    IF_NEGATIVE(response) {
-        LOG(error, "Failed ot enter extendDiagnosticSession");
-        return false;
-    }
-
-    response = call(
-        ServiceRequest::ControlDTCSettings::build()
-            ->subfunction(ServiceRequest::ControlDTCSettings::Subfunction::off)
-            ->build()
-            .value());
-
-    IF_NEGATIVE(response) {
-        LOG(error, "Failed ControlDTCSettings");
-        return false;
-    }
-
-    response = call(
-        ServiceRequest::CommunicationControl::build()
-            ->subfunction(ServiceRequest::CommunicationControl::Subfunction::
-                              disableRxAndTx)
-            ->communication_type(CommunicationType::build()
-                                     ->chanels(CommunicationTypeChanels::build()
-                                                   ->network_communication(1)
-                                                   ->normal_communication(1)
-                                                   ->build()
-                                                   .value())
-                                     ->build()
-                                     .value())
-            ->build()
-            .value());
-
-    IF_NEGATIVE(response) {
-        LOG(error, "Failed CommunicationControl");
-        return false;
-    }
-
-    response = call(ServiceRequest::DiagnosticSessionControl::build()
-                        ->subfunction(ServiceRequest::DiagnosticSessionControl::
-                                          Subfunction::programmingSession)
-                        ->build()
-                        .value());
-
-    IF_NEGATIVE(response) {
-        LOG(error, "Failed on enter programmingSession");
-        return false;
-    }
-
     uint8_t rnd = Crypto::get_RND();
 
     m_logger->info("Seed parameter " + Util::int_to_hex(rnd));
-    response =
+    auto response =
         call(ServiceRequest::SecurityAccess::build()
                  ->subfunction(
                      ServiceRequest::SecurityAccess::Subfunction::requestSeed)

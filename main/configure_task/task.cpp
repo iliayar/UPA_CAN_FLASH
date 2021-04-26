@@ -21,9 +21,6 @@ ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger, bool secur
     connect(window, &ConfigurationWindow::closed, [this]() {
         emit windows_closed();
     });
-    // connect(window, &ConfigurationWindow::closed, []() {
-    //     qDebug() << "Window closed";
-    // });
 }
 
 ConfigurationTask::~ConfigurationTask() {
@@ -51,22 +48,18 @@ void ConfigurationTask::factory_reset() {
 }
 
 void ConfigurationTask::task() {
+    if(!diagnostic_session()) {
+        return;
+    }
     if(m_security) {
         if(!security_access(Crypto::SecuritySettings::get_mask03())) {
             return;
         }
     }
 
-    // ConfigurationWindow window(nullptr, this);
-    // window.setWindowModality(Qt::WindowModal);
-    // loop.moveToThread(this);
-    // window.show();
-    // while(1);
-    // m_window->show();
     QEventLoop loop;
     connect(this, &ConfigurationTask::windows_closed, &loop, &QEventLoop::quit);
     loop.exec();
-    // m_window->setFocus();
 }
 
 void ConfigurationTask::clear_errors() {
@@ -97,7 +90,7 @@ void ConfigurationTask::read_errors(uint8_t mask) {
     emit read_errors_done(mask, std::static_pointer_cast<Can::ServiceResponse::ReadDTCInformation>(response)->get_records());
 }
 
-void ConfigurationTask::diagnostic_session() {
+bool ConfigurationTask::diagnostic_session() {
     auto response =
         call(Can::ServiceRequest::DiagnosticSessionControl::build()
              ->subfunction(Can::ServiceRequest::DiagnosticSessionControl::
@@ -107,8 +100,9 @@ void ConfigurationTask::diagnostic_session() {
 
     IF_NEGATIVE(response) {
         m_logger->error("Failed ot enter extendDiagnosticSession");
-        return;
+        return false;
     }
+    return true;
 }
 
 void ConfigurationTask::write(uint16_t id, std::vector<uint8_t> vec) {

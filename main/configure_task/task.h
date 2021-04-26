@@ -36,7 +36,7 @@ signals:
     void windows_closed();
 
 private:
-    void diagnostic_session();
+    bool diagnostic_session();
 
     bool m_security;
 };

@@ -23,6 +23,60 @@ void FlashTask::task_main() {
     int progress = 0;
     std::shared_ptr<ServiceResponse::ServiceResponse> response;
 
+    response = call(ServiceRequest::DiagnosticSessionControl::build()
+                        ->subfunction(ServiceRequest::DiagnosticSessionControl::
+                                          Subfunction::extendDiagnosticSession)
+                        ->build()
+                        .value());
+
+    IF_NEGATIVE(response) {
+        LOG(error, "Failed ot enter extendDiagnosticSession");
+        return;
+    }
+
+    response = call(
+        ServiceRequest::ControlDTCSettings::build()
+            ->subfunction(ServiceRequest::ControlDTCSettings::Subfunction::off)
+            ->build()
+            .value());
+
+    IF_NEGATIVE(response) {
+        LOG(error, "Failed ControlDTCSettings");
+        return;
+    }
+
+    response = call(
+        ServiceRequest::CommunicationControl::build()
+            ->subfunction(ServiceRequest::CommunicationControl::Subfunction::
+                              disableRxAndTx)
+            ->communication_type(CommunicationType::build()
+                                     ->chanels(CommunicationTypeChanels::build()
+                                                   ->network_communication(1)
+                                                   ->normal_communication(1)
+                                                   ->build()
+                                                   .value())
+                                     ->build()
+                                     .value())
+            ->build()
+            .value());
+
+    IF_NEGATIVE(response) {
+        LOG(error, "Failed CommunicationControl");
+        return;
+    }
+
+    response = call(ServiceRequest::DiagnosticSessionControl::build()
+                        ->subfunction(ServiceRequest::DiagnosticSessionControl::
+                                          Subfunction::programmingSession)
+                        ->build()
+                        .value());
+
+    IF_NEGATIVE(response) {
+        LOG(error, "Failed on enter programmingSession");
+        return;
+    }
+
+
     if(!security_access(Crypto::SecuritySettings::get_mask02())) {
         m_logger->progress(0, true);
         return;

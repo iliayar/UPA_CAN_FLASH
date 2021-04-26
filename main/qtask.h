@@ -67,7 +67,7 @@ protected:
      * @return true if security access was gained, false otherwise
      */
     bool security_access(uint32_t mask);
-
+    
 public slots:
     /**
      * Triggers by {@link QCommunicator} when complete response recieved.
