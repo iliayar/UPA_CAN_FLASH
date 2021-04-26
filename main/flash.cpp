@@ -162,7 +162,7 @@ void FlashTask::task_main() {
         return;
     }
 
-    double progress_step = (100 - 7 - 1) / (hex_info.size / max_block_size);
+    double progress_step = (100.0 - 7 - 1) / (hex_info.size / max_block_size);
     double transfer_progress = 0;
     reader = Hex::HexReader(std::make_shared<Hex::FileSource>(fin));
     LOG(info, "File " + m_file + " opened");
