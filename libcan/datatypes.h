@@ -1,3 +1,7 @@
+/**
+ * @file datatypes.h Contains heplper objects. These object are
+ * implemented using the Builder pattern with the same interface as request/response, frames
+ */
 #pragma once
 
 #include "objects.h"

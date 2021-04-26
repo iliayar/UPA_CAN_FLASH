@@ -1,10 +1,10 @@
-/************************************************************
+/**
  * @file communicator.h
  * These interfaces not in use beacuse of problems
  * with thread and following race conditions. Actual
  * classes has "Q" prefix and located in main/qcommunicator.h
  * That one uses Qt event loops to manage with async tasks
- ***********************************************************/
+ */
 #pragma once
 
 #include <chrono>

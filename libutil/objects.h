@@ -1,18 +1,51 @@
+/**
+ * @file objects.h
+ * Implement classes desribing abstract fields(for requests and frames)
+ */
 #pragma once
 
 #include "bytes.h"
 
 namespace Util {
+    /**
+     * Base class of field. Can be any size, provided in
+     * constructor. Controls field state, when accessing, checks if
+     * field is initialized.
+     *
+     * @tparam T The type of field value. Must
+     * be copyable and assignable
+     */
 template <typename T>
 struct VarField {
+
+    /**
+     * @param value
+     * @param size The size of field in bits 
+     */
     VarField(T value, int size) : m_size(size), m_value(value), m_valid(true) {}
     VarField(int size) : m_size(size), m_valid(false) {}
     VarField() : m_size(0), m_valid(false) {}
 
+    /**
+     * Write this field to provide writer. The write behaviour
+     * implements in derived classes with method {@link #write_impl}
+     *
+     * @param writer
+     * @return false if this field is not initialized or writer failed, true otherwise
+     */
     bool write(Writer& writer) {
         if (!m_valid) return false;
         return write_impl(writer, m_value);
     }
+
+
+    /**
+     * Reads to this field from writer. The read behaviour implements
+     * in deriving classes through method {@link #read_impl(Reader&)}. If read
+     * was success this field become initilized
+     *
+     * @param reader
+     */
     void read(Reader& reader) {
         auto res = read_impl(reader);
         if (res) {
@@ -23,6 +56,11 @@ struct VarField {
         }
     }
 
+    /**
+     * Try get value, stored in this field
+     * 
+     * @return Nothing if this field is not initialized, Some(value) otherwise
+     */
     optional<T> get() {
         if (m_valid) {
             return m_value;
@@ -31,12 +69,24 @@ struct VarField {
         }
     }
 
+    /**
+     * Initialize this field with provided value.
+     *
+     * @param value
+     * @return field reference
+     * @see #set(T)
+     */
     VarField<T>& operator=(const T& value) {
         m_value = value;
         m_valid = true;
         return *this;
     }
 
+    /**
+     * Inialize this field with provided value. After this operaion this field become initialized.
+     *
+     * @param value
+     */
     void set(T value) {
         m_value = value;
         m_valid = true;
@@ -52,6 +102,9 @@ struct VarField {
 
     virtual int get_size() { return m_size; }
 
+    /**
+     * @return true if this field is initialized, false otherwise
+     */
     bool valid() { return m_valid; }
 
 protected:
@@ -64,12 +117,23 @@ protected:
     bool m_all = false;
 };
 
+/**
+ * Abstract field class with fixed size.
+ * @param T The value type
+ * @param size The size of field in bits
+ * @see VarField<T>
+ */
 template <typename T, int size>
 struct Field : VarField<T> {
     Field(T value) : VarField<T>(value, size) {}
     Field() : VarField<T>(size) {}
 };
 
+/**
+ * The field, contains integer value. Has fixed size
+ * @tparam T The integer type
+ * @tparam size The size of integer value in bits
+ */
 template <typename T, int size>
 struct IntField : public Field<T, size> {
     IntField(T value) : Field<T, size>(value) {}
@@ -82,6 +146,9 @@ protected:
     optional<T> read_impl(Reader& reader) { return reader.read_int<T>(size); }
 };
 
+/**
+ * Field for an arbitrary number of bytes. Resizable
+ */
 struct VarVecField : public VarField<std::vector<uint8_t>> {
     VarVecField(std::vector<uint8_t> data, int size)
         : VarField<std::vector<uint8_t>>(data, size) {}
@@ -116,6 +183,10 @@ protected:
     }
 };
 
+/**
+ * Field for an fixed number of bies.
+ * @tparam size The size of all bits
+ */
 template <int size>
 struct VecField : public VarVecField {
 public:
@@ -123,6 +194,12 @@ public:
     VecField() : VarVecField(size) {}
 };
 
+/**
+ * Field for numerations.
+ * @tparam T The enumeration type
+ * @tparam I The integer type appropriate to enumeration type
+ * @tparam size The size of integer value in bits
+ */
 template <typename T, typename I, int size>
 struct EnumField : public Field<T, size> {
     EnumField(T value) : Field<T, size>(value) {}
@@ -213,12 +290,22 @@ bool read_args(Reader& reader, F&... args) {
     return res;
 }
 
+/**
+ * Abstract builder class for objects like request/response, frames
+ * @tparam R The class type for which this builder is declared
+ * @tparam Self The declraed builder class. FIXME It must be deleted somehow
+ */
 template <typename R, class Self>
 class Builder {
 public:
     using B = Util::Builder<R, Self>;
     Builder() { m_object = std::make_shared<R>(); }
 
+    /**
+     * Build the entire object.
+     *
+     * @return Nothing if there was an error during building, Some(object) otherwise
+     */
     optional<std::shared_ptr<R>> build() {
         if (!m_valid) {
             return {};
@@ -227,6 +314,10 @@ public:
     }
 
 protected:
+    /**
+     * Read provided fields from reader
+     * {@code read(reader, object()->field1, object()->field2)}
+     */
     template <typename... F>
     void read(Reader& reader, F&... fields) {
         if (!read_args(reader, std::forward<F&>(fields)...)) {
@@ -234,14 +325,25 @@ protected:
         }
     }
 
+    /**
+     * Accessing the buildable object
+     * @return The pointer to object
+     */
     std::shared_ptr<R> object() { return m_object; }
 
+    /**
+     * Initialize provide field with value
+     * {@code field(object()->field1, value)}
+     */
     template <typename F, typename T>
     Self* field(F& field, T value) {
         field = value;
         return static_cast<Self*>(this);
     }
 
+    /**
+     * Make the whole build process invalid.
+     */
     void fail() { m_valid = false; }
 
 private:
