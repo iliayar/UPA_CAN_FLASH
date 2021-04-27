@@ -69,7 +69,7 @@ uint8_t get_RND();
  * @return 4 bytes key to send to ECU
  */
 static uint32_t seed_to_key(uint32_t seed, uint8_t rnd, uint32_t mask) {
-    return key ^ seed;
+    return mask ^ seed;
 }
 
 /**
