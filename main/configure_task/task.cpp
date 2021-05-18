@@ -114,7 +114,7 @@ void ConfigurationTask::write(uint16_t id, std::vector<uint8_t> vec) {
     std::shared_ptr<Can::ServiceResponse::ServiceResponse> response =
         call(request.value());
 
-    if (response->get_type() == Can::ServiceResponse::Type::Negative) {
+    IF_NEGATIVE(response) {
         m_logger->error("Failed to write data");
     }
 }
@@ -125,7 +125,7 @@ void ConfigurationTask::read(uint16_t id) {
         Can::ServiceRequest::ReadDataByIdentifier::build()->raw_id(id)->build();
     std::shared_ptr<Can::ServiceResponse::ServiceResponse> response =
         call(request.value());
-    if (response->get_type() == Can::ServiceResponse::Type::Negative) {
+    IF_NEGATIVE(response) {
         m_logger->error("Failed to read data");
         return;
     }

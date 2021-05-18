@@ -131,11 +131,6 @@ void QCommunicator::worker_done() {
     switch (m_worker->get_type()) {
         case Can::CommunicatorStatus::Receive: {
             QReceiver* worker = std::static_pointer_cast<QReceiver>(m_worker).get();
-            auto maybe_resp = worker->get_response();
-            if (!maybe_resp) {
-                m_logger->error("Frame worker can't parse response");
-            }
-            auto resp = maybe_resp.value();
             disconnect(worker, &QReceiver::fetch_frame, this,
                        &QCommunicator::fetch_frame_worker);
             disconnect(this, &QCommunicator::push_frame_worker, worker,
@@ -146,8 +141,14 @@ void QCommunicator::worker_done() {
                        &QCommunicator::worker_error);
             disconnect(this, &QCommunicator::operate_receiver, worker,
                        &QReceiver::init);
-            emit response(resp);
             m_worker = nullptr;
+            auto maybe_resp = worker->get_response();
+            if (!maybe_resp) {
+                m_logger->error("Frame worker can't parse response");
+                return;
+            }
+            auto resp = maybe_resp.value();
+            emit response(resp);
             break;
         }
         case Can::CommunicatorStatus::Transmit: {

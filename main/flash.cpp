@@ -92,7 +92,12 @@ void FlashTask::task_main() {
         return;
     }
     Hex::HexReader reader(std::make_unique<Hex::FileSource>(fin));
-    Hex::HexInfo hex_info = Hex::read_hex_info(reader).value();
+    auto maybe_hex_info = Hex::read_hex_info(reader);
+    if(!maybe_hex_info) {
+        m_logger->error("Failed to read HEX file");
+        return;
+    }
+    Hex::HexInfo hex_info = maybe_hex_info.value();
     fin.close();
 
     uint32_t data_size = hex_info.size;

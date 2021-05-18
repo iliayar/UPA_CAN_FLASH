@@ -585,6 +585,7 @@ void MainWindow::check_frames_to_write(std::shared_ptr<Can::Frame::Frame> frame)
     auto maybe_payload = frame->dump();
     if(!maybe_payload) {
         m_logger->error("Invalid frame passed to send. IT SHOULD NOT HAPPEN!");
+        return;
     }
     std::vector<uint8_t> payload = maybe_payload.value();
     QCanBusFrame qframe;
@@ -592,6 +593,9 @@ void MainWindow::check_frames_to_write(std::shared_ptr<Can::Frame::Frame> frame)
     qframe.setPayload(QByteArray(reinterpret_cast<const char*>(payload.data()),
                                  payload.size()));
     bool res = m_device->writeFrame(qframe);
+    if(!res) {
+        m_logger->error("Failed to write frame on device");
+    }
 }
 
 void MainWindow::processReceivedFrames() {
@@ -606,13 +610,14 @@ void MainWindow::processReceivedFrames() {
         if (qframe.frameId() == m_ecu_id) {
             QByteArray payload = qframe.payload();
             if (payload.size() < 8) continue;
-            auto frame = Can::Frame::Factory(
+            auto maybe_frame = Can::Frame::Factory(
                 std::vector<uint8_t>(payload.begin(), payload.end())).get();
-            if(!frame) {
+            if(!maybe_frame) {
                 m_logger->error("Cannot parse received frame");
+                continue;
             }
             DEBUG(info, "pushing frame to communicator");
-            emit frame_received(frame.value());
+            emit frame_received(maybe_frame.value());
         }
     }
 }

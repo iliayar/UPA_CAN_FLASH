@@ -21,6 +21,7 @@ namespace Can {
 
 /**
  * @interface
+ * @deprecated
  * Task actually works only with request
  * It's convient to write algorithm to e.g. flash ECU
  * do not event thinking of lower level, as frames and etc.
