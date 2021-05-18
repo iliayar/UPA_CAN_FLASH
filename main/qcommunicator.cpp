@@ -141,8 +141,8 @@ void QCommunicator::worker_done() {
                        &QCommunicator::worker_error);
             disconnect(this, &QCommunicator::operate_receiver, worker,
                        &QReceiver::init);
-            m_worker = nullptr;
             auto maybe_resp = worker->get_response();
+            m_worker = nullptr;
             if (!maybe_resp) {
                 m_logger->error("Frame worker can't parse response");
                 return;
