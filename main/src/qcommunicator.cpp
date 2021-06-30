@@ -59,20 +59,7 @@ void QCommunicator::push_frame(std::shared_ptr<Can::Frame::Frame> frame) {
         emit push_frame_worker(frame);
         return;
     }
-
-    std::shared_ptr<QReceiver> worker = std::make_shared<QReceiver>();
-    connect(worker.get(), &QReceiver::fetch_frame, this,
-            &QCommunicator::fetch_frame_worker);
-    connect(this, &QCommunicator::push_frame_worker, worker.get(),
-            &QReceiver::push_frame);
-    connect(worker.get(), &QReceiver::worker_done, this,
-            &QCommunicator::worker_done);
-    connect(worker.get(), &QReceiver::worker_error, this,
-            &QCommunicator::worker_error);
-    connect(this, &QCommunicator::operate_receiver, worker.get(),
-            &QReceiver::init);
-    m_worker = std::move(worker);
-    // m_worker->moveToThread(&m_worker_thread);
+    m_worker = std::make_unique<QReceiver>(this);
 
     emit operate_receiver(frame);
     DEBUG(info, "QReceiver created");
@@ -96,19 +83,7 @@ void QCommunicator::request(std::shared_ptr<Can::ServiceRequest::ServiceRequest>
     }
 
     DEBUG(info, "QCommunicator receive request");
-    std::shared_ptr<QTransmitter> worker = std::make_shared<QTransmitter>();
-    connect(this, &QCommunicator::push_frame_worker, worker.get(),
-            &QTransmitter::push_frame);
-    connect(worker.get(), &QTransmitter::fetch_frame, this,
-            &QCommunicator::fetch_frame_worker);
-    connect(worker.get(), &QTransmitter::worker_done, this,
-            &QCommunicator::worker_done);
-    connect(worker.get(), &QTransmitter::worker_error, this,
-            &QCommunicator::worker_error);
-    connect(this, &QCommunicator::operate_transmitter, worker.get(),
-            &QTransmitter::init);
-    m_worker = std::move(worker);
-    // m_worker->moveToThread(&m_worker_thread);
+    m_worker = std::make_unique<QTransmitter>(this);
 
     emit operate_transmitter(r);
     DEBUG(info, "QTransmitter created");
@@ -128,50 +103,11 @@ void QCommunicator::worker_error(WorkerError e) {
 void QCommunicator::worker_done() {
     DEBUG(info, "QCommunicator worker_done");
     if (m_worker == nullptr) return;
-    switch (m_worker->get_type()) {
-        case Can::CommunicatorStatus::Receive: {
-            QReceiver* worker = std::static_pointer_cast<QReceiver>(m_worker).get();
-            disconnect(worker, &QReceiver::fetch_frame, this,
-                       &QCommunicator::fetch_frame_worker);
-            disconnect(this, &QCommunicator::push_frame_worker, worker,
-                       &QReceiver::push_frame);
-            disconnect(worker, &QReceiver::worker_done, this,
-                       &QCommunicator::worker_done);
-            disconnect(worker, &QReceiver::worker_error, this,
-                       &QCommunicator::worker_error);
-            disconnect(this, &QCommunicator::operate_receiver, worker,
-                       &QReceiver::init);
-            auto maybe_resp = worker->get_response();
-            m_worker = nullptr;
-            if (!maybe_resp) {
-                m_logger->error("Frame worker can't parse response");
-                return;
-            }
-            auto resp = maybe_resp.value();
-            emit response(resp);
-            break;
-        }
-        case Can::CommunicatorStatus::Transmit: {
-            QTransmitter* worker = std::static_pointer_cast<QTransmitter>(m_worker).get();
-            disconnect(worker, &QTransmitter::fetch_frame, this,
-                       &QCommunicator::fetch_frame_worker);
-            disconnect(this, &QCommunicator::push_frame_worker, worker,
-                       &QTransmitter::push_frame);
-            disconnect(worker, &QTransmitter::worker_done, this,
-                       &QCommunicator::worker_done);
-            disconnect(worker, &QTransmitter::worker_error, this,
-                       &QCommunicator::worker_error);
-            disconnect(this, &QCommunicator::operate_transmitter, worker,
-                       &QTransmitter::init);
-            m_worker = nullptr;
-            break;
-        }
-        default: {
-            if (m_worker != nullptr) {
-                // This not happen
-            }
-        }
+    auto resp = m_worker->try_get_response();
+    if(resp) {
+        emit response(resp.value());
     }
+    m_worker = nullptr;
     DEBUG(info, "QCommunicator worker_done quit");
 }
 
@@ -180,18 +116,44 @@ QCommunicator::~QCommunicator() {
     m_worker_thread.wait();
 }
 
+QWorker::QWorker(QCommunicator const* communicator)
+    : m_communicator(communicator) {}
+
+QTransmitter::QTransmitter(QCommunicator const* communicator)
+    : QWorker(communicator) {
+    connect(m_communicator, &QCommunicator::push_frame_worker, this,
+            &QTransmitter::push_frame);
+    connect(this, &QTransmitter::fetch_frame, m_communicator,
+            &QCommunicator::fetch_frame_worker);
+    connect(this, &QTransmitter::worker_done, m_communicator,
+            &QCommunicator::worker_done);
+    connect(this, &QTransmitter::worker_error, m_communicator,
+            &QCommunicator::worker_error);
+    connect(m_communicator, &QCommunicator::operate_transmitter, this,
+            &QTransmitter::init);
+}
+
+QTransmitter::~QTransmitter() {
+    disconnect(this, &QTransmitter::fetch_frame, m_communicator,
+               &QCommunicator::fetch_frame_worker);
+    disconnect(m_communicator, &QCommunicator::push_frame_worker, this,
+               &QTransmitter::push_frame);
+    disconnect(this, &QTransmitter::worker_done, m_communicator,
+               &QCommunicator::worker_done);
+    disconnect(this, &QTransmitter::worker_error, m_communicator,
+               &QCommunicator::worker_error);
+    disconnect(m_communicator, &QCommunicator::operate_transmitter, this,
+               &QTransmitter::init);
+}
+
 void QTransmitter::init(std::shared_ptr<Can::ServiceRequest::ServiceRequest> request) {
     init_timer();
-    auto maybe_frames = Can::service_to_frames(request);
-    if(!maybe_frames) {
+    auto frames = Can::service_to_frames(request);
+    if(!frames || frames->size() == 0) {
         emit worker_error(WorkerError::Other);
         return;
     }
-    m_frames = maybe_frames.value();
-    if (m_frames.size() == 0) {
-        emit worker_error(WorkerError::Other);
-        return;
-    }
+    m_frames = frames.value();
     switch (m_frames[0]->get_type()) {
         case Can::Frame::Type::SingleFrame: {
             DEBUG(info, "QTransmitter fetch single frame");
@@ -242,6 +204,38 @@ void QTransmitter::push_frame(std::shared_ptr<Can::Frame::Frame> frame) {
     }
 }
 
+optional<std::shared_ptr<Can::ServiceResponse::ServiceResponse>>
+QTransmitter::try_get_response() {
+    return {};
+}
+
+QReceiver::QReceiver(QCommunicator const* communicator)
+    : QWorker(communicator) {
+    connect(this, &QReceiver::fetch_frame, m_communicator,
+            &QCommunicator::fetch_frame_worker);
+    connect(m_communicator, &QCommunicator::push_frame_worker, this,
+            &QReceiver::push_frame);
+    connect(this, &QReceiver::worker_done, m_communicator,
+            &QCommunicator::worker_done);
+    connect(this, &QReceiver::worker_error, m_communicator,
+            &QCommunicator::worker_error);
+    connect(m_communicator, &QCommunicator::operate_receiver, this,
+            &QReceiver::init);
+}
+
+QReceiver::~QReceiver() {
+    disconnect(this, &QReceiver::fetch_frame, m_communicator,
+               &QCommunicator::fetch_frame_worker);
+    disconnect(m_communicator, &QCommunicator::push_frame_worker, this,
+               &QReceiver::push_frame);
+    disconnect(this, &QReceiver::worker_done, m_communicator,
+               &QCommunicator::worker_done);
+    disconnect(this, &QReceiver::worker_error, m_communicator,
+               &QCommunicator::worker_error);
+    disconnect(m_communicator, &QCommunicator::operate_receiver, this,
+               &QReceiver::init);
+}
+
 void QReceiver::init(std::shared_ptr<Can::Frame::Frame> frame) {
     init_timer();
     switch (frame->get_type()) {
@@ -274,11 +268,11 @@ void QReceiver::init(std::shared_ptr<Can::Frame::Frame> frame) {
     }
 }
 
-optional<std::shared_ptr<Can::ServiceResponse::ServiceResponse>> QReceiver::get_response() {
+optional<std::shared_ptr<Can::ServiceResponse::ServiceResponse>>
+QReceiver::try_get_response() {
     DEBUG(info, "receiver");
-    auto maybe_response =
-        Can::frames_to_service(m_frames);
-    if(!maybe_response) {
+    auto maybe_response = Can::frames_to_service(m_frames);
+    if (!maybe_response) {
         DEBUG(error, "Invalid frames passed");
         return {};
     }

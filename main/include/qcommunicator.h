@@ -5,19 +5,21 @@
  */
 #pragma once
 
-#include "frame.h"
-#include "service.h"
-#include "task.h"
-#include "logger.h"
-#include "communicator.h"
-#include "qtask.h"
-#include "config.h"
-
 #include <QObject>
 #include <QTimer>
 #include <chrono>
-#include <vector>
 #include <string>
+#include <vector>
+
+#include "communicator.h"
+#include "config.h"
+#include "frame.h"
+#include "logger.h"
+#include "qtask.h"
+#include "service.h"
+#include "task.h"
+
+class QCommunicator;
 
 /**
  * @constant timeout in ms to wait next frame for
@@ -26,30 +28,31 @@
 #define FRAME_TIMEOUT 1000
 #endif
 
-enum class WorkerError {
-    Timeout,
-    Other
-};
+enum class WorkerError { Timeout, Other };
 
 /**
- * Abstract worker class usining in QCommunictor 
+ * Abstract worker class usining in QCommunictor
  * to receive/transmit frames.
  * Implements timeout logic
  */
 class QWorker : public QObject {
     Q_OBJECT
 public:
-    QWorker() { }
+    QWorker(QCommunicator const*);
+
+    virtual optional<std::shared_ptr<Can::ServiceResponse::ServiceResponse>>
+    try_get_response() = 0;
 
     /**
      * Disconnecting all timer related stuff from worker object
      */
-    ~QWorker() {
+    virtual ~QWorker() {
         disconnect(&m_timer, &QTimer::timeout, this, &QWorker::timeout);
-        disconnect(this, &QWorker::start_timer, &m_timer, static_cast<void (QTimer::*)(int)>(&QTimer::start));
+        disconnect(this, &QWorker::start_timer, &m_timer,
+                   static_cast<void (QTimer::*)(int)>(&QTimer::start));
         disconnect(this, &QWorker::stop_timer, &m_timer, &QTimer::stop);
     }
-    
+
     /**
      * @return Enum type of worker
      */
@@ -65,9 +68,7 @@ public slots:
     /**
      * Using by timer to notify timeout
      */
-    void timeout() {
-        emit worker_error(WorkerError::Timeout);
-    }
+    void timeout() { emit worker_error(WorkerError::Timeout); }
 signals:
 
     /**
@@ -101,26 +102,26 @@ signals:
     void stop_timer();
 
 protected:
-
     /**
      * Updates timer when new frame received/transimtted
      */
-    void update_timer() {
-        emit start_timer(FRAME_TIMEOUT);
-    }
+    void update_timer() { emit start_timer(FRAME_TIMEOUT); }
 
     /**
      * Initialize timer. Must be called in the thread worker will work in.
      */
     void init_timer() {
         connect(&m_timer, &QTimer::timeout, this, &QWorker::timeout);
-        connect(this, &QWorker::start_timer, &m_timer, static_cast<void (QTimer::*)(int)>(&QTimer::start));
+        connect(this, &QWorker::start_timer, &m_timer,
+                static_cast<void (QTimer::*)(int)>(&QTimer::start));
         connect(this, &QWorker::stop_timer, &m_timer, &QTimer::stop);
         emit start_timer(FRAME_TIMEOUT);
     }
 
+    QCommunicator const* m_communicator;
+
 private:
-    QTimer m_timer; 
+    QTimer m_timer;
 };
 
 /**
@@ -129,23 +130,29 @@ private:
 class QReceiver : public QWorker {
     Q_OBJECT
 public:
+    QReceiver(QCommunicator const*);
 
-    Can::CommunicatorStatus get_type() { return Can::CommunicatorStatus::Receive; }
+    Can::CommunicatorStatus get_type() override {
+        return Can::CommunicatorStatus::Receive;
+    }
 
     /**
      * @return ServiceResponse pointer to parsed response or nullptr if
      * received frame do not represent a valid reponse
      */
-    optional<std::shared_ptr<Can::ServiceResponse::ServiceResponse>> get_response();
+    optional<std::shared_ptr<Can::ServiceResponse::ServiceResponse>>
+    try_get_response() override;
+
+    ~QReceiver();
 
 public slots:
     /**
-     * Initialize reciever based on passed frame. Must be called 
+     * Initialize reciever based on passed frame. Must be called
      * after moving to worker thread
      * @param frame to initlize reciever from
      */
     void init(std::shared_ptr<Can::Frame::Frame>);
-    void push_frame(std::shared_ptr<Can::Frame::Frame>);
+    void push_frame(std::shared_ptr<Can::Frame::Frame>) override;
 
 signals:
     void fetch_frame(std::shared_ptr<Can::Frame::Frame>);
@@ -165,18 +172,26 @@ private:
 class QTransmitter : public QWorker {
     Q_OBJECT
 public:
+    QTransmitter(QCommunicator const*);
 
-    Can::CommunicatorStatus get_type() { return Can::CommunicatorStatus::Transmit; }
+    Can::CommunicatorStatus get_type() override {
+        return Can::CommunicatorStatus::Transmit;
+    }
+
+    optional<std::shared_ptr<Can::ServiceResponse::ServiceResponse>>
+    try_get_response() override;
+
+    ~QTransmitter();
 
 public slots:
 
     /**
-     * Initialize reciever based on passed request from task. 
+     * Initialize reciever based on passed request from task.
      * Must be called after moving to worker thread.
      * @param request to initlize transmitter from
      */
     void init(std::shared_ptr<Can::ServiceRequest::ServiceRequest>);
-    void push_frame(std::shared_ptr<Can::Frame::Frame>);
+    void push_frame(std::shared_ptr<Can::Frame::Frame>) override;
 
 signals:
     void fetch_frame(std::shared_ptr<Can::Frame::Frame>);
@@ -188,7 +203,7 @@ private:
     int m_fc_block_size;
     std::chrono::milliseconds m_fc_min_time;
     std::chrono::time_point<std::chrono::high_resolution_clock>
-    m_last_frame_time;
+        m_last_frame_time;
     int m_i;
     bool m_wait_fc;
     int m_block_begin;
@@ -209,10 +224,9 @@ public:
         : m_worker(nullptr),
           m_task(nullptr),
           m_logger(logger),
-          m_worker_thread()
-        {
-            m_worker_thread.start();
-        }
+          m_worker_thread() {
+        m_worker_thread.start();
+    }
 
     ~QCommunicator();
 
@@ -280,16 +294,18 @@ signals:
      * Emits when worker done and there is not nullptr response parsed by one
      * It's passed to current task
      * @param response fetched from receiver
-     * @param wait flag. if not 0 then ignore {@param response} and increase task timeout by wait*1000 ms
+     * @param wait flag. if not 0 then ignore {@param response} and increase
+     * task timeout by wait*1000 ms
      */
-    void response(std::shared_ptr<Can::ServiceResponse::ServiceResponse>, int wait = 0);
+    void response(std::shared_ptr<Can::ServiceResponse::ServiceResponse>,
+                  int wait = 0);
 
     /**
      * Initialize transmitter. Calls whe transmitter is already in worker thread
      * @param request to initialize trasmitter from
      */
-    void operate_transmitter(std::shared_ptr<Can::ServiceRequest::ServiceRequest>);
-
+    void operate_transmitter(
+        std::shared_ptr<Can::ServiceRequest::ServiceRequest>);
 
     /**
      * Initialize receiver. Calls when receier is already in worker thread
@@ -304,7 +320,7 @@ signals:
     void task_exited();
 
 private:
-    std::shared_ptr<QWorker> m_worker;
+    std::unique_ptr<QWorker> m_worker;
     std::shared_ptr<QTask> m_task;
     std::shared_ptr<Can::Logger> m_logger;
 

@@ -63,6 +63,7 @@ protected:
     
 public slots:
     /**
+     * FIXME: confusing interface
      * Triggers by {@link QCommunicator} when complete response recieved.
      * @param response from ECU
      * @param wait for more inforamtion watch {@link QCommunicator::response}
