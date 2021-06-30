@@ -1,14 +1,6 @@
-set(libutil_SRCS
-    util.h
-    util.cpp
-    crc.h
-    crc.cpp
-    bytes.h
-    bytes.cpp
-    config.h
-    templates.h
-    objects.h
-)
+file(GLOB libutil_SRCS src/*.cpp)
+
+include_directories(include)
 
 # Declare the library
 add_library(libutil STATIC
@@ -26,5 +18,5 @@ target_link_libraries(libutil)
 # Specify here the include directories exported
 # by this library
 target_include_directories(libutil PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
 )

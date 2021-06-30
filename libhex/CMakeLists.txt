@@ -1,7 +1,6 @@
-set(libhex_SRCS
-    hex.h
-    hex.cpp
-)
+file(GLOB libhex_SRCS src/*.cpp)
+
+include_directories(include)
 
 # Declare the library
 add_library(libhex STATIC
@@ -20,5 +19,5 @@ target_link_libraries(libhex
 # Specify here the include directories exported
 # by this library
 target_include_directories(libhex PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
