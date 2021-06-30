@@ -6,57 +6,47 @@
 #include "bytes.h"
 #include "service_all.h"
 
-Can::ServiceResponse::Factory::Factory(std::vector<uint8_t> payload)
+Can::ServiceResponse::Factory::Factory(std::vector<uint8_t> const& payload)
     : m_reader(payload) {}
 
 optional<std::shared_ptr<Can::ServiceResponse::ServiceResponse>>
 Can::ServiceResponse::Factory::get() {
+    using namespace Can::ServiceResponse;
+
     m_type.read(m_reader);
     if (!m_type.valid()) {
         return {};
     }
+
     switch (m_type.get().value()) {
-        case Can::ServiceResponse::Type::Negative:
-            return Can::ServiceResponse::Negative::build(m_reader)->build();
-        case Can::ServiceResponse::Type::CommunicationControl:
-            return Can::ServiceResponse::CommunicationControl::build(m_reader)
-                ->build();
-        case Can::ServiceResponse::Type::ControlDTCSettings:
-            return Can::ServiceResponse::ControlDTCSettings::build(m_reader)
-                ->build();
-        case Can::ServiceResponse::Type::DiagnosticSessionControl:
-            return Can::ServiceResponse::DiagnosticSessionControl::build(m_reader)
-                ->build();
-        case Can::ServiceResponse::Type::ECUReset:
-            return Can::ServiceResponse::ECUReset::build(m_reader)
-                ->build();
-        case Can::ServiceResponse::Type::ReadDataByIdentifier:
-            return Can::ServiceResponse::ReadDataByIdentifier::build(m_reader)
-                ->build();
-        case Can::ServiceResponse::Type::RequestDownload:
-            return Can::ServiceResponse::RequestDownload::build(m_reader)
-                ->build();
-        case Can::ServiceResponse::Type::RequestTransferExit:
-            return Can::ServiceResponse::RequestTransferExit::build(m_reader)
-                ->build();
-        case Can::ServiceResponse::Type::SecurityAccess:
-            return Can::ServiceResponse::SecurityAccess::build(m_reader)
-                ->build();
-        case Can::ServiceResponse::Type::TransferData:
-            return Can::ServiceResponse::TransferData::build(m_reader)
-                ->build();
-        case Can::ServiceResponse::Type::WriteDataByIdentifier:
-            return Can::ServiceResponse::WriteDataByIdentifier::build(m_reader)
-                ->build();
-        case Can::ServiceResponse::Type::ReadDTCInformation:
-            return Can::ServiceResponse::ReadDTCInformation::build(m_reader)
-                ->build();
-        case Can::ServiceResponse::Type::ClearDiagnosticInformation:
-            return Can::ServiceResponse::ClearDiagnostricInformation::build(m_reader)
-                ->build();
-        case Can::ServiceResponse::Type::RoutineControl:
-            return Can::ServiceResponse::RoutineControl::build(m_reader)
-                ->build();
+        case Type::Negative:
+            return Negative::build(m_reader)->build();
+        case Type::CommunicationControl:
+            return CommunicationControl::build(m_reader)->build();
+        case Type::ControlDTCSettings:
+            return ControlDTCSettings::build(m_reader)->build();
+        case Type::DiagnosticSessionControl:
+            return DiagnosticSessionControl::build(m_reader)->build();
+        case Type::ECUReset:
+            return ECUReset::build(m_reader)->build();
+        case Type::ReadDataByIdentifier:
+            return ReadDataByIdentifier::build(m_reader)->build();
+        case Type::RequestDownload:
+            return RequestDownload::build(m_reader)->build();
+        case Type::RequestTransferExit:
+            return RequestTransferExit::build(m_reader)->build();
+        case Type::SecurityAccess:
+            return SecurityAccess::build(m_reader)->build();
+        case Type::TransferData:
+            return TransferData::build(m_reader)->build();
+        case Type::WriteDataByIdentifier:
+            return WriteDataByIdentifier::build(m_reader)->build();
+        case Type::ReadDTCInformation:
+            return ReadDTCInformation::build(m_reader)->build();
+        case Type::ClearDiagnosticInformation:
+            return ClearDiagnostricInformation::build(m_reader)->build();
+        case Type::RoutineControl:
+            return RoutineControl::build(m_reader)->build();
         default:
             return {};
     }

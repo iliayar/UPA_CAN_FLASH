@@ -26,11 +26,11 @@ public:
     class Builder : public Util::Builder<SingleFrame, Builder> {
     public:
         Builder() : B() {}
-        Builder(Util::Reader& reader) : B() {
+        Builder(Util::Reader const& reader) : B() {
             read(reader, object()->m_len, object()->m_data);
         }
         auto len(uint8_t len) { return field(object()->m_len, len); }
-        auto data(std::vector<uint8_t> data) {
+        auto data(std::vector<uint8_t> const& data) {
             return field(object()->m_data, data);
         }
     };
@@ -41,7 +41,7 @@ public:
     static std::unique_ptr<Builder> build() {
         return std::make_unique<Builder>();
     }
-    static std::unique_ptr<Builder> build(Util::Reader& reader) {
+    static std::unique_ptr<Builder> build(Util::Reader const& reader) {
         return std::make_unique<Builder>(reader);
     }
 
@@ -61,11 +61,11 @@ public:
     class Builder : public Util::Builder<FirstFrame, Builder> {
     public:
         Builder() : B() {}
-        Builder(Util::Reader& reader) : B() {
+        Builder(Util::Reader const& reader) : B() {
             read(reader, object()->m_len, object()->m_data);
         }
         auto len(uint16_t len) { return field(object()->m_len, len); }
-        auto data(std::vector<uint8_t> data) {
+        auto data(std::vector<uint8_t> const& data) {
             return field(object()->m_data, data);
         }
     };
@@ -76,7 +76,7 @@ public:
     static std::unique_ptr<Builder> build() {
         return std::make_unique<Builder>();
     }
-    static std::unique_ptr<Builder> build(Util::Reader& reader) {
+    static std::unique_ptr<Builder> build(Util::Reader const& reader) {
         return std::make_unique<Builder>(reader);
     }
 
@@ -96,13 +96,13 @@ public:
     class Builder : public Util::Builder<ConsecutiveFrame, Builder> {
     public:
         Builder() : B() {}
-        Builder(Util::Reader& reader) : B() {
+        Builder(Util::Reader const& reader) : B() {
             read(reader, object()->m_seq_num, object()->m_data);
         }
         auto seq_num(uint8_t seq_num) {
             return field(object()->m_seq_num, seq_num);
         }
-        auto data(std::vector<uint8_t> data) {
+        auto data(std::vector<uint8_t> const& data) {
             return field(object()->m_data, data);
         }
     };
@@ -113,7 +113,7 @@ public:
     static std::unique_ptr<Builder> build() {
         return std::make_unique<Builder>();
     }
-    static std::unique_ptr<Builder> build(Util::Reader& reader) {
+    static std::unique_ptr<Builder> build(Util::Reader const& reader) {
         return std::make_unique<Builder>(reader);
     }
 
@@ -133,7 +133,7 @@ public:
     class Builder : public Util::Builder<FlowControl, Builder> {
     public:
         Builder() : B() {}
-        Builder(Util::Reader& reader) : B() {
+        Builder(Util::Reader const& reader) : B() {
             read(reader, object()->m_status, object()->m_block_size,
                  object()->m_min_separation_time);
         }
@@ -157,7 +157,7 @@ public:
     static std::unique_ptr<Builder> build() {
         return std::make_unique<Builder>();
     }
-    static std::unique_ptr<Builder> build(Util::Reader& reader) {
+    static std::unique_ptr<Builder> build(Util::Reader const& reader) {
         return std::make_unique<Builder>(reader);
     }
 

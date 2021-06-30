@@ -37,7 +37,7 @@ public:
     class Builder : public Util::Builder<Negative, Builder> {
     public:
         Builder() : B() {}
-        Builder(Util::Reader& reader) : B() {
+        Builder(Util::Reader const& reader) : B() {
             read(reader, object()->m_serice, object()->m_code);
         }
         auto service(Can::ServiceRequest::Type value) {
@@ -49,7 +49,7 @@ public:
         }
     };
     static auto build() { return std::make_unique<Builder>(); }
-    static auto build(Util::Reader& reader) {
+    static auto build(Util::Reader const& reader) {
         return std::make_unique<Builder>(reader);
     }
     optional<std::vector<uint8_t>> dump() {

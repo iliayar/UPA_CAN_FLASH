@@ -44,9 +44,9 @@ public:
 class Factory {
 public:
     /**
-     * @param binary representation of service response
+     * @param data binary representation of service response
      */
-    Factory(std::vector<uint8_t>);
+    Factory(std::vector<uint8_t> const& data);
 
     /**
      * @return Service response parsed from passed bytes

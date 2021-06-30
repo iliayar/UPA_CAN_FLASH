@@ -62,7 +62,7 @@ public:
      * The one can be fetched using
      * @param data data to parse frame from
      */
-    Factory(std::vector<uint8_t> data);
+    Factory(std::vector<uint8_t> const& data);
 
     /**
      * @return optional of frame parsed from passed vector
