@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../qtask.h"
+#include "qtask.h"
 
 #include <QLayout>
 #include <QGroupBox>

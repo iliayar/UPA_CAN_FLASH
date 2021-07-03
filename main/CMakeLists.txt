@@ -92,6 +92,7 @@ target_link_libraries(UPA_CAN_FLASH
   libhex
   libutil
   libcan
+  libqcan
   stdc++fs
   Qt5::Core
   Qt5::Widgets

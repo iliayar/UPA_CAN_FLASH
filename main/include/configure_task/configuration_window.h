@@ -9,7 +9,7 @@
 #include <QDebug>
 
 #include "logger.h"
-#include "config.h"
+#include "configure_task/config.h"
 #include "datatypes.h"
 
 class ConfigurationWindow : public QMainWindow {
