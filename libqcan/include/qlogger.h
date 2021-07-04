@@ -30,16 +30,16 @@ public:
 
 public slots:
 
-    void received_frame(std::shared_ptr<Can::Frame::Frame>);
-    void transmitted_frame(std::shared_ptr<Can::Frame::Frame>);
-    void received_service_response(std::shared_ptr<Can::ServiceResponse::ServiceResponse>);
-    void transmitted_service_request(std::shared_ptr<Can::ServiceRequest::ServiceRequest>);
+    virtual void received_frame(std::shared_ptr<Can::Frame::Frame>);
+    virtual void transmitted_frame(std::shared_ptr<Can::Frame::Frame>);
+    virtual void received_service_response(std::shared_ptr<Can::ServiceResponse::ServiceResponse>);
+    virtual void transmitted_service_request(std::shared_ptr<Can::ServiceRequest::ServiceRequest>);
 
-    void error(std::string const&);
-    void info(std::string const&);
-    void warning(std::string const&);
-    void important(std::string const&);
-    void progress(int, bool err);
+    virtual void error(std::string const&);
+    virtual void info(std::string const&);
+    virtual void warning(std::string const&);
+    virtual void important(std::string const&);
+    virtual void progress(int, bool err);
 
 private:
     QString vec_to_qstr(std::vector<uint8_t>);
