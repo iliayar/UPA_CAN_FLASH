@@ -41,6 +41,7 @@ public slots:
     void check_frames_to_write(std::shared_ptr<Can::Frame::Frame>);
     void disconnect_device();
     void task_done();
+    void closeEvent(QCloseEvent *event);
 
 private:
     void create_layout(QWidget*);

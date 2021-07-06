@@ -27,6 +27,9 @@ ConfigurationWindow::ConfigurationWindow(QWidget* parent)
 
     create_layout(tabs);
 
+    restoreGeometry(m_settings.value("configurationWindow/geometry").toByteArray());
+    restoreState(m_settings.value("configurationWindow/windowState").toByteArray());
+
     // layout->addWidget(tabs);
     // QMenuBar* menu_bar = new QMenuBar(this);
     QMenu* tools_menu = new QMenu(tr("Tools"));
@@ -41,6 +44,13 @@ ConfigurationWindow::ConfigurationWindow(QWidget* parent)
     setCentralWidget(tabs);
 
     // setCentralWidget(tabs);
+}
+
+void ConfigurationWindow::closeEvent(QCloseEvent *event) {
+    m_settings.setValue("configurationWindow/geometry", saveGeometry());
+    m_settings.setValue("configurationWindow/windowState", saveState());
+    emit closed();
+    QMainWindow::closeEvent(event);
 }
 
 ConfigurationWindow::~ConfigurationWindow() {}

@@ -40,12 +40,11 @@ public slots:
     void factory_reset_sig();
     void read_errors_sig_failed();
     void read_errors_sig_confirmed();
+
+    void closeEvent(QCloseEvent *event);
     
 private:
     void create_layout(QTabWidget* tabs);
-    void closeEvent(QCloseEvent* e) {
-        emit closed();
-    }
     
     DataConfig m_config;
     QSettings m_settings;

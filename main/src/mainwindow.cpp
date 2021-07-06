@@ -63,6 +63,9 @@ MainWindow::MainWindow(QWidget* parent)
 
     create_layout(window);
 
+    restoreGeometry(m_settings.value("mainWindow/geometry").toByteArray());
+    restoreState(m_settings.value("mainWindow/windowState").toByteArray());
+
     bool ok;
     uint32_t mask = m_settings.value("crypto/mask02").toString().toUInt(&ok, 0);
     if(ok) Crypto::SecuritySettings::set_mask02(mask);
@@ -92,6 +95,13 @@ MainWindow::MainWindow(QWidget* parent)
 
     setCentralWidget(window);
 }
+
+void MainWindow::closeEvent(QCloseEvent *event) {
+    m_settings.setValue("mainWindow/geometry", saveGeometry());
+    m_settings.setValue("mainWindow/windowState", saveState());
+    QMainWindow::closeEvent(event);
+}
+
 void MainWindow::create_layout(QWidget* root) {
     DEBUG(info, "Creating layout");
     const QFont fixedFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
