@@ -47,6 +47,10 @@ public:
         QHBoxLayout* layout = new QHBoxLayout(frame);
         QPushButton* write_btn = new QPushButton(tr("&Write"));
         QPushButton* read_btn = new QPushButton(tr("&Read"));
+        QString btn_style = write_btn->styleSheet();
+        write_btn->setStyleSheet(btn_style + " QPushButton { margin: 0; padding: 2; }");
+        read_btn->setStyleSheet(btn_style + " QPushButton { margin: 0; padding: 2; }");
+        layout->setMargin(0);
         layout->addWidget(write_btn);
         layout->addWidget(read_btn);
         frame->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
@@ -217,6 +221,8 @@ protected:
         QHBoxLayout* layout = new QHBoxLayout(frame);
         QCheckBox* checkbox = new QCheckBox("decimal", frame);
         QPushButton* copy_btn = new QPushButton("Copy", frame);
+        layout->setMargin(0);
+        layout->setSpacing(2);
         layout->addWidget(copy_btn);
         layout->addWidget(checkbox);
         std::vector<std::string> top_labels = {"G", "0", "21", "25", "42", "60", "76", "115", "145", "180", "213", "250", "280", "350", "420"};
@@ -322,6 +328,7 @@ protected:
             QFrame* frame = new QFrame(this);
             frame->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
             QHBoxLayout* layout = new QHBoxLayout(frame);
+            layout->setMargin(0);
             layout->addWidget(new QLabel(QString::fromStdString(item.name) + ": "));
             SpinBox box = create_hex_spin_box();
             box.box->setMinimum(0);

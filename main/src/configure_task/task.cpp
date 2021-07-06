@@ -7,8 +7,8 @@
 
 #include "configure_task/configuration_window.h"
 
-ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger, bool security, ConfigurationWindow* window)
-    : QTask(logger), m_security(security) {
+ConfigurationTask::ConfigurationTask(std::shared_ptr<QLogger> logger, bool security, ConfigurationWindow* window, bool fake)
+    : QTask(logger), m_security(security), m_fake(fake) {
 
     connect(this, &ConfigurationTask::clear_errors_done, window, &ConfigurationWindow::clear_errors_done);
     connect(this, &ConfigurationTask::read_done, window, &ConfigurationWindow::read_done);
@@ -48,12 +48,14 @@ void ConfigurationTask::factory_reset() {
 }
 
 void ConfigurationTask::task() {
-    if(!diagnostic_session()) {
-        return;
-    }
-    if(m_security) {
-        if(!security_access(Crypto::SecuritySettings::get_mask03())) {
+    if (!m_fake) {
+        if (!diagnostic_session()) {
             return;
+        }
+        if (m_security) {
+            if (!security_access(Crypto::SecuritySettings::get_mask03())) {
+                return;
+            }
         }
     }
 

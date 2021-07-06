@@ -84,7 +84,7 @@ void ConfigurationWindow::create_layout(QTabWidget* tabs) {
                     QString path =
                     m_settings.value("configuration/data").toString();
                     QString filename = QFileDialog::getOpenFileName(
-                        this, tr("Open configuration data"), path);
+                        this, tr("Open configuration data"), path, tr("JSON File (*.json);;Any File (*)"));
                     this->m_config.json_to_group(filename, groupname);
                     if(filename != "") {
                         m_settings.setValue("configuration/data", filename);
@@ -95,7 +95,7 @@ void ConfigurationWindow::create_layout(QTabWidget* tabs) {
                     QString path =
                     m_settings.value("configuration/data").toString();
                     QString filename = QFileDialog::getSaveFileName(
-                        this, tr("Save configuration data"), path);
+                        this, tr("Save configuration data"), path, tr("JSON File (*.json)"));
                     this->m_config.group_to_json(filename, groupname);
                     if(filename != "") {
                         m_settings.setValue("configuration/data", filename);

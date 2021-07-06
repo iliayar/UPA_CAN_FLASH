@@ -16,7 +16,7 @@ class ConfigurationTask : public QTask {
 Q_OBJECT
 public:
 
-    ConfigurationTask(std::shared_ptr<QLogger> logger, bool security, ConfigurationWindow* window);
+    ConfigurationTask(std::shared_ptr<QLogger> logger, bool security, ConfigurationWindow* window, bool fake = false);
     virtual ~ConfigurationTask();
 
     void task() override;
@@ -39,4 +39,5 @@ private:
     bool diagnostic_session();
 
     bool m_security;
+    bool m_fake;
 };

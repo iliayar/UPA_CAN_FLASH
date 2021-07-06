@@ -22,6 +22,7 @@
 #include <QThread>
 #include <QVBoxLayout>
 #include <QCheckBox>
+#include <QShortcut>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -135,6 +136,9 @@ void MainWindow::create_layout(QWidget* root) {
     QPushButton* device_connect_btn = new QPushButton("Connect");
     QPushButton* device_disconnect_btn = new QPushButton("Disconnect");
 
+    QShortcut* connect_shortcut = new QShortcut(QKeySequence("F2"), this);
+    QShortcut* disconnect_shortcut = new QShortcut(QKeySequence("Esc"), this);
+
     QSpinBox* tester_id_box = new QSpinBox();
     QSpinBox* ecu_id_box = new QSpinBox();
 
@@ -217,7 +221,9 @@ void MainWindow::create_layout(QWidget* root) {
 
     for(QString task : {"Flash" /*, "Test"*/, "Configuration"}) {
         QPushButton* btn = new QPushButton(task, tasks_group);
-        btn->setDisabled(true);
+        if(task != "Configuration") {
+            btn->setDisabled(true);
+        }
         tasks_btns.push_back(btn);
         tasks_group_layout->addWidget(btn);
     }
@@ -345,7 +351,11 @@ void MainWindow::create_layout(QWidget* root) {
     connect(plugins_list, QOverload<const QString&>::of(&QComboBox::activated), this, &MainWindow::update_device_list);
     connect(device_connect_btn, &QPushButton::released, this,
             &MainWindow::connect_device);
+    connect(connect_shortcut, &QShortcut::activated, this,
+            &MainWindow::connect_device);
     connect(device_disconnect_btn, &QPushButton::released, this,
+            &MainWindow::disconnect_device);
+    connect(disconnect_shortcut, &QShortcut::activated, this,
             &MainWindow::disconnect_device);
     connect(tester_id_box, QOverload<int>::of(&QSpinBox::valueChanged),
             [&](int v) { m_settings.setValue("task/testerId", v); });
@@ -540,18 +550,18 @@ void MainWindow::device_error(QCanBusDevice::CanBusError err) {
 void MainWindow::abort_task() { emit set_task(nullptr); }
 
 void MainWindow::start_task(QString task_name) {
-    if (m_device == nullptr) {
-        m_logger->warning("Choose device first");
-        return;
-    }
     m_log_frames->clear();
     m_log_messages->clear();
     for(auto btn : m_start_task_buttons) {
         btn->setEnabled(false);
     }
-    m_disconnect_device_button->setDisabled(true);
     m_logger->progress(0);
     if (task_name == "Flash") {
+        m_disconnect_device_button->setDisabled(true);
+        if (m_device == nullptr) {
+            m_logger->warning("Choose device first");
+            return;
+        }
         DEBUG(info, "Starting Flash task");
         m_logger->info("Starting task " + task_name.toStdString());
         emit set_task(std::make_shared<FlashTask>(
@@ -561,14 +571,16 @@ void MainWindow::start_task(QString task_name) {
         ConfigurationWindow* window =  new ConfigurationWindow(this);
         emit set_task(std::make_shared<ConfigurationTask>(
             std::make_shared<QLogger>(m_logger_worker),
-            m_config_security_checkbox->isChecked(), window));
+            m_config_security_checkbox->isChecked(), window, m_device == nullptr));
         window->show();
     }
 }
 
 void MainWindow::task_done() {
     for(auto btn : m_start_task_buttons) {
-        btn->setEnabled(true);
+        if(m_device != nullptr || btn->text() == "Configuration") {
+            btn->setEnabled(true);
+        }
     }
     if(m_device == nullptr) {
         update_device_list("");
