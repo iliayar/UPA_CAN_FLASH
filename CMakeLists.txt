@@ -32,7 +32,7 @@ add_subdirectory(test)
 endif (${CMAKE_BUILD_TYPE} STREQUAL "Release")
 
 
-set(APP_VERSION "v0.9.10")
+set(APP_VERSION "v0.9.11")
 
 add_subdirectory(main)
 add_subdirectory(libhex)
