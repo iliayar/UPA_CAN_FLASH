@@ -102,43 +102,43 @@ target_link_libraries(UPA_CAN_FLASH
 
 
 IF(WIN32)
-	file(GLOB ROOT_DLLS ${CMAKE_BINARY_DIR}/main/*.dll)
-  	install(
-		FILES ${CMAKE_BINARY_DIR}/main/UPA_CAN_FLASH.exe
-		DESTINATION .
-    		)
-	install(
-		FILES ${ROOT_DLLS}
-		DESTINATION .
-		)
-	install(
-		DIRECTORY ${CMAKE_BINARY_DIR}/main/translations
-		DESTINATION .
-		)
-	install(
-		DIRECTORY ${CMAKE_BINARY_DIR}/main/styles
-		DESTINATION .
-		)
-	install(
-		DIRECTORY ${CMAKE_BINARY_DIR}/main/platforms
-		DESTINATION .
-		)
-	install(
-		DIRECTORY ${CMAKE_BINARY_DIR}/main/imageformats
-		DESTINATION .
-		)
-	install(
-		DIRECTORY ${CMAKE_BINARY_DIR}/main/iconengines
-		DESTINATION .
-		)
-	install(
-		DIRECTORY ${CMAKE_BINARY_DIR}/main/canbus
-		DESTINATION .
-		)
-	install(
-		DIRECTORY ${CMAKE_BINARY_DIR}/main/bearer
-		DESTINATION .
-		)
+  file(GLOB ROOT_DLLS ${CMAKE_BINARY_DIR}/main/*.dll)
+  install(
+    FILES ${CMAKE_BINARY_DIR}/main/UPA_CAN_FLASH.exe
+    DESTINATION .
+    )
+  install(
+    FILES ${ROOT_DLLS}
+    DESTINATION .
+    )
+  install(
+    DIRECTORY ${CMAKE_BINARY_DIR}/main/translations
+    DESTINATION .
+    )
+  install(
+    DIRECTORY ${CMAKE_BINARY_DIR}/main/styles
+    DESTINATION .
+    )
+  install(
+    DIRECTORY ${CMAKE_BINARY_DIR}/main/platforms
+    DESTINATION .
+    )
+  install(
+    DIRECTORY ${CMAKE_BINARY_DIR}/main/imageformats
+    DESTINATION .
+    )
+  install(
+    DIRECTORY ${CMAKE_BINARY_DIR}/main/iconengines
+    DESTINATION .
+    )
+  install(
+    DIRECTORY ${CMAKE_BINARY_DIR}/main/canbus
+    DESTINATION .
+    )
+  install(
+    DIRECTORY ${CMAKE_BINARY_DIR}/main/bearer
+    DESTINATION .
+    )
 
 
   # CPACK macros below here

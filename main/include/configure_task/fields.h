@@ -219,8 +219,10 @@ protected:
         QFrame* frame = new QFrame(this);
         frame->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
         QHBoxLayout* layout = new QHBoxLayout(frame);
-        QCheckBox* checkbox = new QCheckBox("decimal", frame);
+        QCheckBox* checkbox = new QCheckBox("dec", frame);
         QPushButton* copy_btn = new QPushButton("Copy", frame);
+        QString btn_style = copy_btn->styleSheet();
+        copy_btn->setStyleSheet(btn_style + " QPushButton { margin: 0; padding: 2; }");
         layout->setMargin(0);
         layout->setSpacing(2);
         layout->addWidget(copy_btn);
