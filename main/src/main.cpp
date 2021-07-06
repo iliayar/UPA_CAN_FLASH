@@ -69,8 +69,6 @@ int main(int argc, char* argv[]) {
     QDesktopWidget dw;
     MainWindow main_window{};
 
-    main_window.resize(dw.availableGeometry(&main_window).size() * 0.8);
-
     main_window.show();
 
     return app.exec();

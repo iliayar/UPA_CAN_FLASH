@@ -63,9 +63,6 @@ MainWindow::MainWindow(QWidget* parent)
 
     create_layout(window);
 
-    restoreGeometry(m_settings.value("mainWindow/geometry").toByteArray());
-    restoreState(m_settings.value("mainWindow/windowState").toByteArray());
-
     bool ok;
     uint32_t mask = m_settings.value("crypto/mask02").toString().toUInt(&ok, 0);
     if(ok) Crypto::SecuritySettings::set_mask02(mask);
@@ -94,11 +91,16 @@ MainWindow::MainWindow(QWidget* parent)
     m_communicator_thread.start();
 
     setCentralWidget(window);
+
+    restoreGeometry(m_settings.value("mainWindow/geometry").toByteArray());
+    restoreState(m_settings.value("mainWindow/windowState").toByteArray());
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
     m_settings.setValue("mainWindow/geometry", saveGeometry());
     m_settings.setValue("mainWindow/windowState", saveState());
+    m_communicator_thread.terminate();
+    m_communicator_thread.wait();
     QMainWindow::closeEvent(event);
 }
 
@@ -578,7 +580,7 @@ void MainWindow::start_task(QString task_name) {
             m_file, std::make_shared<QLogger>(m_logger_worker)));
     } else if (task_name == "Configuration") {
         m_logger->info("Starting task " + task_name.toStdString());
-        ConfigurationWindow* window =  new ConfigurationWindow(this);
+        ConfigurationWindow* window =  new ConfigurationWindow(nullptr);
         emit set_task(std::make_shared<ConfigurationTask>(
             std::make_shared<QLogger>(m_logger_worker),
             m_config_security_checkbox->isChecked(), window, m_device == nullptr));
@@ -642,11 +644,4 @@ void MainWindow::processReceivedFrames() {
             emit frame_received(maybe_frame.value());
         }
     }
-}
-
-MainWindow::~MainWindow() {
-    m_communicator_thread.terminate();
-    m_communicator_thread.wait();
-    if (m_device != nullptr) delete m_device;
-    if (m_communicator != nullptr) delete m_communicator;
 }

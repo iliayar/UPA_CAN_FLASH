@@ -26,24 +26,18 @@ ConfigurationWindow::ConfigurationWindow(QWidget* parent)
     QTabWidget* tabs = new QTabWidget(this);
 
     create_layout(tabs);
-
-    restoreGeometry(m_settings.value("configurationWindow/geometry").toByteArray());
-    restoreState(m_settings.value("configurationWindow/windowState").toByteArray());
-
-    // layout->addWidget(tabs);
-    // QMenuBar* menu_bar = new QMenuBar(this);
     QMenu* tools_menu = new QMenu(tr("Tools"));
     QAction* reset_action = new QAction(tr("Factory reset"), this);
 
     tools_menu->addAction(reset_action);
     menuBar()->addMenu(tools_menu);
 
-    // layout->setMenuBar(menu_bar);
     connect(reset_action, &QAction::triggered, this,
             &ConfigurationWindow::factory_reset);
     setCentralWidget(tabs);
 
-    // setCentralWidget(tabs);
+    restoreGeometry(m_settings.value("configurationWindow/geometry").toByteArray());
+    restoreState(m_settings.value("configurationWindow/windowState").toByteArray());
 }
 
 void ConfigurationWindow::closeEvent(QCloseEvent *event) {
@@ -144,8 +138,8 @@ void ConfigurationWindow::create_layout(QTabWidget* tabs) {
 
     tabs->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     tabs->adjustSize();
-    adjustSize();
-    resize(QGuiApplication::primaryScreen()->size() * 0.8);
+    // adjustSize();
+    // resize(QGuiApplication::primaryScreen()->size() * 0.8);
     m_err_log = err_log;
 }
 

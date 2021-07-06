@@ -27,7 +27,7 @@ class MainWindow : public QMainWindow {
 
 public:
     explicit MainWindow(QWidget* parent = nullptr);
-    virtual ~MainWindow();
+//     virtual ~MainWindow();
     void processReceivedFrames();
 signals:
     void frame_received(std::shared_ptr<Can::Frame::Frame>);
