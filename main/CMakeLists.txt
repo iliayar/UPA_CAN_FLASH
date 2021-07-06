@@ -102,57 +102,53 @@ target_link_libraries(UPA_CAN_FLASH
 
 
 IF(WIN32)
-  include(InstallRequiredSystemLibraries)
-  install(
-    DIRECTORY ${CMAKE_BINARY_DIR}/main/
-    DESTINATION bin
-    COMPONENT applications
-    )
+	file(GLOB ROOT_DLLS ${CMAKE_BINARY_DIR}/main/*.dll)
+  	install(
+		FILES ${CMAKE_BINARY_DIR}/main/UPA_CAN_FLASH.exe
+		DESTINATION .
+    		)
+	install(
+		FILES ${ROOT_DLLS}
+		DESTINATION .
+		)
+	install(
+		DIRECTORY ${CMAKE_BINARY_DIR}/main/translations
+		DESTINATION .
+		)
+	install(
+		DIRECTORY ${CMAKE_BINARY_DIR}/main/styles
+		DESTINATION .
+		)
+	install(
+		DIRECTORY ${CMAKE_BINARY_DIR}/main/platforms
+		DESTINATION .
+		)
+	install(
+		DIRECTORY ${CMAKE_BINARY_DIR}/main/imageformats
+		DESTINATION .
+		)
+	install(
+		DIRECTORY ${CMAKE_BINARY_DIR}/main/iconengines
+		DESTINATION .
+		)
+	install(
+		DIRECTORY ${CMAKE_BINARY_DIR}/main/canbus
+		DESTINATION .
+		)
+	install(
+		DIRECTORY ${CMAKE_BINARY_DIR}/main/bearer
+		DESTINATION .
+		)
+
 
   # CPACK macros below here
   #
   set (CPACK_PACKAGE_NAME "UPA_CAN_FLASH")
-  set (CPACK_PACKAGE_VENDOR "Some cool vendor")
-  set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "UPA_CAN_FLASH - flash something")
   set (CPACK_PACKAGE_VERSION ${APP_VERSION})
-  set (CPACK_PACKAGE_VERSION_MAJOR "0")
-  set (CPACK_PACKAGE_VERSION_MINOR "6")
-  set (CPACK_PACKAGE_VERSION_PATCH "6")
   set (CPACK_PACKAGE_INSTALL_DIRECTORY "UPA_CAN_FLASH")
 
-  # Define components and their display names
-  set (CPACK_COMPONENTS_ALL applications libraries headers)
-  set (CPACK_COMPONENT_APPLICATIONS_DISPLAY_NAME "Main application")
-  set (CPACK_COMPONENT_LIBRARIES_DISPLAY_NAME "Libraries")
-  set (CPACK_COMPONENT_HEADERS_DISPLAY_NAME "C++ Headers")
-
-  # Human readable component descriptions
-  set (CPACK_COMPONENT_APPLICATIONS_DESCRIPTION
-    "Replace this text with something describing flash")
-  set (CPACK_COMPONENT_LIBRARIES_DESCRIPTION
-    "Have no shared Libraries")
-  set (CPACK_COMPONENT_HEADERS_DESCRIPTION
-    "Have no header files")
-
-  # Define dependencies between components
-  set (CPACK_COMPONENT_HEADERS_DEPENDS libraries)
-
-  # Define groups
-  set(CPACK_COMPONENT_APPLICATIONS_GROUP "Runtime")
-  set(CPACK_COMPONENT_LIBRARIES_GROUP "Development")
-  set(CPACK_COMPONENT_HEADERS_GROUP "Development")
-
-  set(CPACK_COMPONENT_GROUP_DEVELOPMENT_DESCRIPTION
-    "All of the tools you'll ever need to develop software")
-
-  # Define NSIS installation types
-  set(CPACK_ALL_INSTALL_TYPES Full Developer)
-  set(CPACK_COMPONENT_LIBRARIES_INSTALL_TYPES Developer Full)
-  set(CPACK_COMPONENT_HEADERS_INSTALL_TYPES Developer Full)
-  set(CPACK_COMPONENT_APPLICATIONS_INSTALL_TYPES Full)
-
   set(CPACK_NSIS_CREATE_ICONS_EXTRA
-    "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\UPA_CAN_FLASH.lnk' '$INSTDIR\\\\bin\\\\UPA_CAN_FLASH.exe'"
+    "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\UPA_CAN_FLASH.lnk' '$INSTDIR\\\\UPA_CAN_FLASH.exe'"
     )
 
   # SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS 
