@@ -25,8 +25,16 @@
 #ifndef RESPONSE_TIMEOUT
 #define RESPONSE_TIMEOUT 1000
 #endif
-#define IF_NEGATIVE(res) \
-    if (res->get_type() == Can::ServiceResponse::Type::Negative)
+#define IF_NEGATIVE(res)  \
+    if (res == nullptr || \
+        res->get_type() == Can::ServiceResponse::Type::Negative)
+
+class interrupted_exception : public std::runtime_error {
+public:
+    interrupted_exception()
+        : std::runtime_error("task was interrupted") {
+    }
+};
 
 /**
  * Interface of task passed into {@link QCommunicator}
@@ -70,6 +78,12 @@ public slots:
      */
     void response(std::shared_ptr<Can::ServiceResponse::ServiceResponse>, int wait = 0);
 
+
+    /**
+     * Interrupt task. Sets {@link #m_is_interrupted}, stops all threads.
+     */
+    void interrupt();
+
 signals:
 
     /**
@@ -85,4 +99,5 @@ private:
 
 protected:
     std::shared_ptr<QLogger> m_logger;
+    bool m_is_interrupted = false;
 };

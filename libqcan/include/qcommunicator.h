@@ -46,12 +46,7 @@ public:
     /**
      * Disconnecting all timer related stuff from worker object
      */
-    virtual ~QWorker() {
-        disconnect(&m_timer, &QTimer::timeout, this, &QWorker::timeout);
-        disconnect(this, &QWorker::start_timer, &m_timer,
-                   static_cast<void (QTimer::*)(int)>(&QTimer::start));
-        disconnect(this, &QWorker::stop_timer, &m_timer, &QTimer::stop);
-    }
+    virtual ~QWorker();
 
     /**
      * @return Enum type of worker
@@ -72,10 +67,10 @@ public slots:
 signals:
 
     /**
-     * @param frame Frame to send to ECU
      * Emits when new frame is ready to send
+     * @param frame Frame to send to ECU
      */
-    void fetch_frame(std::shared_ptr<Can::Frame::Frame>);
+    void fetch_frame(std::shared_ptr<Can::Frame::Frame> frame);
 
     /**
      * signal
@@ -84,19 +79,18 @@ signals:
     void worker_done();
 
     /**
-     * @signal
      * Emits when error ocues during trasmitting/receiving request/response
+     * @param err The error enum value
      */
-    void worker_error(WorkerError);
+    void worker_error(WorkerError err);
 
     /**
-     * @signal
      * Emits on inint. Starts timer
+     * @param ms The time in milliseconds
      */
-    void start_timer(int);
+    void start_timer(int ms);
 
     /**
-     * @signal
      * Emits on destructing. Stops timer
      */
     void stop_timer();
@@ -110,13 +104,7 @@ protected:
     /**
      * Initialize timer. Must be called in the thread worker will work in.
      */
-    void init_timer() {
-        connect(&m_timer, &QTimer::timeout, this, &QWorker::timeout);
-        connect(this, &QWorker::start_timer, &m_timer,
-                static_cast<void (QTimer::*)(int)>(&QTimer::start));
-        connect(this, &QWorker::stop_timer, &m_timer, &QTimer::stop);
-        emit start_timer(FRAME_TIMEOUT);
-    }
+    void init_timer();
 
     QCommunicator const* m_communicator;
 
@@ -237,21 +225,21 @@ public slots:
      * Triggers by main programm
      * @param frame recevied from ECU
      */
-    void push_frame(std::shared_ptr<Can::Frame::Frame>);
+    void push_frame(std::shared_ptr<Can::Frame::Frame> frame);
 
     /**
      * Process request received from task, sends it to ECU
      * Triggers by {@link QTask} class
      * @param request received from task
      */
-    void request(std::shared_ptr<Can::ServiceRequest::ServiceRequest>);
+    void request(std::shared_ptr<Can::ServiceRequest::ServiceRequest> request);
 
     /**
      * Fetching frame frome worker ans pass it to main programm
      * Triggers by woker.
      * @param frame recevied from worker to send to ECU
      */
-    void fetch_frame_worker(std::shared_ptr<Can::Frame::Frame>);
+    void fetch_frame_worker(std::shared_ptr<Can::Frame::Frame> frame);
 
     /**
      * Triggers by worker when it's done
@@ -268,7 +256,7 @@ public slots:
      * Triggers by main programm.
      * @param task implements {@link QTask}
      */
-    void set_task(std::shared_ptr<QTask>);
+    void set_task(std::shared_ptr<QTask> task);
 
     /**
      * Triggers by worker {@link QWorker::task_done} method
@@ -281,14 +269,14 @@ signals:
      * Emits when received frame to worker and apss it to main programm
      * @param frame received from worker
      */
-    void fetch_frame(std::shared_ptr<Can::Frame::Frame>);
+    void fetch_frame(std::shared_ptr<Can::Frame::Frame> frame);
 
     /**
      * Emits when receive frame from main programm.
      * Then pass it to current worker
      * @param frame received from ECU
      */
-    void push_frame_worker(std::shared_ptr<Can::Frame::Frame>);
+    void push_frame_worker(std::shared_ptr<Can::Frame::Frame> frame);
 
     /**
      * Emits when worker done and there is not nullptr response parsed by one
@@ -297,7 +285,7 @@ signals:
      * @param wait flag. if not 0 then ignore {@param response} and increase
      * task timeout by wait*1000 ms
      */
-    void response(std::shared_ptr<Can::ServiceResponse::ServiceResponse>,
+    void response(std::shared_ptr<Can::ServiceResponse::ServiceResponse> response,
                   int wait = 0);
 
     /**

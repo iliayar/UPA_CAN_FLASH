@@ -57,6 +57,7 @@ class Data {
 public:
 
     static std::map<uint16_t, int> m_sizes;
+    static std::map<uint16_t, std::string> m_names;
     
     class Builder : public Util::Builder<Data, Builder> {
     protected:
@@ -112,9 +113,10 @@ public:
         return std::make_unique<Builder>(reader);
     }
 
-    static void register_did(uint16_t did, int size) {
+    static void register_did(uint16_t did, int size, std::string name = "UNNAMED") {
         if(m_sizes.find(did) == m_sizes.end()) {
             m_sizes[did] = size;
+            m_names[did] = name;
         }
     }
 

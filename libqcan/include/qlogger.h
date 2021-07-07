@@ -41,6 +41,8 @@ public slots:
     virtual void important(std::string const&);
     virtual void progress(int, bool err);
 
+    void success(std::string const&);
+
 private:
     QString vec_to_qstr(std::vector<uint8_t>);
 
@@ -67,6 +69,7 @@ public:
         CONNECT(error);
         CONNECT(warning);
         CONNECT(important);
+        CONNECT(success);
         CONNECT(received_frame);
         CONNECT(transmitted_frame);
         CONNECT(received_service_response);
@@ -89,6 +92,8 @@ public:
     void important(std::string const& s) override;
     void progress(int a, bool err = false);
 
+    void success(std::string const&);
+
 #define DISCONNECT(sig) \
     connect(this, &QLogger::signal_##sig, m_worker, &QLoggerWorker::sig)
     ~QLogger() {
@@ -96,6 +101,7 @@ public:
         DISCONNECT(error);
         DISCONNECT(warning);
         DISCONNECT(important);
+        DISCONNECT(success);
         DISCONNECT(received_frame);
         DISCONNECT(transmitted_frame);
         DISCONNECT(received_service_response);
@@ -118,6 +124,8 @@ signals:
     void signal_warning(std::string const&);
     void signal_important(std::string const&);
     void signal_progress(int, bool);
+
+    void signal_success(std::string const&);
 
 private:
     QLoggerWorker* m_worker;

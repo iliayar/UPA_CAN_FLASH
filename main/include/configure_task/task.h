@@ -40,4 +40,5 @@ private:
 
     bool m_security;
     bool m_fake;
+    ConfigurationWindow *m_window;
 };

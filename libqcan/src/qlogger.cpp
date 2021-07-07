@@ -98,6 +98,16 @@ void QLoggerWorker::important(std::string const& message) {
     DEBUG(info, message);
 }
 
+void QLoggerWorker::success(std::string const& message) {
+    m_message_log->setTextColor(QColor("green"));
+    m_message_log->append(get_date_str() +
+                          "      OK: " + QString::fromStdString(message));
+    m_message_log->setTextColor(QColor("black"));
+    m_message_log->verticalScrollBar()->setValue(
+        m_message_log->verticalScrollBar()->maximum());
+    DEBUG(warning, message);
+}
+
 void QLoggerWorker::progress(int a, bool err) {
     if (err) {
         QPalette p = m_progress->palette();
@@ -132,4 +142,5 @@ void QLogger::error(std::string const& s) { emit signal_error(s); }
 void QLogger::info(std::string const& s) { emit signal_info(s); }
 void QLogger::warning(std::string const& s) { emit signal_warning(s); }
 void QLogger::important(std::string const& s) { emit signal_important(s); }
+void QLogger::success(std::string const& s) { emit signal_success(s); }
 void QLogger::progress(int a, bool err) { emit signal_progress(a, err); }

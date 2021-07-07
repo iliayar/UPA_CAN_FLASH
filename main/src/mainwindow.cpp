@@ -417,7 +417,7 @@ void MainWindow::update_device_list(const QString& str) {
                 device.name() + " (" + device.description() + ")",
                 device.name());
         }
-        if (devices.size() > 0) {
+        if (devices.size() > 0 && m_device == nullptr) {
             m_connect_device_button->setEnabled(true);
         } else {
             m_connect_device_button->setDisabled(true);
@@ -539,23 +539,20 @@ void MainWindow::device_state_changes(QCanBusDevice::CanBusDeviceState state) {
         m_disconnect_device_button->setDisabled(true);
         m_connect_device_button->setEnabled(true);
         for (auto btn : m_start_task_buttons) {
-            btn->setDisabled(true);
+            if(btn->text() != "Configuration") {
+                btn->setDisabled(true);
+            }
         }
         disconnect(m_device, &QCanBusDevice::stateChanged, this, &MainWindow::device_state_changes);
         disconnect(m_device, &QCanBusDevice::errorOccurred, this, &MainWindow::device_error);
+        disconnect(m_device, &QCanBusDevice::framesReceived, this,
+                   &MainWindow::processReceivedFrames);
         m_device = nullptr;
         update_device_list("");
     }
 }
 
 void MainWindow::device_error(QCanBusDevice::CanBusError err) {
-    // disconnect(m_device, &QCanBusDevice::framesReceived, this,
-    //            &MainWindow::processReceivedFrames);
-    // disconnect(m_device, &QCanBusDevice::stateChanged, this,
-    //            &MainWindow::device_state_changes);
-    // disconnect(m_device, &QCanBusDevice::errorOccurred, this,
-    //            &MainWindow::device_error);
-    // m_device = nullptr;
     disconnect_device();
 }
 
@@ -565,7 +562,7 @@ void MainWindow::start_task(QString task_name) {
     m_log_frames->clear();
     m_log_messages->clear();
     for(auto btn : m_start_task_buttons) {
-        btn->setEnabled(false);
+        btn->setDisabled(true);
     }
     m_logger->progress(0);
     if (task_name == "Flash") {
@@ -589,20 +586,20 @@ void MainWindow::start_task(QString task_name) {
 }
 
 void MainWindow::task_done() {
-    for(auto btn : m_start_task_buttons) {
-        if(m_device != nullptr || btn->text() == "Configuration") {
+    for (auto btn : m_start_task_buttons) {
+        if (m_device != nullptr || btn->text() == "Configuration") {
             btn->setEnabled(true);
         }
     }
-    if(m_device == nullptr) {
-        update_device_list("");
-    } else {
+    if (m_device != nullptr) {
         m_disconnect_device_button->setEnabled(true);
     }
+    update_device_list("");
 }
 
-void MainWindow::check_frames_to_write(std::shared_ptr<Can::Frame::Frame> frame) {
-    if(m_device == nullptr) {
+void MainWindow::check_frames_to_write(
+    std::shared_ptr<Can::Frame::Frame> frame) {
+    if (m_device == nullptr) {
         m_logger->error("No device connected. Cannot send frames");
         return;
     }

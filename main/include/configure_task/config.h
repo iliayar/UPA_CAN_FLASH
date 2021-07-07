@@ -3,6 +3,7 @@
 // #include "fields.h"
 #include <unordered_map>
 #include <vector>
+#include <memory>
 #include <string>
 #include <QString>
 class Field;

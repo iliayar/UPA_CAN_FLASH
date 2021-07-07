@@ -68,7 +68,7 @@ DataConfig::DataConfig() {
                     size = json_field["size"].toInt();
                     group_list.push_back(new VecField(name, did, size));
                 }
-                Can::Data::register_did(did, size);
+                Can::Data::register_did(did, size, name);
             }
             fields.emplace_back(group_name, std::move(group_list));
         }

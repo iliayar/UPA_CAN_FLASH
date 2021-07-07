@@ -69,7 +69,9 @@ def work():
     bus1.send(msg2)
 
     bc = 0
-    for i in range(0x4a):
+    #  for i in range(0x4a):
+    for i in range(5):
+
 
         msg1 = bus1.recv();
         print(msg1)

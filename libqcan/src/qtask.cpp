@@ -10,13 +10,27 @@
 #include "service_all.h"
 #include "security.h"
 
+
+namespace {
+std::shared_ptr<Can::ServiceResponse::ServiceResponse> negative(
+    std::shared_ptr<Can::ServiceRequest::ServiceRequest> req) {
+    return Can::ServiceResponse::Negative::build()
+        ->service(req->get_type())
+        ->code(0x00)
+        ->build()
+        .value();
+}
+}  // namespace
+
 QTask::QTask(std::shared_ptr<QLogger> logger) : m_logger(logger), m_wait(0) {}
 
 void QTask::run() {
     try {
         task();
-    } catch (std::experimental::bad_optional_access& e) {
+    } catch (std::experimental::bad_optional_access const& e) {
         m_logger->error(std::string("Task failed: ") + e.what());
+    } catch (interrupted_exception const& e) {
+        m_logger->error("Task was interrupted");
     }
     DEBUG(info, "Exiting task");
 }
@@ -30,17 +44,24 @@ void QTask::response(std::shared_ptr<Can::ServiceResponse::ServiceResponse> r,
         m_wait += wait;
     }
     m_response = r;
-    emit response_imp(r);
+    if(!m_is_interrupted) {
+        emit response_imp(r);
+    }
 }
 
 std::shared_ptr<Can::ServiceResponse::ServiceResponse> QTask::call(
     std::shared_ptr<Can::ServiceRequest::ServiceRequest> req) {
     DEBUG(info, "QTask emit request");
     int retries = 1;
-    emit request(req);
+    if(!m_is_interrupted) {
+        emit request(req);
+    }
     while (1) {
         QSignalSpy spy(this, &QTask::response_imp);
         bool res = spy.wait(RESPONSE_TIMEOUT);
+        if (m_is_interrupted) {
+            throw interrupted_exception();
+        }
         if (!res) {
             if (m_wait) {
                 m_wait--;
@@ -48,11 +69,9 @@ std::shared_ptr<Can::ServiceResponse::ServiceResponse> QTask::call(
             }
             retries++;
             if (retries > 3) {
-                return Can::ServiceResponse::Negative::build()
-                    ->service(req->get_type())
-                    ->code(0x00)
-                    ->build()
-                    .value();
+                interrupt();
+                throw interrupted_exception();
+                // return negative(req);
             }
             emit request(req);
             m_logger->warning("Service response timed out");
@@ -88,6 +107,10 @@ std::shared_ptr<Can::ServiceResponse::ServiceResponse> QTask::call(
             return m_response;
         }
     }
+}
+
+void QTask::interrupt() {
+    m_is_interrupted = true;
 }
 
 using namespace Can;

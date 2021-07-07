@@ -114,6 +114,7 @@ optional<std::shared_ptr<Can::ServiceResponse::ServiceResponse>> Can::frames_to_
 
     for (std::shared_ptr<Frame::Frame> frame : frames) {
         std::vector<uint8_t> data;
+        if(frame == nullptr) return {};
         switch (frame->get_type()) {
             case Can::Frame::Type::SingleFrame:
                 len = std::static_pointer_cast<Can::Frame::SingleFrame>(frame)

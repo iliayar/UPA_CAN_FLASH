@@ -25,7 +25,6 @@ void QCommunicator::set_task(std::shared_ptr<QTask> task) {
                    &QCommunicator::request);
         disconnect(m_task.get(), &QTask::finished, this,
                    &QCommunicator::task_done);
-        worker_done();
         emit task_exited();
     }
 
@@ -81,6 +80,7 @@ void QCommunicator::request(std::shared_ptr<Can::ServiceRequest::ServiceRequest>
         m_logger->warning("Restarting worker");
         worker_done();
     }
+    if(m_task == nullptr) return;
 
     DEBUG(info, "QCommunicator receive request");
     m_worker = std::make_unique<QTransmitter>(this);
@@ -92,10 +92,10 @@ void QCommunicator::request(std::shared_ptr<Can::ServiceRequest::ServiceRequest>
 void QCommunicator::worker_error(WorkerError e) {
     switch (e) {
         case WorkerError::Timeout:
-            m_logger->warning("Frame worker timed out");
+            m_logger->warning("Frames timeout");
             break;
         case WorkerError::Other:
-            m_logger->error("Frame worker error");
+            m_logger->error("Invalid frames");
             break;
     }
     worker_done();
@@ -118,6 +118,22 @@ QCommunicator::~QCommunicator() {
 
 QWorker::QWorker(QCommunicator const* communicator)
     : m_communicator(communicator) {}
+
+QWorker::~QWorker() {
+    disconnect(&m_timer, &QTimer::timeout, this, &QWorker::timeout);
+    disconnect(this, &QWorker::start_timer, &m_timer,
+               static_cast<void (QTimer::*)(int)>(&QTimer::start));
+    disconnect(this, &QWorker::stop_timer, &m_timer, &QTimer::stop);
+    DEBUG(info, "destroyed");
+}
+
+void QWorker::init_timer() {
+    connect(&m_timer, &QTimer::timeout, this, &QWorker::timeout);
+    connect(this, &QWorker::start_timer, &m_timer,
+            static_cast<void (QTimer::*)(int)>(&QTimer::start));
+    connect(this, &QWorker::stop_timer, &m_timer, &QTimer::stop);
+    emit start_timer(FRAME_TIMEOUT);
+}
 
 QTransmitter::QTransmitter(QCommunicator const* communicator)
     : QWorker(communicator) {

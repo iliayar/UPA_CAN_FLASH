@@ -47,7 +47,12 @@ void ConfigurationWindow::closeEvent(QCloseEvent *event) {
     QMainWindow::closeEvent(event);
 }
 
-ConfigurationWindow::~ConfigurationWindow() {}
+ConfigurationWindow::~ConfigurationWindow() {
+}
+
+DataConfig& ConfigurationWindow::config() {
+    return m_config;
+}
 
 void ConfigurationWindow::create_layout(QTabWidget* tabs) {
     for (auto& [name, fields] : m_config.fields) {
@@ -138,8 +143,6 @@ void ConfigurationWindow::create_layout(QTabWidget* tabs) {
 
     tabs->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     tabs->adjustSize();
-    // adjustSize();
-    // resize(QGuiApplication::primaryScreen()->size() * 0.8);
     m_err_log = err_log;
 }
 

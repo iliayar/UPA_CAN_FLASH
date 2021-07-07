@@ -18,6 +18,8 @@ public:
     explicit ConfigurationWindow(QWidget* parent);
     virtual ~ConfigurationWindow();
 
+    DataConfig& config();
+
 signals:
     void closed();
     void read(uint16_t);
