@@ -231,7 +231,7 @@ void MainWindow::create_layout(QWidget* root) {
     settings_mask02_layout->addWidget(mask02_box);
     settings_mask03_layout->addWidget(new QLabel("MASK03"));
     settings_mask03_layout->addWidget(mask03_box);
-    config_securiry_layout->addWidget(new QLabel("Security in Configuration"));
+    config_securiry_layout->addWidget(new QLabel("Security"));
     config_securiry_layout->addWidget(config_security_checkbox);
 
     // Setting up widgets
@@ -588,6 +588,7 @@ void MainWindow::start_task(QString task_name) {
         btn->setDisabled(true);
     }
     m_logger->progress(0);
+    bool security = m_config_security_checkbox->isChecked();
     if (task_name == "Flash") {
         m_disconnect_device_button->setDisabled(true);
         if (m_device == nullptr) {
@@ -597,13 +598,13 @@ void MainWindow::start_task(QString task_name) {
         DEBUG(info, "Starting Flash task");
         m_logger->info("Starting task " + task_name.toStdString());
         emit set_task(std::make_shared<FlashTask>(
-            m_file, std::make_shared<QLogger>(m_logger_worker)));
+            m_file, security, std::make_shared<QLogger>(m_logger_worker)));
     } else if (task_name == "Configuration") {
         m_logger->info("Starting task " + task_name.toStdString());
         ConfigurationWindow* window =  new ConfigurationWindow(nullptr);
         emit set_task(std::make_shared<ConfigurationTask>(
             std::make_shared<QLogger>(m_logger_worker),
-            m_config_security_checkbox->isChecked(), window, m_device == nullptr));
+            security, window, m_device == nullptr));
         window->show();
     }
 }

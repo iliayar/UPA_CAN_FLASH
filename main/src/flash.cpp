@@ -10,8 +10,8 @@
 
 using namespace Can;
 
-FlashTask::FlashTask(std::string file, std::shared_ptr<QLogger> logger)
-    : QTask(logger), m_file(file) {}
+FlashTask::FlashTask(std::string file, bool security, std::shared_ptr<QLogger> logger)
+    : QTask(logger), m_file(file), m_security(security) {}
 
 void FlashTask::task() {
     task_main();
@@ -79,10 +79,12 @@ void FlashTask::task_main() {
         return;
     }
 
-
-    if(!security_access(Crypto::SecuritySettings::get_mask02())) {
-        m_logger->progress(0, true);
-        return;
+    if (m_security) {
+        // Perform security access
+        if (!security_access(Crypto::SecuritySettings::get_mask02())) {
+            m_logger->progress(0, true);
+            return;
+        }
     }
 
     progress += 6;

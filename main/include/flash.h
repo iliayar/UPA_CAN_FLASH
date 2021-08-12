@@ -19,7 +19,7 @@ public:
      * @param file Main programm file in Intel HEX format
      * @param logger
      */
-    FlashTask(std::string file, std::shared_ptr<QLogger> logger);
+    FlashTask(std::string file, bool security, std::shared_ptr<QLogger> logger);
 
     /**
      * Implementation of abstrct method task
@@ -32,4 +32,5 @@ protected:
 
 private:
     std::string m_file;
+    bool m_security;
 };
