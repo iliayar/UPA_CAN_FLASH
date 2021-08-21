@@ -478,24 +478,26 @@ void MainWindow::choose_file() {
 
 void MainWindow::disconnect_device() {
     if (m_device != nullptr) {
-        disconnect(m_device, &QCanBusDevice::framesReceived, this,
-                   &MainWindow::processReceivedFrames);
+        // disconnect(m_device, &QCanBusDevice::framesReceived, this,
+        //            &MainWindow::processReceivedFrames);
         m_device->disconnectDevice();
     }
+}
+
+QList<QCanBusDevice::Filter> get_filters(uint32_t ecu_id) {
+    QCanBusDevice::Filter filter;
+    QList<QCanBusDevice::Filter> filters;
+    filter.frameId = ecu_id;
+    filter.frameIdMask = 0x000007ff;
+    filter.format = QCanBusDevice::Filter::MatchBaseFormat;
+    filter.type = QCanBusFrame::DataFrame;
+    filters.append(filter);
+    return filters;
 }
 
 void MainWindow::connect_device() {
     DEBUG(info, "Connecting device");
     QString errorString;
-    QCanBusDevice::Filter filter;
-    QList<QCanBusDevice::Filter> filters;
-    m_tester_id = m_tester_id_box->value();
-    m_ecu_id = m_ecu_id_box->value();
-    filter.frameId = m_ecu_id;
-    filter.frameIdMask = 0x000007ff;
-    filter.format = QCanBusDevice::Filter::MatchBaseFormat;
-    filter.type = QCanBusFrame::DataFrame;
-    filters.append(filter);
     QString device_name = m_device_list->currentData().toString();
     m_device = QCanBus::instance()->createDevice(
         m_plugin_list->currentData().toString(), device_name, &errorString);
@@ -507,21 +509,28 @@ void MainWindow::connect_device() {
     } else {
         m_logger->info("Connecting " + device_name.toStdString());
         int bitrate = m_bitrate_list->currentText().toInt();
-        m_device->setConfigurationParameter(
-            QCanBusDevice::ConfigurationKey::BitRateKey, bitrate);
+        m_tester_id = m_tester_id_box->value();
+        m_ecu_id = m_ecu_id_box->value();
+
+        if (m_device->configurationKeys().contains(QCanBusDevice::ConfigurationKey::BitRateKey)) {
+            m_device->setConfigurationParameter(
+                QCanBusDevice::ConfigurationKey::BitRateKey, bitrate);
+        }
         m_device->setConfigurationParameter(QCanBusDevice::RawFilterKey,
-                                            QVariant::fromValue(filters));
+                                            QVariant::fromValue(get_filters(m_ecu_id)));
+
+        connect(m_device, &QCanBusDevice::errorOccurred, this, &MainWindow::device_error);
         connect(m_device, &QCanBusDevice::stateChanged, this,
                 &MainWindow::device_state_changes);
-        connect(m_device, &QCanBusDevice::errorOccurred, this, &MainWindow::device_error);
-        if (m_device->connectDevice()) {
-            connect(m_device, &QCanBusDevice::framesReceived, this,
-                    &MainWindow::processReceivedFrames);
-        } else {
-            m_logger->error("Cannot connect device");
-            disconnect(m_device, &QCanBusDevice::stateChanged, this, &MainWindow::device_state_changes);
+        connect(m_device, &QCanBusDevice::framesReceived, this,
+                &MainWindow::processReceivedFrames);
+        if (!m_device->connectDevice()) {
             disconnect(m_device, &QCanBusDevice::errorOccurred, this, &MainWindow::device_error);
-            m_device = nullptr;
+            disconnect(m_device, &QCanBusDevice::stateChanged, this,
+                    &MainWindow::device_state_changes);
+            disconnect(m_device, &QCanBusDevice::framesReceived, this,
+                    &MainWindow::processReceivedFrames);
+            m_logger->error("Cannot connect device");
         }
     }
 }
@@ -533,7 +542,7 @@ void MainWindow::device_state_changes(QCanBusDevice::CanBusDeviceState state) {
         for (auto btn : m_start_task_buttons) {
             btn->setEnabled(true);
         }
-        m_logger->info("Device successfuly connected");
+        m_logger->success("Device successfuly connected");
     } else if (state == QCanBusDevice::CanBusDeviceState::UnconnectedState) {
         m_logger->info("Device disconnected");
         m_disconnect_device_button->setDisabled(true);
@@ -624,7 +633,7 @@ void MainWindow::processReceivedFrames() {
         m_logger->error("No devices connected. Cannot receive frames");
         return;
     }
-    std::unique_lock<std::mutex> lock(m_communicator_mutex);
+    // std::unique_lock<std::mutex> lock(m_communicator_mutex);
     while (m_device->framesAvailable()) {
         QCanBusFrame qframe = m_device->readFrame();
         if (!qframe.isValid()) continue;
