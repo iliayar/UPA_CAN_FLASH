@@ -648,7 +648,7 @@ void MainWindow::processReceivedFrames() {
         m_logger->error("No devices connected. Cannot receive frames");
         return;
     }
-    // std::unique_lock<std::mutex> lock(m_communicator_mutex);
+
     while (m_device != nullptr && m_device->framesAvailable()) {
         QCanBusFrame qframe = m_device->readFrame();
         if (!qframe.isValid()) continue;

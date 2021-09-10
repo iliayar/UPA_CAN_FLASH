@@ -40,14 +40,11 @@ if(WIN32)
     ${MINGW_DLL_DIR}/libdouble-conversion.dll
     ${MINGW_DLL_DIR}/libpcre2-16-0.dll
     ${MINGW_DLL_DIR}/zlib1.dll
-    ${MINGW_DLL_DIR}/libicuin68.dll
-    ${MINGW_DLL_DIR}/libicuuc68.dll
     ${MINGW_DLL_DIR}/libpcre2-16-0.dll
     ${MINGW_DLL_DIR}/libzstd.dll
     ${MINGW_DLL_DIR}/libfreetype-6.dll
     ${MINGW_DLL_DIR}/libglib-2.0-0.dll
     ${MINGW_DLL_DIR}/libgraphite2.dll
-    ${MINGW_DLL_DIR}/libicudt68.dll
     ${MINGW_DLL_DIR}/libbrotlidec.dll
     ${MINGW_DLL_DIR}/libbz2-1.dll
     ${MINGW_DLL_DIR}/libintl-8.dll
