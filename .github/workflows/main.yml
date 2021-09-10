@@ -23,7 +23,7 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
       - name: Installing Qt
-        run: sudo apt-get install qt5-default libqt5serialbus5-dev libqt5serialport5-dev
+        run: sudo apt-get update && sudo apt-get install qt5-default libqt5serialbus5-dev libqt5serialport5-dev
       - name: Creating build environment
         run: mkdir ${{github.workspace}}/build &&
              cd ${{github.workspace}}/build &&
