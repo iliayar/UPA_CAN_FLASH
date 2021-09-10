@@ -1,4 +1,7 @@
 #include "mainwindow.h"
+#include <qmainwindow.h>
+#include <qobjectdefs.h>
+#include <qpushbutton.h>
 
 #include <QCanBus>
 #include <QCanBusFrame>
@@ -145,6 +148,7 @@ void MainWindow::create_layout(QWidget* root) {
     QComboBox* bitrate_list = new QComboBox(devices_group);
     std::vector<QPushButton*> tasks_btns;
 
+    QPushButton* checker_btn = new QPushButton("Search");
     QPushButton* device_connect_btn = new QPushButton("Connect");
     QPushButton* device_disconnect_btn = new QPushButton("Disconnect");
 
@@ -204,6 +208,7 @@ void MainWindow::create_layout(QWidget* root) {
 
     devices_group_layout->addWidget(devices_list);
     devices_group_layout->addWidget(bitrate_list);
+    devices_group_layout->addWidget(checker_btn);
     devices_group_layout->addWidget(devices_buttons_group);
 
     devices_buttons_layout->addWidget(device_connect_btn);
@@ -361,6 +366,7 @@ void MainWindow::create_layout(QWidget* root) {
         m_settings_window->setFocus();
     });
     connect(plugins_list, QOverload<const QString&>::of(&QComboBox::activated), this, &MainWindow::update_device_list);
+    connect(checker_btn, &QPushButton::released, this, &MainWindow::check_devices);
     connect(device_connect_btn, &QPushButton::released, this,
             &MainWindow::connect_device);
     connect(connect_shortcut, &QShortcut::activated, this,
@@ -495,10 +501,9 @@ QList<QCanBusDevice::Filter> get_filters(uint32_t ecu_id) {
     return filters;
 }
 
-void MainWindow::connect_device() {
+void MainWindow::connect_device_impl(const QString &device_name, std::uint32_t ecu_id, int bitrate) {
     DEBUG(info, "Connecting device");
     QString errorString;
-    QString device_name = m_device_list->currentData().toString();
     m_device = QCanBus::instance()->createDevice(
         m_plugin_list->currentData().toString(), device_name, &errorString);
     if (!m_device) {
@@ -508,9 +513,8 @@ void MainWindow::connect_device() {
         return;
     } else {
         m_logger->info("Connecting " + device_name.toStdString());
-        int bitrate = m_bitrate_list->currentText().toInt();
         m_tester_id = m_tester_id_box->value();
-        m_ecu_id = m_ecu_id_box->value();
+        m_ecu_id = ecu_id;
 
         if (m_device->configurationKeys().contains(QCanBusDevice::ConfigurationKey::BitRateKey)) {
             m_device->setConfigurationParameter(
@@ -535,6 +539,12 @@ void MainWindow::connect_device() {
     }
 }
 
+void MainWindow::connect_device() {
+    connect_device_impl(m_device_list->currentData().toString(),
+                        m_ecu_id_box->value(),
+                        m_bitrate_list->currentText().toInt());
+}
+
 void MainWindow::device_state_changes(QCanBusDevice::CanBusDeviceState state) {
     if (state == QCanBusDevice::CanBusDeviceState::ConnectedState) {
         m_disconnect_device_button->setEnabled(true);
@@ -557,7 +567,11 @@ void MainWindow::device_state_changes(QCanBusDevice::CanBusDeviceState state) {
         disconnect(m_device, &QCanBusDevice::framesReceived, this,
                    &MainWindow::processReceivedFrames);
         m_device = nullptr;
-        update_device_list("");
+        if(m_checker == nullptr) {
+            update_device_list("");
+        } else {
+            emit checker_next();
+        }
     }
 }
 
@@ -646,8 +660,81 @@ void MainWindow::processReceivedFrames() {
                 m_logger->error("Cannot parse received frame");
                 continue;
             }
-            DEBUG(info, "pushing frame to communicator");
-            emit frame_received(maybe_frame.value());
+            if (m_checker == nullptr) {
+                DEBUG(info, "pushing frame to communicator");
+                emit frame_received(maybe_frame.value());
+            } else {
+                emit frame_received_checker();
+            }
         }
     }
+}
+
+void MainWindow::check_devices() {
+    update_device_list("");
+    QString errorString;
+    QList<QCanBusDeviceInfo> devices = QCanBus::instance()->availableDevices(
+        m_plugin_list->currentData().toString(), &errorString);
+    QList<int> bitrates;
+    for(int i = 0; i < m_bitrate_list->count(); ++i) {
+        bitrates.push_back(m_bitrate_list->itemText(i).toInt());
+    }
+    if (errorString.isEmpty()) {
+        m_logger->info("Start searching active devices");
+        m_checker = new DeviceCheker(devices, bitrates);
+        connect(this, &MainWindow::frame_received_checker, m_checker,
+                &DeviceCheker::frame_recieved);
+        connect(this, &MainWindow::checker_next, m_checker,
+                &DeviceCheker::next);
+        connect(m_checker, &DeviceCheker::connect_device, this,
+                &MainWindow::connect_device_checker);
+        connect(m_checker, &DeviceCheker::device_status, this,
+                &MainWindow::device_status_checker);
+        connect(m_checker, &DeviceCheker::done, this,
+                &MainWindow::checker_done);
+        emit checker_next();
+    } else {
+        m_logger->error("Searching failed");
+    }
+
+}
+
+void MainWindow::device_status_checker(bool active, QString const& device_name,
+                                       int bitrate) {
+    QString bitrate_str = QString::number(bitrate);
+    std::string bitrate_stdstr = bitrate_str.toStdString();
+    std::string device_name_stdstr = device_name.toStdString();
+    if (active) {
+        m_logger->success("Device " + device_name.toStdString() +
+                          " active with bitrate " + bitrate_str.toStdString());
+        m_bitrate_list->setCurrentText(bitrate_str);
+        int device_id = m_device_list->findData(device_name);
+        m_device_list->setCurrentIndex(device_id);
+
+    } else {
+        m_logger->error("Device " + device_name.toStdString() +
+                        " inactive with bitrate " +
+                        QString::number(bitrate).toStdString());
+    }
+    disconnect_device();
+}
+
+void MainWindow::connect_device_checker(QString const& device_name, int bitrate) {
+    connect_device_impl(device_name, 0x5E9, bitrate);
+}
+
+void MainWindow::checker_done() {
+    disconnect(this, &MainWindow::frame_received_checker, m_checker,
+               &DeviceCheker::frame_recieved);
+    disconnect(this, &MainWindow::checker_next, m_checker, &DeviceCheker::next);
+    disconnect(m_checker, &DeviceCheker::connect_device, this,
+               &MainWindow::connect_device_checker);
+    disconnect(m_checker, &DeviceCheker::device_status, this,
+               &MainWindow::device_status_checker);
+    disconnect(m_checker, &DeviceCheker::done, this, &MainWindow::checker_done);
+
+    m_logger->info("Searching done");
+
+    delete m_checker;
+    m_checker = nullptr;
 }

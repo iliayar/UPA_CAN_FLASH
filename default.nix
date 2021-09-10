@@ -12,6 +12,7 @@ pkgs.mkShell {
     cmake
     can-utils
     wrapper
+    gdb
 
     (python39.withPackages (pypkgs: with pypkgs; [
       can
@@ -46,4 +47,4 @@ pkgs.mkShell {
       cp main/UPA_CAN_FLASH $out/bin
       wrapQtApp $out/bin/UPA_CAN_FLASH
     '';
-};
+}

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <qcanbusdeviceinfo.h>
 #include <QCanBus>
 #include <QComboBox>
 #include <QLabel>
@@ -12,11 +13,13 @@
 #include <QThread>
 #include <QLineEdit>
 #include <QCheckBox>
+#include <cstdint>
 #include <mutex>
 
 #include "communicator.h"
 #include "qcommunicator.h"
 #include "qtask.h"
+#include "checker.h"
 
 namespace Ui {
 class MainWindow;
@@ -33,6 +36,9 @@ signals:
     void frame_received(std::shared_ptr<Can::Frame::Frame>);
     void set_task(std::shared_ptr<QTask>);
 
+    void frame_received_checker();
+    void checker_next();
+
 public slots:
     void choose_file();
     void start_task(QString);
@@ -43,11 +49,19 @@ public slots:
     void task_done();
     void closeEvent(QCloseEvent *event);
 
+    void check_devices();
+    void device_status_checker(bool active, QString const& device_name, int bitrate);
+    void connect_device_checker(QString const& device_name, int bitrate);
+    void checker_done();
+
 private:
     void create_layout(QWidget*);
     void update_device_list(const QString& str);
     void device_state_changes(QCanBusDevice::CanBusDeviceState state);
     void device_error(QCanBusDevice::CanBusError error);
+    void search_active_devices(QString const& plugin);
+    void connect_device_impl(QString const& device_name, std::uint32_t ecu_id, int bitrate);
+    bool is_device_active(QCanBusDeviceInfo const& device);
 
     QCanBusDevice* m_device;
     QCommunicator* m_communicator;
@@ -93,4 +107,6 @@ private:
 
     QLineEdit* m_mask02;
     QLineEdit* m_mask03;
+
+    DeviceCheker* m_checker;
 };

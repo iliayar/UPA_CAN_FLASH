@@ -7,12 +7,12 @@ from itertools import count
 
 DEVICES = 10
 
-def createDevices():
+def createDevices() -> list[can.interface.Bus]:
     res = []
     for n in range(DEVICES):
         os.system(f"sudo ip link add dev testCan{n} type vcan")
         os.system(f"sudo ip link set dev testCan{n} up")
-        res.append(can.interface.Bus(f"testCan{n}", bustype="virtual"))
+        res.append(can.interface.Bus(f"testCan{n}", bustype="socketcan"))
     return res
 
 def deleteDevices():
@@ -35,6 +35,6 @@ if __name__ == "__main__":
     print(f"Press C-c to interrupt")
 
     while(True):
-        msg = can.Message(arbitration_id=0x5E9, data=[0x00]*8)
+        msg = can.Message(arbitration_id=0x5E9, data=[0x00]*8, is_extended_id=False)
         device.send(msg)
         time.sleep(0.1)
