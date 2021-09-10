@@ -648,10 +648,14 @@ void MainWindow::processReceivedFrames() {
         return;
     }
     // std::unique_lock<std::mutex> lock(m_communicator_mutex);
-    while (m_device->framesAvailable()) {
+    while (m_device != nullptr && m_device->framesAvailable()) {
         QCanBusFrame qframe = m_device->readFrame();
         if (!qframe.isValid()) continue;
         if (qframe.frameId() == m_ecu_id) {
+	    if (m_checker != nullptr) {
+                emit frame_received_checker();
+		continue;
+            }
             QByteArray payload = qframe.payload();
             if (payload.size() < 8) continue;
             auto maybe_frame = Can::Frame::Factory(
@@ -660,12 +664,8 @@ void MainWindow::processReceivedFrames() {
                 m_logger->error("Cannot parse received frame");
                 continue;
             }
-            if (m_checker == nullptr) {
-                DEBUG(info, "pushing frame to communicator");
-                emit frame_received(maybe_frame.value());
-            } else {
-                emit frame_received_checker();
-            }
+            DEBUG(info, "pushing frame to communicator");
+            emit frame_received(maybe_frame.value());
         }
     }
 }
