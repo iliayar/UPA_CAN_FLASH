@@ -48,7 +48,7 @@ public slots:
 private:
     void create_layout(QTabWidget* tabs);
     
-    DataConfig m_config;
     QSettings m_settings;
+    DataConfig m_config;
     QTextEdit* m_err_log;
 };

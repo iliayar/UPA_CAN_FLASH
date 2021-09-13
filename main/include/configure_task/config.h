@@ -11,7 +11,7 @@ class Field;
 struct DataConfig {
 public:
 
-    DataConfig();
+    DataConfig(QString postfix);
 
     std::vector<std::pair<std::string, std::vector<Field*>>> fields;
     std::unordered_map<

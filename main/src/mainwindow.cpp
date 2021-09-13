@@ -1,7 +1,12 @@
 #include "mainwindow.h"
+#include <qboxlayout.h>
+#include <qframe.h>
+#include <qlabel.h>
+#include <qlineedit.h>
 #include <qmainwindow.h>
 #include <qobjectdefs.h>
 #include <qpushbutton.h>
+#include <qtextedit.h>
 
 #include <QCanBus>
 #include <QCanBusFrame>
@@ -76,6 +81,10 @@ MainWindow::MainWindow(QWidget* parent)
     if(ok) Crypto::SecuritySettings::set_mask03(mask);
     else {
         m_settings.setValue("crypto/mask03", QString::number(Crypto::SecuritySettings::get_mask03()));
+    }
+    QString postfix = m_settings.value("settings/postfix").toString();
+    if(postfix.isEmpty()) {
+        m_settings.setValue("settings/postfix", "default");
     }
 
     m_device = nullptr;
@@ -171,15 +180,18 @@ void MainWindow::create_layout(QWidget* root) {
     QFrame* settings_mask02_frame = new QFrame();
     QFrame* settings_mask03_frame = new QFrame();
     QFrame* config_security_frame = new QFrame();
+    QFrame* config_postfix_frame = new QFrame();
 
     QVBoxLayout* settings_window_layout = new QVBoxLayout(settings_window);
     QHBoxLayout* settings_mask02_layout = new QHBoxLayout(settings_mask02_frame);
     QHBoxLayout* settings_mask03_layout = new QHBoxLayout(settings_mask03_frame);
     QHBoxLayout* config_securiry_layout = new QHBoxLayout(config_security_frame);
+    QHBoxLayout* config_postfix_layout = new QHBoxLayout(config_postfix_frame);
 
     QLineEdit* mask02_box = new QLineEdit();
     QLineEdit* mask03_box = new QLineEdit();
     QCheckBox* config_security_checkbox = new QCheckBox(config_security_frame);
+    QLineEdit* config_postfix = new QLineEdit();
 
     // Creating layout
     
@@ -226,6 +238,7 @@ void MainWindow::create_layout(QWidget* root) {
     settings_window_layout->addWidget(settings_mask02_frame);
     settings_window_layout->addWidget(settings_mask03_frame);
     settings_window_layout->addWidget(config_security_frame);
+    settings_window_layout->addWidget(config_postfix_frame);
 
     settings_mask02_layout->addWidget(new QLabel("MASK02"));
     settings_mask02_layout->addWidget(mask02_box);
@@ -233,6 +246,8 @@ void MainWindow::create_layout(QWidget* root) {
     settings_mask03_layout->addWidget(mask03_box);
     config_securiry_layout->addWidget(new QLabel("Security"));
     config_securiry_layout->addWidget(config_security_checkbox);
+    config_postfix_layout->addWidget(new QLabel("Config postfix"));
+    config_postfix_layout->addWidget(config_postfix);
 
     // Setting up widgets
 
@@ -294,10 +309,12 @@ void MainWindow::create_layout(QWidget* root) {
     m_mask02 = mask02_box;
     m_mask03 = mask03_box;
     m_config_security_checkbox = config_security_checkbox;
+    m_config_postfix = config_postfix;
 
     // Filling widgets
 
     m_config_security_checkbox->setChecked(m_settings.value("settings/security").toInt());
+    m_config_postfix->setText(m_settings.value("settings/postfix").toString());
 
     int tester_id = m_settings.value("task/testerId").toInt();
     int ecu_id = m_settings.value("task/ecuId").toInt();

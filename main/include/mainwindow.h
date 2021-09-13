@@ -99,6 +99,7 @@ private:
     QLabel* m_addr_label;
 
     QCheckBox* m_config_security_checkbox;
+    QLineEdit* m_config_postfix;
 
     int m_tester_id;
     int m_ecu_id;

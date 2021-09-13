@@ -105,7 +105,7 @@ void QLoggerWorker::success(std::string const& message) {
     m_message_log->setTextColor(QColor("black"));
     m_message_log->verticalScrollBar()->setValue(
         m_message_log->verticalScrollBar()->maximum());
-    DEBUG(warning, message);
+    DEBUG(info, message);
 }
 
 void QLoggerWorker::progress(int a, bool err) {

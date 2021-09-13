@@ -2,8 +2,14 @@
   pkgs ? import <nixpkgs> { }
 }:
 let
+  qt5 = pkgs.libsForQt512.qt5;
   stdenv = pkgs.stdenv;
   wrapper = pkgs.libsForQt512.qt5.wrapQtAppsHook;
+  runApp = pkgs.writeShellScriptBin "runApp" ''
+        rm -Rf main/.UPA_CAN_FLASH*
+        make -j8
+        main/UPA_CAN_FLASH
+  '';
 in
 pkgs.mkShell {
   src = ./.;
@@ -13,6 +19,7 @@ pkgs.mkShell {
     can-utils
     wrapper
     gdb
+    runApp
 
     (python39.withPackages (pypkgs: with pypkgs; [
       can
@@ -22,9 +29,11 @@ pkgs.mkShell {
   ];
 
   buildInputs = with pkgs; [
-    libsForQt512.qt5.qtbase
-    libsForQt512.qt5.qtserialbus
+    qt5.qtbase
+    qt5.qtserialbus
   ];
+
+  QT_QPA_PLATFORM_PLUGIN_PATH="${qt5.qtbase.bin}/lib/qt-${qt5.qtbase.version}/plugins";
 
   buildPhase = ''
       make -j8

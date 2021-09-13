@@ -22,7 +22,7 @@
 ConfigurationWindow::ConfigurationWindow(QWidget* parent)
     : QMainWindow(parent),
       m_settings("canFlash", "Some cool organization name"),
-      m_config() {
+      m_config(m_settings.value("settings/postfix").toString()) {
     QTabWidget* tabs = new QTabWidget(this);
 
     create_layout(tabs);

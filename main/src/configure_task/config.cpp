@@ -9,11 +9,11 @@
 #include "configure_task/fields.h"
 #include "datatypes.h"
 
-DataConfig::DataConfig() {
+DataConfig::DataConfig(QString postfix) {
     QString app_path = QCoreApplication::applicationDirPath();
     {
         QFile json_file;
-        json_file.setFileName(app_path + "/configuration.json"); // FIXME
+        json_file.setFileName(app_path + "/configuration_" + postfix + ".json");
         json_file.open(QIODevice::ReadOnly | QIODevice::Text);
         QString json_data = json_file.readAll();
         json_file.close();
@@ -76,7 +76,7 @@ DataConfig::DataConfig() {
     
     {
         QFile json_file;
-        json_file.setFileName(app_path + "/configuration_err.json"); // FIXME
+        json_file.setFileName(app_path + "/configuration_err_" + postfix + ".json");
         json_file.open(QIODevice::ReadOnly | QIODevice::Text);
         QString json_data = json_file.readAll();
         json_file.close();
