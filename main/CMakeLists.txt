@@ -51,7 +51,12 @@ if(WIN32)
     ${MINGW_DLL_DIR}/libpcre-1.dll
     ${MINGW_DLL_DIR}/libbrotlicommon.dll
     ${MINGW_DLL_DIR}/libiconv-2.dll
-    ${MINGW_DLL_DIR}/libpcre2-16-0.dll)
+    ${MINGW_DLL_DIR}/libpcre2-16-0.dll
+    ${MINGW_DLL_DIR}/libicuuc69.dll
+    ${MINGW_DLL_DIR}/libicuin69.dll 
+    ${MINGW_DLL_DIR}/libicudt69.dll
+    ${MINGW_DLL_DIR}/libmd4c.dll)
+
   if ($ENV{MSYSTEM} STREQUAL "MINGW32")
     set(MINGW_DLLS ${MINGW_DLLS} ${MINGW_DLL_DIR}/libgcc_s_dw2-1.dll)
   else ($ENV{MSYSTEM} STREQUAL "MINGW32")
