@@ -88,14 +88,11 @@ MainWindow::MainWindow(QWidget* parent)
         m_settings.setValue("crypto/mask03", QString::number(Crypto::SecuritySettings::get_mask03()));
     }
 
-    QString postfix = m_settings.value("settings/postfix").toString();
-    if(postfix.isEmpty()) {
+    if(!m_settings.contains("settings/postfix")) {
         m_settings.setValue("settings/postfix", "default");
     }
 
-    ok = true;
-    int checker_id = m_settings.value("settings/checker_id").toUInt(&ok);
-    if(!ok) {
+    if(!m_settings.contains("settings/checker_id")) {
         m_settings.setValue("settings/checker_id", 0x5E9);
     }
 
