@@ -1,5 +1,6 @@
 #pragma once
 
+#include <qnamespace.h>
 #include <QComboBox>
 #include <QDialog>
 #include <QFrame>
@@ -288,6 +289,7 @@ protected:
             }
             // qDebug() << res;
         });
+        checkbox->setCheckState(Qt::Checked);
     }
 
     void from_vec(std::vector<uint8_t> data) override {
@@ -342,6 +344,7 @@ protected:
         connect(checkbox, &QCheckBox::stateChanged, [=](int state) {
             this->toggle_hex_dec(this->m_values, state);
         });
+        checkbox->setCheckState(Qt::Checked);
     }
 
     void from_vec(std::vector<uint8_t> data) override {

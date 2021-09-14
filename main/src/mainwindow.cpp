@@ -1,12 +1,16 @@
 #include "mainwindow.h"
 #include <qboxlayout.h>
+#include <qcombobox.h>
 #include <qframe.h>
 #include <qlabel.h>
 #include <qlineedit.h>
 #include <qmainwindow.h>
 #include <qobjectdefs.h>
 #include <qpushbutton.h>
+#include <qspinbox.h>
 #include <qtextedit.h>
+#include <qvariant.h>
+#include <sys/types.h>
 
 #include <QCanBus>
 #include <QCanBusFrame>
@@ -66,7 +70,8 @@
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent),
       m_device(),
-      m_settings("canFlash", "Some cool organization name") {
+      m_settings("canFlash", "Some cool organization name"),
+      m_checker(nullptr) {
     QWidget* window = new QWidget();
 
     create_layout(window);
@@ -82,9 +87,16 @@ MainWindow::MainWindow(QWidget* parent)
     else {
         m_settings.setValue("crypto/mask03", QString::number(Crypto::SecuritySettings::get_mask03()));
     }
+
     QString postfix = m_settings.value("settings/postfix").toString();
     if(postfix.isEmpty()) {
         m_settings.setValue("settings/postfix", "default");
+    }
+
+    ok = true;
+    int checker_id = m_settings.value("settings/checker_id").toUInt(&ok);
+    if(!ok) {
+        m_settings.setValue("settings/checker_id", 0x5E9);
     }
 
     m_device = nullptr;
@@ -111,6 +123,13 @@ MainWindow::MainWindow(QWidget* parent)
 void MainWindow::closeEvent(QCloseEvent *event) {
     m_settings.setValue("mainWindow/geometry", saveGeometry());
     m_settings.setValue("mainWindow/windowState", saveState());
+    m_settings.setValue("task/testerId", m_tester_id_box->value());
+    m_settings.setValue("task/ecuId", m_ecu_id_box->value());
+    m_settings.setValue("device/bitrate", m_bitrate_list->currentText());
+    m_settings.setValue("settings/postfix", m_config_postfix->text());
+    m_settings.setValue("settings/checker_id", (uint)m_config_checker_id->value());
+    m_settings.setValue("settings/security", (int)m_config_security_checkbox->isChecked());
+
     m_communicator_thread.terminate();
     m_communicator_thread.wait();
     QMainWindow::closeEvent(event);
@@ -129,7 +148,8 @@ void MainWindow::create_layout(QWidget* root) {
     QGroupBox* message_log_progress_group = new QGroupBox();
     QGroupBox* file_group = new QGroupBox(tr("File"));
     QGroupBox* devices_group = new QGroupBox(tr("Devices"));
-    QGroupBox* devices_buttons_group = new QGroupBox();
+    QFrame* devices_buttons_group = new QFrame();
+    QFrame* devices_list_buttons_group = new QFrame();
     QGroupBox* tasks_group = new QGroupBox(tr("Tasks"));
     QFrame* tester_id_frame = new QFrame();
     QFrame* ecu_id_frame = new QFrame();
@@ -143,6 +163,7 @@ void MainWindow::create_layout(QWidget* root) {
     QVBoxLayout* devices_group_layout = new QVBoxLayout(devices_group);
     QHBoxLayout* devices_buttons_layout =
         new QHBoxLayout(devices_buttons_group);
+    QHBoxLayout* devices_list_buttons_layout = new QHBoxLayout(devices_list_buttons_group);
     QVBoxLayout* tasks_group_layout = new QVBoxLayout(tasks_group);
     QHBoxLayout* tester_id_layout = new QHBoxLayout(tester_id_frame);
     QHBoxLayout* ecu_id_layout = new QHBoxLayout(ecu_id_frame);
@@ -158,6 +179,7 @@ void MainWindow::create_layout(QWidget* root) {
     std::vector<QPushButton*> tasks_btns;
 
     QPushButton* checker_btn = new QPushButton("Search");
+    QPushButton* refresh_btn = new QPushButton("Refresh");
     QPushButton* device_connect_btn = new QPushButton("Connect");
     QPushButton* device_disconnect_btn = new QPushButton("Disconnect");
 
@@ -181,17 +203,20 @@ void MainWindow::create_layout(QWidget* root) {
     QFrame* settings_mask03_frame = new QFrame();
     QFrame* config_security_frame = new QFrame();
     QFrame* config_postfix_frame = new QFrame();
+    QFrame* config_chekcer_id_frame = new QFrame();
 
     QVBoxLayout* settings_window_layout = new QVBoxLayout(settings_window);
     QHBoxLayout* settings_mask02_layout = new QHBoxLayout(settings_mask02_frame);
     QHBoxLayout* settings_mask03_layout = new QHBoxLayout(settings_mask03_frame);
     QHBoxLayout* config_securiry_layout = new QHBoxLayout(config_security_frame);
     QHBoxLayout* config_postfix_layout = new QHBoxLayout(config_postfix_frame);
+    QHBoxLayout* config_checker_id_layout = new QHBoxLayout(config_chekcer_id_frame);
 
     QLineEdit* mask02_box = new QLineEdit();
     QLineEdit* mask03_box = new QLineEdit();
     QCheckBox* config_security_checkbox = new QCheckBox(config_security_frame);
     QLineEdit* config_postfix = new QLineEdit();
+    QSpinBox* config_checker_id = new QSpinBox();
 
     // Creating layout
     
@@ -220,7 +245,9 @@ void MainWindow::create_layout(QWidget* root) {
 
     devices_group_layout->addWidget(devices_list);
     devices_group_layout->addWidget(bitrate_list);
-    devices_group_layout->addWidget(checker_btn);
+    devices_group_layout->addWidget(devices_list_buttons_group);
+    devices_list_buttons_layout->addWidget(checker_btn);
+    devices_list_buttons_layout->addWidget(refresh_btn);
     devices_group_layout->addWidget(devices_buttons_group);
 
     devices_buttons_layout->addWidget(device_connect_btn);
@@ -239,6 +266,7 @@ void MainWindow::create_layout(QWidget* root) {
     settings_window_layout->addWidget(settings_mask03_frame);
     settings_window_layout->addWidget(config_security_frame);
     settings_window_layout->addWidget(config_postfix_frame);
+    settings_window_layout->addWidget(config_chekcer_id_frame);
 
     settings_mask02_layout->addWidget(new QLabel("MASK02"));
     settings_mask02_layout->addWidget(mask02_box);
@@ -248,8 +276,12 @@ void MainWindow::create_layout(QWidget* root) {
     config_securiry_layout->addWidget(config_security_checkbox);
     config_postfix_layout->addWidget(new QLabel("Config postfix"));
     config_postfix_layout->addWidget(config_postfix);
+    config_checker_id_layout->addWidget(new QLabel("Search Message ID"));
+    config_checker_id_layout->addWidget(config_checker_id);
 
     // Setting up widgets
+
+    DEBUG(info, "Setting up widgets");
 
     for(QString task : {"Flash" /*, "Test"*/, "Configuration"}) {
         QPushButton* btn = new QPushButton(task, tasks_group);
@@ -285,7 +317,13 @@ void MainWindow::create_layout(QWidget* root) {
     tester_id_box->setDisplayIntegerBase(16);
     ecu_id_box->setDisplayIntegerBase(16);
 
-    // Storting widgets
+    config_checker_id->setDisplayIntegerBase(16);
+    config_checker_id->setRange(0x000, 0xFFF);
+    config_checker_id->setPrefix("0x");
+
+    // Storing widgets
+
+    DEBUG(info, "Storing widgets");
 
     m_filename_label = filename_label;
     m_crc_label = crc_label;
@@ -310,11 +348,9 @@ void MainWindow::create_layout(QWidget* root) {
     m_mask03 = mask03_box;
     m_config_security_checkbox = config_security_checkbox;
     m_config_postfix = config_postfix;
+    m_config_checker_id = config_checker_id;
 
     // Filling widgets
-
-    m_config_security_checkbox->setChecked(m_settings.value("settings/security").toInt());
-    m_config_postfix->setText(m_settings.value("settings/postfix").toString());
 
     int tester_id = m_settings.value("task/testerId").toInt();
     int ecu_id = m_settings.value("task/ecuId").toInt();
@@ -335,6 +371,14 @@ void MainWindow::create_layout(QWidget* root) {
     int bitrate_id = bitrate_list->findText(bitrate_last);
     if (bitrate_id != -1) bitrate_list->setCurrentIndex(bitrate_id);
 
+    m_mask02->setText(m_settings.value("crypto/mask02").toString());
+    m_mask03->setText(m_settings.value("crypto/mask03").toString());
+    m_config_security_checkbox->setChecked(
+        m_settings.value("settings/security").toInt());
+    m_config_postfix->setText(m_settings.value("settings/postfix").toString());
+    m_config_checker_id->setValue(
+        m_settings.value("settings/checker_id").toUInt());
+
     // Setting up events
 
     for(auto btn : tasks_btns) {
@@ -342,11 +386,9 @@ void MainWindow::create_layout(QWidget* root) {
             this->start_task(btn->text());
         });
     }
-    
-    connect(bitrate_list, &QComboBox::currentTextChanged, [this]() {
-        m_settings.setValue("device/bitrate", m_bitrate_list->currentText());
-    });
 
+    connect(m_file_menu_act, &QAction::triggered, this,
+            &MainWindow::choose_file);
     connect(m_mask02, &QLineEdit::textChanged, [this](const QString& value) {
         if(value.length() <= 2) {
             return;
@@ -373,17 +415,14 @@ void MainWindow::create_layout(QWidget* root) {
             Crypto::SecuritySettings::set_mask03(mask);
         }
     });
-    connect(m_file_menu_act, &QAction::triggered, this,
-            &MainWindow::choose_file);
     connect(m_settings_menu_act, &QAction::triggered, this, [this]() {
-        m_mask02->setText(m_settings.value("crypto/mask02").toString());
-        m_mask03->setText(m_settings.value("crypto/mask03").toString());
 
         m_settings_window->show();
         m_settings_window->setFocus();
     });
-    connect(plugins_list, QOverload<const QString&>::of(&QComboBox::activated), this, &MainWindow::update_device_list);
+    connect(plugins_list, QOverload<const QString&>::of(&QComboBox::activated), [&](QString const&) { update_device_list(); });
     connect(checker_btn, &QPushButton::released, this, &MainWindow::check_devices);
+    connect(refresh_btn, &QPushButton::released, [&]() { update_device_list(); });
     connect(device_connect_btn, &QPushButton::released, this,
             &MainWindow::connect_device);
     connect(connect_shortcut, &QShortcut::activated, this,
@@ -392,13 +431,6 @@ void MainWindow::create_layout(QWidget* root) {
             &MainWindow::disconnect_device);
     connect(disconnect_shortcut, &QShortcut::activated, this,
             &MainWindow::disconnect_device);
-    connect(tester_id_box, QOverload<int>::of(&QSpinBox::valueChanged),
-            [&](int v) { m_settings.setValue("task/testerId", v); });
-    connect(ecu_id_box, QOverload<int>::of(&QSpinBox::valueChanged),
-            [&](int v) { m_settings.setValue("task/ecuId", v); });
-    connect(config_security_checkbox, &QCheckBox::stateChanged, [this](int s) {
-        m_settings.setValue("settings/security", s);
-    });
 
     // Updating plugins and devices list
 
@@ -421,12 +453,12 @@ void MainWindow::create_layout(QWidget* root) {
 	    }
         }
     }
-    update_device_list("");
+    update_device_list();
 
     DEBUG(info, "Layout created");
 }
 
-void MainWindow::update_device_list(const QString& str) {
+void MainWindow::update_device_list() {
     m_device_list->clear();
     QString errorString;
     QList<QCanBusDeviceInfo> devices = QCanBus::instance()->availableDevices(
@@ -585,7 +617,7 @@ void MainWindow::device_state_changes(QCanBusDevice::CanBusDeviceState state) {
                    &MainWindow::processReceivedFrames);
         m_device = nullptr;
         if(m_checker == nullptr) {
-            update_device_list("");
+            update_device_list();
         } else {
             emit checker_next();
         }
@@ -635,7 +667,7 @@ void MainWindow::task_done() {
     if (m_device != nullptr) {
         m_disconnect_device_button->setEnabled(true);
     }
-    update_device_list("");
+    update_device_list();
 }
 
 void MainWindow::check_frames_to_write(
@@ -689,7 +721,7 @@ void MainWindow::processReceivedFrames() {
 }
 
 void MainWindow::check_devices() {
-    update_device_list("");
+    update_device_list();
     QString errorString;
     QList<QCanBusDeviceInfo> devices = QCanBus::instance()->availableDevices(
         m_plugin_list->currentData().toString(), &errorString);
@@ -738,7 +770,7 @@ void MainWindow::device_status_checker(bool active, QString const& device_name,
 }
 
 void MainWindow::connect_device_checker(QString const& device_name, int bitrate) {
-    connect_device_impl(device_name, 0x5E9, bitrate);
+    connect_device_impl(device_name, m_config_checker_id->value(), bitrate);
 }
 
 void MainWindow::checker_done() {

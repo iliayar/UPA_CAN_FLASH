@@ -7,7 +7,7 @@ let
   wrapper = pkgs.libsForQt512.qt5.wrapQtAppsHook;
   runApp = pkgs.writeShellScriptBin "runApp" ''
         rm -Rf main/.UPA_CAN_FLASH*
-        make -j8
+        make -j8 && \
         main/UPA_CAN_FLASH
   '';
 in
