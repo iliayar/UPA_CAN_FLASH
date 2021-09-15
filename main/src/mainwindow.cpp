@@ -58,7 +58,7 @@
     {                                                       \
         {"sysWORXX", "systeccan"}, {"IXXAT", "ixxatcan"}, { \
             "VECTOR", "vectorcan"                           \
-        }                                                   \
+        }, { "PassThru", "passthrucan" }                    \
     }
 #elif __linux__
 #define CAN_PLUGINS                  \
