@@ -562,9 +562,12 @@ void MainWindow::connect_device_impl(const QString &device_name, std::uint32_t e
         m_tester_id = m_tester_id_box->value();
         m_ecu_id = ecu_id;
 
-        if (m_device->configurationKeys().contains(QCanBusDevice::ConfigurationKey::BitRateKey)) {
+        if (m_plugin_list->currentData().toString() != "socketcan") {
+            DEBUG(info, "Bit Rate key avaliable");
             m_device->setConfigurationParameter(
                 QCanBusDevice::ConfigurationKey::BitRateKey, bitrate);
+        } else {
+            DEBUG(info, "Bit Rate key unavaliable");
         }
         m_device->setConfigurationParameter(QCanBusDevice::RawFilterKey,
                                             QVariant::fromValue(get_filters(m_ecu_id)));
