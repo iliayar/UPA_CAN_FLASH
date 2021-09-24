@@ -10,6 +10,7 @@
 #include <qspinbox.h>
 #include <qtextedit.h>
 #include <qvariant.h>
+#include <qwidget.h>
 #include <sys/types.h>
 
 #include <QCanBus>
@@ -74,8 +75,6 @@ MainWindow::MainWindow(QWidget* parent)
       m_checker(nullptr) {
     QWidget* window = new QWidget();
 
-    create_layout(window);
-
     bool ok;
     uint32_t mask = m_settings.value("crypto/mask02").toString().toUInt(&ok, 0);
     if(ok) Crypto::SecuritySettings::set_mask02(mask);
@@ -89,12 +88,15 @@ MainWindow::MainWindow(QWidget* parent)
     }
 
     if(!m_settings.contains("settings/postfix")) {
-        m_settings.setValue("settings/postfix", "default");
+        m_settings.setValue("settings/postfix", QString("default"));
+        DEBUG(info, "postfix is empty, updating");
     }
 
     if(!m_settings.contains("settings/checker_id")) {
         m_settings.setValue("settings/checker_id", 0x5E9);
     }
+
+    create_layout(window);
 
     m_device = nullptr;
 
@@ -214,6 +216,7 @@ void MainWindow::create_layout(QWidget* root) {
     QCheckBox* config_security_checkbox = new QCheckBox(config_security_frame);
     QLineEdit* config_postfix = new QLineEdit();
     QSpinBox* config_checker_id = new QSpinBox();
+    QPushButton* settings_ok_button = new QPushButton("Ok");
 
     // Creating layout
     
@@ -264,6 +267,7 @@ void MainWindow::create_layout(QWidget* root) {
     settings_window_layout->addWidget(config_security_frame);
     settings_window_layout->addWidget(config_postfix_frame);
     settings_window_layout->addWidget(config_chekcer_id_frame);
+    settings_window_layout->addWidget(settings_ok_button);
 
     settings_mask02_layout->addWidget(new QLabel("MASK02"));
     settings_mask02_layout->addWidget(mask02_box);
@@ -331,6 +335,7 @@ void MainWindow::create_layout(QWidget* root) {
     m_log_messages = log_messages;
     m_disconnect_device_button = device_disconnect_btn;
     m_connect_device_button = device_connect_btn;
+    m_checker_button = checker_btn;
     m_device_list = devices_list;
     m_start_task_buttons = tasks_btns;
     m_tester_id_box = tester_id_box;
@@ -377,6 +382,8 @@ void MainWindow::create_layout(QWidget* root) {
         m_settings.value("settings/checker_id").toUInt());
 
     // Setting up events
+
+    connect(settings_ok_button, &QPushButton::released, settings_window, &QWidget::close);
 
     for(auto btn : tasks_btns) {
         connect(btn, &QPushButton::released, [this, btn]() {
@@ -595,14 +602,16 @@ void MainWindow::device_state_changes(QCanBusDevice::CanBusDeviceState state) {
     if (state == QCanBusDevice::CanBusDeviceState::ConnectedState) {
         m_disconnect_device_button->setEnabled(true);
         m_connect_device_button->setDisabled(true);
+        m_checker_button->setDisabled(true);
         for (auto btn : m_start_task_buttons) {
             btn->setEnabled(true);
         }
-        m_logger->success("Device successfuly connected");
+        m_logger->success("Adapter is successfully connected");
     } else if (state == QCanBusDevice::CanBusDeviceState::UnconnectedState) {
         m_logger->info("Device disconnected");
         m_disconnect_device_button->setDisabled(true);
         m_connect_device_button->setEnabled(true);
+        m_checker_button->setEnabled(true);
         for (auto btn : m_start_task_buttons) {
             if(btn->text() != "Configuration") {
                 btn->setDisabled(true);
@@ -752,8 +761,8 @@ void MainWindow::device_status_checker(bool active, QString const& device_name,
     std::string bitrate_stdstr = bitrate_str.toStdString();
     std::string device_name_stdstr = device_name.toStdString();
     if (active) {
-        m_logger->success("Device " + device_name.toStdString() +
-                          " active with bitrate " + bitrate_str.toStdString());
+        m_logger->success("UPA is found on port " + device_name.toStdString() +
+                          " bitrate " + bitrate_str.toStdString());
         m_bitrate_list->setCurrentText(bitrate_str);
         int device_id = m_device_list->findData(device_name);
         m_device_list->setCurrentIndex(device_id);

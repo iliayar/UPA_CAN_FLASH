@@ -80,6 +80,7 @@ private:
     std::vector<QPushButton*> m_start_task_buttons;
     QPushButton* m_connect_device_button;
     QPushButton* m_disconnect_device_button;
+    QPushButton* m_checker_button;
 
     QComboBox* m_device_list;
     QComboBox* m_bitrate_list;
