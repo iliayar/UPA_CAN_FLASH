@@ -646,6 +646,7 @@ void MainWindow::start_task(QString task_name) {
         btn->setDisabled(true);
     }
     m_logger->progress(0);
+    m_settings.setValue("settings/postfix", m_config_postfix->text());
     bool security = m_config_security_checkbox->isChecked();
     if (task_name == "Flash") {
         m_disconnect_device_button->setDisabled(true);
