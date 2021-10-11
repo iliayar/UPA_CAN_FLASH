@@ -106,7 +106,6 @@ target_link_libraries(UPA_CAN_FLASH
 IF(WIN32)
   file(GLOB ROOT_DLLS ${CMAKE_BINARY_DIR}/main/*.dll)
   file(GLOB ROOT_CONFIGS ${CMAKE_BINARY_DIR}/main/*.json)
-  message(${ROOT_DLLS})
   install(
     FILES ${CMAKE_BINARY_DIR}/main/UPA_CAN_FLASH.exe
     DESTINATION .
