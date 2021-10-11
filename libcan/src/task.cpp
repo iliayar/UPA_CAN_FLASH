@@ -14,7 +14,7 @@ std::shared_ptr<Can::ServiceResponse::ServiceResponse> Can::AsyncTask::call_imp(
     std::shared_ptr<Can::ServiceRequest::ServiceRequest> request) {
     DEBUG(info, "task");
     while (true) {
-        {
+        if (m_request == nullptr) {
             std::unique_lock<std::mutex> lock(m_mutex);
             if (m_request == nullptr) {
                 m_request = request;
@@ -26,7 +26,7 @@ std::shared_ptr<Can::ServiceResponse::ServiceResponse> Can::AsyncTask::call_imp(
     }
     DEBUG(info, "task waiting response");
     while (true) {
-        {
+        if (m_response != nullptr) {
             std::unique_lock<std::mutex> lock(m_mutex);
             if (m_response != nullptr) {
                 DEBUG(info, "task get response");

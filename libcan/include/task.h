@@ -6,6 +6,7 @@
  */
 #pragma once
 
+#include <atomic>
 #include <future>
 #include <iostream>
 #include <mutex>
@@ -78,14 +79,13 @@ public:
           m_response(nullptr) {}
 
     optional<std::shared_ptr<ServiceRequest::ServiceRequest>> fetch_request() {
-        std::this_thread::sleep_for(
-            static_cast<std::chrono::milliseconds>(DELAY));
         DEBUG(info, "task");
         while (true) {
-            {
+            if (m_request != nullptr) {
                 std::unique_lock<std::mutex> lock(m_mutex);
                 if (m_request != nullptr) {
-                    std::shared_ptr<ServiceRequest::ServiceRequest> request = m_request;
+                    std::shared_ptr<ServiceRequest::ServiceRequest> request =
+                        m_request;
                     DEBUG(info, "task fetched request");
                     m_request = nullptr;
                     return request;
@@ -97,11 +97,9 @@ public:
     }
 
     void push_response(std::shared_ptr<ServiceResponse::ServiceResponse> response) {
-        std::this_thread::sleep_for(
-            static_cast<std::chrono::milliseconds>(DELAY));
         DEBUG(info, "task");
         while (true) {
-            {
+            if (m_response == nullptr) {
                 std::unique_lock<std::mutex> lock(m_mutex);
                 if (m_response == nullptr) {
                     m_response = response;
@@ -114,10 +112,7 @@ public:
         }
     }
 
-    // :FIXME: Wanna some race conditions ?!?!?
     bool is_completed() {
-        std::this_thread::sleep_for(
-            static_cast<std::chrono::milliseconds>(DELAY));
         return m_completed;
     }
 
@@ -147,12 +142,9 @@ private:
 
     std::shared_ptr<ServiceRequest::ServiceRequest> m_request;
     std::shared_ptr<ServiceResponse::ServiceResponse> m_response;
-    bool m_completed;
-    bool m_wait_response;
+    std::atomic_bool m_completed;
+    std::atomic_bool m_wait_response;
     std::thread m_thread;
-
-    static constexpr std::chrono::milliseconds DELAY =
-        static_cast<std::chrono::milliseconds>(2);
 
 };
 
