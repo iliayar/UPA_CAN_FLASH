@@ -826,43 +826,43 @@ private:
 };
 }  // namespace Can
 
-TEST(testCommunication, testThreadedTask) {
-    auto task = std::make_shared<Can::TestAsyncTask>();
-    Can::Communicator communicator{};
-    communicator.set_task(task);
-    EXPECT_EQ(communicator.get_status(), Can::CommunicatorStatus::Transmit);
+// TEST(testCommunication, testThreadedTask) {
+//     auto task = std::make_shared<Can::TestAsyncTask>();
+//     Can::Communicator communicator{};
+//     communicator.set_task(task);
+//     EXPECT_EQ(communicator.get_status(), Can::CommunicatorStatus::Transmit);
 
-    std::shared_ptr<Can::Frame::Frame> frame = communicator.fetch_frame().value();
+//     std::shared_ptr<Can::Frame::Frame> frame = communicator.fetch_frame().value();
 
-    EXPECT_EQ(frame->get_type(), Can::Frame::Type::SingleFrame);
-    EXPECT_EQ(
-        std::static_pointer_cast<Can::Frame::SingleFrame>(frame)->get_len(), 3);
-    EXPECT_EQ(
-        std::static_pointer_cast<Can::Frame::SingleFrame>(frame)->get_data(),
-        std::vector<uint8_t>({0x22, 0xf1, 0x90, 0x00, 0x00, 0x00, 0x00}));
+//     EXPECT_EQ(frame->get_type(), Can::Frame::Type::SingleFrame);
+//     EXPECT_EQ(
+//         std::static_pointer_cast<Can::Frame::SingleFrame>(frame)->get_len(), 3);
+//     EXPECT_EQ(
+//         std::static_pointer_cast<Can::Frame::SingleFrame>(frame)->get_data(),
+//         std::vector<uint8_t>({0x22, 0xf1, 0x90, 0x00, 0x00, 0x00, 0x00}));
 
-    std::vector<std::shared_ptr<Can::Frame::Frame>> frames;
-    frames.push_back(Can::Frame::FirstFrame::build()
-                         ->len(20)
-                         ->data({0x62, 0xf1, 0x90, 0x41, 0x20, 0x41})
-                         ->build()
-                         .value());
-    frames.push_back(Can::Frame::ConsecutiveFrame::build()
-                         ->seq_num(1)
-                         ->data({0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20})
-                         ->build()
-                         .value());
-    frames.push_back(Can::Frame::ConsecutiveFrame::build()
-                         ->seq_num(2)
-                         ->data({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})
-                         ->build()
-                         .value());
+//     std::vector<std::shared_ptr<Can::Frame::Frame>> frames;
+//     frames.push_back(Can::Frame::FirstFrame::build()
+//                          ->len(20)
+//                          ->data({0x62, 0xf1, 0x90, 0x41, 0x20, 0x41})
+//                          ->build()
+//                          .value());
+//     frames.push_back(Can::Frame::ConsecutiveFrame::build()
+//                          ->seq_num(1)
+//                          ->data({0x20, 0x41, 0x20, 0x41, 0x20, 0x41, 0x20})
+//                          ->build()
+//                          .value());
+//     frames.push_back(Can::Frame::ConsecutiveFrame::build()
+//                          ->seq_num(2)
+//                          ->data({0x41, 0x20, 0x41, 0x20, 0x41, 0x20, 0x41})
+//                          ->build()
+//                          .value());
 
-    EXPECT_EQ(communicator.get_status(), Can::CommunicatorStatus::Idle);
-    for (std::shared_ptr<Can::Frame::Frame> f : frames) {
-        communicator.push_frame(f);
-    }
-    EXPECT_EQ(communicator.get_status(), Can::CommunicatorStatus::Idle);
-    EXPECT_EQ(task->is_completed(), true);
-    EXPECT_EQ(task->get_result(), "A A A A A A A A A");
-}
+//     EXPECT_EQ(communicator.get_status(), Can::CommunicatorStatus::Idle);
+//     for (std::shared_ptr<Can::Frame::Frame> f : frames) {
+//         communicator.push_frame(f);
+//     }
+//     EXPECT_EQ(communicator.get_status(), Can::CommunicatorStatus::Idle);
+//     EXPECT_EQ(task->is_completed(), true);
+//     EXPECT_EQ(task->get_result(), "A A A A A A A A A");
+// }
